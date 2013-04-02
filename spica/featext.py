@@ -1,0 +1,888 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import argparse
+import traceback
+
+# tmp for debugging
+#import pdb
+
+import numpy
+
+from ssbc import featmat
+from ssbc import data_set
+from ssbc import protein
+from ssbc import mutation
+
+
+class FeatureExtraction(object):
+
+    def __init__(self):
+
+        # define file location if we want to store data
+        self.root_dir = None
+
+        # initialize empty feature matrices
+        self.fm_protein = featmat.FeatureMatrix()
+        self.fm_missense = featmat.FeatureMatrix()
+
+        # initialize protein data set
+        self.protein_data_set = data_set.ProteinDataSet()
+
+        # initialize feature vectors
+        self.fv_dict_protein = None
+        self.fv_dict_missense = None
+
+    def set_root_dir(self, root_dir):
+        '''
+        Set the root dir if you want to load or store the data to file.
+        '''
+        # store the root dir
+        self.root_dir = root_dir
+
+        # set the protein feature matrix root dir
+        self.fm_protein_d = os.path.join(root_dir, 'feature_matrix_protein')
+        self.fm_protein.set_root_dir(self.fm_protein_d)
+
+        # set the missense mutation feature matrix root dir
+        self.fm_missense_d = os.path.join(root_dir, 'feature_matrix_missense')
+        self.fm_missense.set_root_dir(self.fm_missense_d)
+
+        # set the protein data set root dir
+        self.protein_data_set_d = os.path.join(root_dir, 'protein_data_set')
+        self.protein_data_set.set_root_dir(self.protein_data_set_d)
+
+    def load_protein_ids(self, protein_ids_f):
+
+        # use the ids to create protein objects in the protein data set
+        self.protein_data_set.load_proteins(protein_ids_f)
+
+        # and use the protein ids as object ids in the protein feature matrix
+        self.fm_protein.set_object_ids(self.protein_data_set.get_protein_ids())
+
+    def load_mutation_data(self, mutation_f):
+
+        # add mutation data to protein data set
+        self.protein_data_set.load_mutation_data(mutation_f)
+
+        # and use the mutation ids as object ids in the protein feature matrix
+        mut_ids = self.protein_data_set.get_mutation_ids()
+        self.fm_missense.set_object_ids(mut_ids)
+
+    def set_object_ids(self, object_type):
+        if(object_type == 'protein'):
+            object_ids = self.protein_data_set.get_protein_ids()
+            self.fm_protein.set_object_ids(object_ids)
+        elif(object_type == 'missense_mutation'):
+            object_ids = self.protein_data_set.get_mutation_ids()
+            self.fm_missense.set_object_ids(object_ids)
+        else:
+            raise Exception('Wrong object type provided.')
+
+    def calculate_protein_features(self, feat_vector_id):
+        assert(self.fm_protein.object_ids)
+        (fm, feat_ids) = self.fv_dict_protein[feat_vector_id].calc_feats()
+        self.fm_protein.add_features(feat_ids, fm)
+
+    # TODO split in calculate and add function? or add remove from featmat
+    def calculate_missense_features(self, feat_vector_id):
+        assert(self.fm_protein.object_ids)
+        (fm, feat_ids) = self.fv_dict_missense[feat_vector_id].calc_feats()
+        self.fm_missense.add_features(feat_ids, fm)
+
+    def delete_feature_matrices(self):
+        self.fm_missense.delete_feature_matrix()
+        self.fm_protein.delete_feature_matrix()
+
+    #def available_features(self):
+    #    return [fc for fc in self.feature_categories if fc.available()]
+
+    #def feat_id_to_name_dict(self):
+    #    result = {}
+    #    for fc in self.feature_categories:
+    #        cat_dict = fc.feat_name_dict()
+    #        for key in cat_dict.keys():
+    #            result[key] = (fc.name, cat_dict[key])
+    #    return result
+
+    def load(self):
+
+        assert(self.root_dir)
+
+        # load the feature matrices
+        self.fm_protein.load()
+        self.fm_missense.load()
+
+        # load protein data set
+        self.protein_data_set.load()
+
+        # create protein feature vectors object
+        if(self.protein_data_set.get_proteins()):
+            self.fv_dict_protein = ProteinFeatureVectorFactory().\
+                    get_feature_vectors(self.protein_data_set.get_proteins())
+
+        # create mutation feature vector object
+        if(self.protein_data_set.get_mutations()):
+            self.fv_dict_missense = MutationFeatureVectorFactory().\
+                    get_feature_vectors(self.protein_data_set.get_mutations())
+
+    def save(self):
+
+        assert(self.root_dir)
+
+        # create root dir, if not available
+        if not(os.path.exists(self.root_dir)):
+            os.makedirs(self.root_dir)
+
+        # save feature matrix
+        self.fm_protein.save()
+        self.fm_missense.save()
+
+        # save protein data set
+        self.protein_data_set.save()
+
+    def __str__(self):
+        return '%s\n%s\n' % (str(self.fm_protein), str(self.fm_missense))
+
+    def plot_mutation_environment_signals(self, env_window, scale, sig_window,
+            edge, labeling_name):
+
+        if(sig_window > env_window):
+            raise ValueError('Signal window (sig_window) must be equal or ' +
+                    'smaller than environment window (env_window).')
+
+        mutations = self.protein_data_set.get_mutations()
+        labeling = self.fm_missense.labeling_dict[labeling_name]
+
+        # TODO use any labeling... now hacked to my mut labels
+        indices_0 = labeling.object_indices_per_class['neutral']
+        indices_1 = labeling.object_indices_per_class['disease']
+
+        nrows = env_window - (sig_window - 1)
+        ncols = len(mutations)
+
+        data = numpy.zeros((nrows, ncols))
+
+        for index, mut in enumerate(mutations):
+            data[:, index] = mut.environment_signal(env_window, scale,
+                    sig_window, edge)
+
+        # split data per label # TODO implement multiple labels
+        data0 = data[:, indices_0]
+        data1 = data[:, indices_1]
+
+        from matplotlib import pyplot
+        pyplot.plot(data0[:, range(300)], color="#55ff55", alpha=0.1)
+        pyplot.plot(data1[:, range(300)], color="#ff5555", alpha=0.1)
+        #pyplot.plot(data0, color="#55ff55")
+        #pyplot.plot(data1, color="#ff5555")
+        pyplot.show()
+
+
+class FeatureVector():
+
+    def __init__(self, uid, object_list, name, feature_func, kwargs):
+
+        assert(object_list)
+
+        self.uid = uid
+        self.name = name
+
+        self.object_list = object_list
+        self.feature_func = feature_func
+        self.kwargs = kwargs
+
+        (ids, names) = self.feature_func(self.object_list[0],
+                feature_ids=True, **kwargs)
+
+        self.short_ids = ids
+        self.short_names = names
+
+        self.feat_ids = ['%s_%s' % (self.uid, i) for i in ids]
+        self.feat_names = ['%s %s' % (self.name, n) for n in names]
+
+    def calc_feats(self):
+
+        # init empty feature matrix
+        fm = numpy.empty((len(self.object_list), len(self.feat_ids)))
+
+        # fill the matrix
+        for index, o in enumerate(self.object_list):
+            fm[index, :] = self.feature_func(o, **self.kwargs)
+        return(fm, self.feat_ids)
+
+    def feat_name_dict(self):
+        return dict(zip(self.feat_ids, self.feat_names))
+
+
+class FeatureVectorFactory(object):
+
+    def get_feature_vectors(self, object_list):
+        return dict(zip(self.feature_vector_ids,
+                [FeatureVector(fid, object_list, *self.feature_vectors[fid])
+                for fid in self.feature_vector_ids]))
+
+
+class MutationFeatureVectorFactory(FeatureVectorFactory):
+
+    def __init__(self):
+
+        # global settings
+        seqenv_window_range = range(1, 61)
+
+        # atom count shell settings
+        atom_count_distances = []
+        max_dist = 60
+        for inner in xrange(1, max_dist):
+            for outer in xrange(inner + 1, max_dist + 1):
+                atom_count_distances.append((inner, outer))
+
+        ######################################################################
+        # feature vector ids
+        ######################################################################
+
+        # mutation vector
+        self.feature_vector_ids = ['mutvec']
+        self.feature_vector_ids.append('mutrisk')
+        # georgiev signal difference
+        self.feature_vector_ids.append('mutggsigdiff')
+        self.feature_vector_ids.append('mutggbsigdiff')
+        # sequence environment aa counts
+        self.feature_vector_ids.extend(['seqenv%i' % (i)
+                for i in seqenv_window_range])
+        # msa-related
+        self.feature_vector_ids.append('msa')
+        self.feature_vector_ids.append('msaggsigdiff')
+        # structure atom counts
+        self.feature_vector_ids.extend(['atmcnti%io%i' % (i)
+                for i in atom_count_distances])
+        # backbone angles
+        self.feature_vector_ids.append('bbang')
+        # relative solv access
+        self.feature_vector_ids.append('rasa')
+        self.feature_vector_ids.append('pfam')
+
+        # from mutations vectors
+        self.feature_vector_ids.append('tomutvec')
+        #for letter in sequtil.aa_unambiguous_alph:
+        #    self.feature_vector_ids.append('mut%stox' % (letter.lower()))
+
+        # this doesn't work... TODO think of other solution...
+        # sequence environment signal peak area
+        ggsig_ids = []
+        for env_window in xrange(3, 102, 2):
+            for sig_window in xrange(3, 22, 2):
+                for edge in numpy.arange(0.0, 1.1, 0.25):
+                    for below_threshold in [False, True]:
+                        for threshold in [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0,
+                                3.5, 4.0]:
+                            ggsig_ids.append('ggsew%03dsw%02de%03dt%02d%s' %
+                                    (env_window, sig_window,
+                                    int(edge * 100), int(threshold * 10),
+                                    'd' if below_threshold else 'u'))
+        self.feature_vector_ids.extend(ggsig_ids)
+        # sequence environment signal peak area
+        ggsig_ids = []
+        for env_window in xrange(3, 102, 2):
+            for sig_window in xrange(3, 22, 2):
+                for edge in numpy.arange(0.0, 1.1, 0.25):
+                    for below_threshold in [False, True]:
+                        for threshold in [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0,
+                                3.5, 4.0]:
+                            ggsig_ids.append('ggbsew%03dsw%02de%03dt%02d%s' %
+                                    (env_window, sig_window,
+                                    int(edge * 100), int(threshold * 10),
+                                    'd' if below_threshold else 'u'))
+        self.feature_vector_ids.extend(ggsig_ids)
+
+        ######################################################################
+        # feature vector info dict
+        ######################################################################
+
+        self.feature_vectors = {
+            'mutvec': ('mutation vector',
+                mutation.MissenseMutation.mutation_vector, {}),
+            'mutrisk': ('mutation risk',
+                mutation.MissenseMutation.mutation_risk, {}),
+            'mutggsigdiff': ('mutation georgiev signal difference',
+                mutation.MissenseMutation.georgiev_signal_diff, {}),
+            'mutggbsigdiff': ('mutation georgiev blosum signal difference',
+                mutation.MissenseMutation.georgiev_blosum_signal_diff, {}),
+            'msa': ('msa-based',
+                mutation.MissenseMutation.msa_based, {}),
+            'msaggsigdiff': ('msa georgiev signal difference',
+                mutation.MissenseMutation.msa_scale_diff, {}),
+            'bbang': ('backbone angles',
+                mutation.MissenseMutation.backbone_angles, {}),
+            'rasa': ('relative accessible surface area',
+                mutation.MissenseMutation.solv_access, {}),
+            'pfam': ('pfam annotation',
+                mutation.MissenseMutation.pfam_annotation, {}),
+            'tomutvec': ('to mutation vector',
+                mutation.MissenseMutation.mutation_to_vector, {})
+        }
+
+        #for letter in sequtil.aa_unambiguous_alph:
+        #    self.feature_vectors['mut%stox' % (letter.lower())] = (
+        #            '%s to X mutation vector' % (letter),
+        #            mutation.MissenseMutation.mutation_to_vector,
+        #            {'fr': letter})
+
+        for window in seqenv_window_range:
+            self.feature_vectors['seqenv%i' % (window)] = (
+                'sequence environment %i' % (window),
+                mutation.MissenseMutation.seq_env_aa_count,
+                {'window': window})
+
+        for (min_dist, max_dist) in atom_count_distances:
+            self.feature_vectors['atmcnti%io%i' % (min_dist, max_dist)] = (
+                'atom count %i - %i angstrom' % (min_dist, max_dist),
+                mutation.MissenseMutation.atom_count,
+                {'min_dist': min_dist, 'max_dist': max_dist})
+
+        # do this differently...
+        for env_window in xrange(3, 102, 2):
+            for sig_window in xrange(3, 22, 2):
+                for edge in numpy.arange(0.0, 1.1, 0.25):
+                    for below_threshold in [False, True]:
+                        for threshold in [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0,
+                                3.5, 4.0]:
+                            self.feature_vectors[
+                                    'ggsew%03dsw%02de%03dt%02d%s' %
+                                    (env_window, sig_window,
+                                    int(edge * 100),
+                                    int(threshold * 10),
+                                    'd' if below_threshold else 'u')] = (
+                                    'name...',
+                                    mutation.MissenseMutation.
+                                    georgiev_signal_auc,
+                                    {'env_window': env_window,
+                                    'sig_window': sig_window,
+                                    'edge': edge,
+                                    'threshold': -1.0 * threshold if
+                                    below_threshold else threshold,
+                                    'below_threshold': below_threshold})
+        # do this differently...
+        for env_window in xrange(3, 102, 2):
+            for sig_window in xrange(3, 22, 2):
+                for edge in numpy.arange(0.0, 1.1, 0.25):
+                    for below_threshold in [False, True]:
+                        for threshold in [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0,
+                                3.5, 4.0]:
+                            self.feature_vectors[
+                                    'ggbsew%03dsw%02de%03dt%02d%s' %
+                                    (env_window, sig_window,
+                                    int(edge * 100),
+                                    int(threshold * 10),
+                                    'd' if below_threshold else 'u')] = (
+                                    'name...',
+                                    mutation.MissenseMutation.
+                                    georgiev_blosum_signal_auc,
+                                    {'env_window': env_window,
+                                    'sig_window': sig_window,
+                                    'edge': edge,
+                                    'threshold': -1.0 * threshold if
+                                    below_threshold else threshold,
+                                    'below_threshold': below_threshold})
+
+        # make sure that all ids are in the ids list
+        assert(set(self.feature_vector_ids) ==
+               set(self.feature_vectors.keys()))
+
+
+class ProteinFeatureVectorFactory(FeatureVectorFactory):
+
+    def __init__(self):
+
+        self.feature_vector_ids = ['aac']
+
+        self.feature_vectors = {
+            'aac': ('amino acid composition',
+                protein.Protein.amino_acid_composition, {})
+        }
+
+        # make sure that all ids are in the ids list
+        assert(set(self.feature_vector_ids) ==
+               set(self.feature_vectors.keys()))
+'''
+class ProteinFeatureCategoryFactory(FeatureCategoryFactory):
+
+    def __init__(self):
+
+        # for manual ordering...
+        self.feature_category_ids = ['aac',
+                                     '5p50aac', '5p75aac', '5p100aac',
+                                     '8p50aac', '8p75aac', '8p100aac',
+                                     'clc',
+                                     'ssc', 'ssaac',
+                                     'sac', 'saaac',
+                                     'codc', 'codu']
+
+        # the data used to create feature category objects
+        # - name
+        # - function --> (feature matrix, feature ids, feature names)
+        # - required sequence data resources
+        # - additional arguments (kwargs)
+        self.feature_categories = {
+            'aac': ('amino acid composition',
+                    ProteinFeatureExtraction._amino_acid_composition,
+                    ['prot_seq'],
+                    {}),
+            '5p50aac': ('5-prime 50 AA count',
+                    ProteinFeatureExtraction._prime_amino_acid_count,
+                    ['prot_seq'],
+                    {'seq_length': 50, 'five_prime': True}),
+            '5p75aac': ('5-prime 75 AA count',
+                    ProteinFeatureExtraction._prime_amino_acid_count,
+                    ['prot_seq'],
+                    {'seq_length': 75, 'five_prime': True}),
+            '5p100aac': ('5-prime 100 AA count',
+                    ProteinFeatureExtraction._prime_amino_acid_count,
+                    ['prot_seq'],
+                    {'seq_length': 100, 'five_prime': True}),
+            '8p50aac': ('8-prime 50 AA count',
+                    ProteinFeatureExtraction._prime_amino_acid_count,
+                    ['prot_seq'],
+                    {'seq_length': 50, 'five_prime': False}),
+            '8p75aac': ('8-prime 75 AA count',
+                    ProteinFeatureExtraction._prime_amino_acid_count,
+                    ['prot_seq'],
+                    {'seq_length': 75, 'five_prime': False}),
+            '8p100aac': ('8-prime 100 AA count',
+                    ProteinFeatureExtraction._prime_amino_acid_count,
+                    ['prot_seq'],
+                    {'seq_length': 100, 'five_prime': False}),
+            'clc': ('cluster composition',
+                    ProteinFeatureExtraction._cluster_composition,
+                    ['prot_seq'],
+                    {}),
+            'ssc': ('secondary structure composition',
+                    ProteinFeatureExtraction._ss_composition,
+                    ['ss_seq'],
+                    {}),
+            'ssaac': ('secondary structure amino acid composition',
+                    ProteinFeatureExtraction._ss_aa_composition,
+                    ['prot_seq', 'ss_seq'],
+                    {}),
+            'sac': ('solvent accessibility composition',
+                    ProteinFeatureExtraction._sa_composition,
+                    ['sa_seq'],
+                    {}),
+            'saaac': ('solvent accessibility amino acid composition',
+                    ProteinFeatureExtraction._sa_aa_composition,
+                    ['prot_seq', 'sa_seq'],
+                    {}),
+            'codc': ('codon composition',
+                    ProteinFeatureExtraction._codon_composition,
+                    ['orf_seq'],
+                    {}),
+            'codu': ('codon usage',
+                    ProteinFeatureExtraction._codon_usage,
+                    ['orf_seq'],
+                    {})
+        }
+
+        # make sure that all ids are in the ids list
+        assert(set(self.feature_category_ids) ==
+               set(self.feature_categories.keys()))
+'''
+
+
+if __name__ == '__main__':
+
+    # parse arguments
+    parser = argparse.ArgumentParser()
+
+    # required to provide a root directory for the application
+    parser.add_argument('-r', '--root', required=True)
+
+    # initialize a new project
+    parser.add_argument('-i', '--init', action='store_true', default=False)
+
+    # set protein ids
+    parser.add_argument('-u', '--uniprot_ids')
+
+    # add path to mutation data
+    parser.add_argument('-m', '--missense_mutations')
+
+    # optional, only needed for classification stuff (hists, ttest, ...)
+    parser.add_argument('-l', '--labels', nargs=3, action='append')
+
+    # add path to protein sequence data sources (that use the uniprot ids)
+    parser.add_argument('--protein_sequence_data')
+
+    # add path to pfam annotation data
+    parser.add_argument('--pfam_data')
+
+    # data sources that have a mapping from their ids to uniprot ids
+    parser.add_argument('--orf_sequence_data', nargs=2)
+    parser.add_argument('--structure_data', nargs=2)
+    parser.add_argument('--rasa_data', nargs=2)
+    parser.add_argument('--residue_rank_data', nargs=2)
+
+    # features to be calculated
+    parser.add_argument('--missense_features', nargs='+', default=None)
+    parser.add_argument('--protein_features', nargs='+', default=None)
+
+    # TODO implement this
+    # user should provide 2 paths, one to feature matrix, one to feature ids
+    parser.add_argument('--custom_missense_features', nargs=2)
+    parser.add_argument('--custom_protein_features', nargs=2)
+
+    # delete feature matrix TODO do this without loading the data set???
+    parser.add_argument('--delete_feature_matrices', action='store_true',
+            default=False)
+
+    args = parser.parse_args()
+
+    # create feature extraction object
+    fe = FeatureExtraction()
+    fe.set_root_dir(args.root)
+
+    # initialize new project
+    if(args.init):
+
+        if(os.path.exists(args.root) and os.listdir(args.root)):
+            print('\nUnable to initialize a new project in '
+                  '%s, the directory is not empty.\n' % (args.root))
+            sys.exit()
+        else:
+            fe.save()
+            print('\nNew project created in %s\n' % (args.root))
+
+    # try to load project
+    if not(os.path.exists(args.root)):
+        print '\nDirectory %s does not exist' % (args.root)
+        print 'Use --init if you want to create a new project.\n'
+        sys.exit()
+    else:
+        try:
+            print('\nLoading data...')
+            fe.load()
+            print('Done.')
+        except Exception, e:
+            print '\nError while loading project: %s\n' % (e)
+            raise
+
+    # initialize proteins using a list of ids
+    if(args.uniprot_ids):
+
+        if(fe.protein_data_set.proteins):
+            print('\nProteins are allready set.\n')
+            sys.exit()
+        else:
+            try:
+                fe.load_protein_ids(args.uniprot_ids)
+            except IOError as e:
+                print '\nNo such file: %s\n' % (e)
+                sys.exit()
+            except Exception, e:
+                print '\nError in object ids file: %s\n' % (e)
+                sys.exit()
+
+        fe.save()
+
+    # set labels
+    if(args.labels):
+
+        label_types = ['protein', 'missense']
+
+        for (label_type, label_name, label_path) in args.labels:
+
+            if not(label_type in label_types):
+                print '\nWrong label type: %s' % (label_type)
+                print 'Must be one of: %s\n' % (', '.join(label_types))
+                sys.exit()
+            try:
+                if(label_type == 'protein'):
+                    fe.fm_protein.load_labels(label_name, label_path)
+                elif(label_type == 'missense'):
+                    fe.fm_missense.load_labels(label_name, label_path)
+                else:
+                    print '\nWrong label type, error should not occur...\n'
+                    sys.exit()
+            except IOError, e:
+                print '\nLabels file: %s\n' % (e)
+                sys.exit()
+            except ValueError, e:
+                print '\nLabels error: %s\n' % (e)
+                sys.exit()
+            except Exception, e:
+                print '\nError in labels file: %s\n' % (e)
+                sys.exit()
+
+        fe.save()
+
+    # add protein sequence data (obtain from fasta file using uniprot ids)
+    if(args.protein_sequence_data):
+
+        ds_name = 'prot_seq'
+        prot_ds = fe.protein_data_set
+        ds_path = args.protein_sequence_data
+
+        # the try is not realy neccasary anymore now... TODO remove
+        try:
+            ds = prot_ds.ds_dict[ds_name]
+        except KeyError:
+            print('\nNo such data source: %s\n' % (ds_name))
+            sys.exit()
+
+        if(ds.available()):
+            print('\nData source already available: %s\n' % (ds_name))
+            sys.exit()
+        else:
+            try:
+                prot_ds.read_data_source(ds_name, ds_path, None)
+            except IOError as e:
+                print '\nData source io error: %s\n\n%s' % (ds_name, e)
+                sys.exit()
+            except ValueError as e:
+                print '\nData source value error: %s\n\n%s' % (ds_name, e)
+                sys.exit()
+            except Exception as e:
+                print '\nData source exception: %s\n\n%s' % (ds_name, e)
+                print sys.exc_info()[0]
+                sys.exit()
+
+        fe.save()
+
+    # add pfam annotation data
+    if(args.pfam_data):
+
+        ds_name = 'pfam'
+        prot_ds = fe.protein_data_set
+        ds_path = args.pfam_data
+
+        try:
+            ds = prot_ds.ds_dict[ds_name]
+        except KeyError:
+            print('\nNo such data source: %s\n' % (ds_name))
+            sys.exit()
+
+        if(ds.available()):
+            print('\nData source already available: %s\n' % (ds_name))
+            sys.exit()
+        else:
+            try:
+                prot_ds.read_data_source(ds_name, ds_path, None)
+            except IOError as e:
+                print '\nData source io error: %s\n\n%s' % (ds_name, e)
+                sys.exit()
+            except ValueError as e:
+                print '\nData source value error: %s\n\n%s' % (ds_name, e)
+                sys.exit()
+            except Exception as e:
+                print '\nData source exception: %s\n\n%s' % (ds_name, e)
+                print sys.exc_info()[0]
+                sys.exit()
+
+        fe.save()
+
+    # add orf sequence data,
+    if(args.orf_sequence_data):
+
+        (uni_orf_map_f, ds_path) = args.orf_sequence_data
+
+        ds_name = 'orf_seq'
+        prot_ds = fe.protein_data_set
+
+        #ds_path = args.protein_sequence_data
+        #ds_name = 'protseq'
+
+        # the try is not realy neccasary anymore now... TODO remove
+        try:
+            ds = prot_ds.ds_dict[ds_name]
+        except KeyError:
+            print('\nNo such data source: %s\n' % (ds_name))
+            sys.exit()
+
+        if(ds.available()):
+            print('\nData source already available: %s\n' % (ds_name))
+            sys.exit()
+        else:
+            try:
+                prot_ds.read_data_source(ds_name, ds_path,
+                        mapping_file=uni_orf_map_f)
+            except IOError as e:
+                print '\nData source io error: %s\n\n%s' % (ds_name, e)
+                print traceback.format_exc()
+                sys.exit()
+            except ValueError as e:
+                print '\nData source value error: %s\n\n%s' % (ds_name, e)
+                print traceback.format_exc()
+                sys.exit()
+            except Exception as e:
+                print '\nData source exception: %s\n\n%s' % (ds_name, e)
+                print traceback.format_exc()
+                sys.exit()
+
+        fe.save()
+
+    # add structure data
+    if(args.structure_data):
+
+        (ids_file, pdb_dir) = args.structure_data
+
+        prot_ds = fe.protein_data_set
+        ds = prot_ds.ds_dict['prot_struct']
+
+        if(ds.available()):
+            print('\nProtein structure data already available.\n')
+            sys.exit()
+        else:
+            try:
+                prot_ds.read_data_source('prot_struct', pdb_dir, ids_file)
+            except IOError as e:
+                print '\nData source io error: prot_struct\n'
+                print traceback.format_exc()
+                sys.exit()
+            except ValueError as e:
+                print '\nData source value error: prot_struct\n'
+                print traceback.format_exc()
+                sys.exit()
+            except Exception as e:
+                print '\nData source exception: prot_struct\n'
+                print traceback.format_exc()
+                sys.exit()
+
+        fe.save()
+
+    # add solvent accessibilty data
+    if(args.rasa_data):
+
+        (ids_file, rasa_dir) = args.rasa_data
+
+        prot_ds = fe.protein_data_set
+        ds = prot_ds.ds_dict['residue_rasa']
+
+        if(ds.available()):
+            print('\nSolvent accessibility data already available.\n')
+            sys.exit()
+        else:
+            try:
+                prot_ds.read_data_source('residue_rasa', rasa_dir, ids_file)
+            except IOError as e:
+                print '\nData source io error: residue_rasa\n'
+                print traceback.format_exc()
+                sys.exit()
+            except ValueError as e:
+                print '\nData source value error: residue_rasa\n'
+                print traceback.format_exc()
+                sys.exit()
+            except Exception as e:
+                print '\nData source exception: residue_rasa\n'
+                print traceback.format_exc()
+                sys.exit()
+
+        fe.save()
+
+    # add residue rank data
+    if(args.residue_rank_data):
+
+        (ids_file, rank_dir) = args.residue_rank_data
+
+        prot_ds = fe.protein_data_set
+        ds = prot_ds.ds_dict['residue_rank']
+
+        if(ds.available()):
+            print('\nProtein residue rank data already available.\n')
+            sys.exit()
+        else:
+            try:
+                prot_ds.read_data_source('residue_rank', rank_dir, ids_file)
+            except IOError as e:
+                print '\nData source io error: residue rank\n'
+                print traceback.format_exc()
+                sys.exit()
+            except ValueError as e:
+                print '\nData source value error: residue rank\n'
+                print traceback.format_exc()
+                sys.exit()
+            except Exception as e:
+                print '\nData source exception: residue rank\n'
+                print traceback.format_exc()
+                sys.exit()
+
+        fe.save()
+
+    # add missense mutation data
+    if(args.missense_mutations):
+
+        # check if protein sequences are available
+        if not(fe.protein_data_set.ds_dict['prot_seq'].available()):
+            print('\nMutation data can only be added if protein sequences' +
+                    ' are available.\n')
+            sys.exit()
+
+        else:
+
+            # check if mutations are not allready present
+            if(fe.protein_data_set.get_mutations()):
+                print('\nMutation data already available.\n')
+                sys.exit()
+            else:
+                try:
+                    fe.load_mutation_data(args.missense_mutations)
+                except IOError as e:
+                    print '\nMutation data io error.\n\n%s' % (str(e))
+                    raise e
+                except ValueError as e:
+                    print '\nMutation value error.\n\n%s' % (str(e))
+                    raise e
+                except Exception as e:
+                    print '\nMutation exception.\n\n%s' % (str(e))
+                    raise e
+        fe.save()
+
+    # calculate features
+    if(args.missense_features):
+
+        for feature_vector in args.missense_features:
+            try:
+                fe.calculate_missense_features(feature_vector)
+            except ValueError, e:
+                print('\nFeature category error: %s\n' % (e))
+                print traceback.print_exc()
+                sys.exit()
+            except Exception as e:
+                print('\nFeature calculation error: %s\n' % (e))
+                print traceback.print_exc()
+                sys.exit()
+
+        fe.save()
+
+    if(args.protein_features):
+
+        for feature_vector in args.protein_features:
+
+            try:
+                fe.calculate_protein_features(feature_vector)
+            except ValueError, e:
+                print('\nFeature category error: %s\n' % (e))
+                sys.exit()
+            except Exception as e:
+                print('\nFeature calculation error: %s\n' % (e))
+                print traceback.print_exc()
+                sys.exit()
+
+        fe.save()
+
+    # add custom features
+    if(args.custom_missense_features):
+        feat_ids_f, feat_mat_f = args.custom_missense_features
+        # TODO implement
+
+    if(args.custom_protein_features):
+        feat_ids_f, feat_mat_f = args.custom_protein_features
+        # TODO implement
+
+    if(args.delete_feature_matrices):
+        fe.delete_feature_matrices()
+        fe.save()
+
+
+    # print feature matrix overview
+    # they become a bit large now...
+    #print(str(fe.fm_protein))
+    #print(str(fe.fm_missense))
