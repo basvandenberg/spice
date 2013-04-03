@@ -2,10 +2,10 @@ import os
 import operator
 import glob
 
-from sbc import featext
-from sbc import featmat
-from sbc import sequtil
-from sbc.util import file_io
+from spica import featext
+from spica import featmat
+from util import sequtil
+from util import file_io
 
 class ProjectManager(object):
 
@@ -268,7 +268,7 @@ class ProjectManager(object):
         pre: user_id is set
         '''
         project_dir = os.path.join(self.user_dir, project_id)
-        if(os.path.exists(project_dir):
+        if(os.path.exists(project_dir)):
             shutil.rmtree(project_dir)
             return True
         else:

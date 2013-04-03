@@ -6,10 +6,11 @@ from daemon import Daemon
 from operator import itemgetter
 
 # define project directory location
-project_dir = '/home/bastiaan/Development/webdev/spica/projects'
+# TODO add a set_root_dir function, or pass spica as parameter...
+project_dir = '/home/bastiaan/Development/spicaweb_test/projects'
     
 # define log output files
-log_dir = '/home/bastiaan/Development/job_runner_0.1/job_runner'
+log_dir = '/home/bastiaan/Development/spicaweb/job_runner_0.1/job_runner'
 pid_f = os.path.join(log_dir, 'daemon.pid')
 
 # pause between checking for jobs in queue

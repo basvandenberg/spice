@@ -15,10 +15,10 @@ sys.path.insert(1, os.environ['SKL'])
 from sklearn.datasets.base import Bunch
 
 from util import file_io
-from ssbc.plotpy import histogram
-from ssbc.plotpy import scatter
-from ssbc.plotpy import heatmap
-from ssbc.plotpy import color
+from spica.plotpy import histogram
+from spica.plotpy import scatter
+from spica.plotpy import heatmap
+from spica.plotpy import color
 
 
 class FeatureMatrix(object):

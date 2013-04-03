@@ -8,7 +8,7 @@ import numpy
 #from scipy.cluster import hierarchy
 from matplotlib import pyplot, colors, cm, gridspec, colorbar, ticker
 
-from ssbc.plotpy import color
+from spica.plotpy import color
 
 def heatmap_fig(data, xlab, ylab, file_name, vmin=-3.0, vmax=3.0):
     

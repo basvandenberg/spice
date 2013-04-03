@@ -23,7 +23,8 @@ from sklearn import preprocessing
 from sklearn import cross_validation
 from sklearn import metrics
 
-from ssbc import featmat
+from spica import featmat
+
 from util import timeout
 from util import roc
 from util import file_io

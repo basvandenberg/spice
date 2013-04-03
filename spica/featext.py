@@ -10,10 +10,10 @@ import traceback
 
 import numpy
 
-from ssbc import featmat
-from ssbc import data_set
-from ssbc import protein
-from ssbc import mutation
+from spica import featmat
+from spica import data_set
+from spica import protein
+from spica import mutation
 
 
 class FeatureExtraction(object):
