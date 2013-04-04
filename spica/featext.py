@@ -182,7 +182,8 @@ class FeatureExtraction(object):
 
 class FeatureVector():
 
-    def __init__(self, uid, object_list, name, feature_func, kwargs):
+    def __init__(self, uid, object_list, name, feature_func, kwargs,
+            required_data=None):
 
         assert(object_list)
 
@@ -193,6 +194,8 @@ class FeatureVector():
         self.feature_func = feature_func
         self.kwargs = kwargs
 
+        self.required_data = required_data
+
         (ids, names) = self.feature_func(self.object_list[0],
                 feature_ids=True, **kwargs)
 
@@ -201,6 +204,17 @@ class FeatureVector():
 
         self.feat_ids = ['%s_%s' % (self.uid, i) for i in ids]
         self.feat_names = ['%s %s' % (self.name, n) for n in names]
+
+    def required_data_available(self, get_data_func, all_objects=True):
+        '''
+        get_data_func: is a simple getter that should be available for the
+        objects in self.object_list
+        all_objects: if False, then any is assumed.
+        '''
+        if(all_objects):
+            return(all([get_data_func(obj) for obj in self.object_list]))
+        else:
+            return(any([get_data_func(obj) for obj in self.object_list]))
 
     def calc_feats(self):
 
@@ -214,7 +228,6 @@ class FeatureVector():
 
     def feat_name_dict(self):
         return dict(zip(self.feat_ids, self.feat_names))
-
 
 class FeatureVectorFactory(object):
 
@@ -395,68 +408,48 @@ class ProteinFeatureVectorFactory(FeatureVectorFactory):
 
     def __init__(self):
 
-        self.feature_vector_ids = ['aac']
+        self.feature_vector_ids = [
+            'aac',
+            '5p50aac', '5p75aac', '5p100aac',
+            '8p50aac', '8p75aac', '8p100aac',
+            'clc',
+            'ssc', 'ssaac',
+            'sac', 'saaac',
+            'codc', 'codu']
 
         self.feature_vectors = {
             'aac': ('amino acid composition',
-                protein.Protein.amino_acid_composition, {})
-        }
-
-        # make sure that all ids are in the ids list
-        assert(set(self.feature_vector_ids) ==
-               set(self.feature_vectors.keys()))
-'''
-class ProteinFeatureCategoryFactory(FeatureCategoryFactory):
-
-    def __init__(self):
-
-        # for manual ordering...
-        self.feature_category_ids = ['aac',
-                                     '5p50aac', '5p75aac', '5p100aac',
-                                     '8p50aac', '8p75aac', '8p100aac',
-                                     'clc',
-                                     'ssc', 'ssaac',
-                                     'sac', 'saaac',
-                                     'codc', 'codu']
-
-        # the data used to create feature category objects
-        # - name
-        # - function --> (feature matrix, feature ids, feature names)
-        # - required sequence data resources
-        # - additional arguments (kwargs)
-        self.feature_categories = {
-            'aac': ('amino acid composition',
-                    ProteinFeatureExtraction._amino_acid_composition,
-                    ['prot_seq'],
-                    {}),
+                protein.Protein.amino_acid_composition, {},
+                [(protein.Protein.get_protein_sequence, True)]),
             '5p50aac': ('5-prime 50 AA count',
-                    ProteinFeatureExtraction._prime_amino_acid_count,
-                    ['prot_seq'],
-                    {'seq_length': 50, 'five_prime': True}),
+                protein.Protein.five_prime_amino_acid_count,
+                {'seq_length': 50},
+                [(protein.Protein.get_protein_sequence, True)]),
             '5p75aac': ('5-prime 75 AA count',
-                    ProteinFeatureExtraction._prime_amino_acid_count,
-                    ['prot_seq'],
-                    {'seq_length': 75, 'five_prime': True}),
+                protein.Protein.five_prime_amino_acid_count,
+                {'seq_length': 75},
+                [(protein.Protein.get_protein_sequence, True)]),
             '5p100aac': ('5-prime 100 AA count',
-                    ProteinFeatureExtraction._prime_amino_acid_count,
-                    ['prot_seq'],
-                    {'seq_length': 100, 'five_prime': True}),
+                protein.Protein.five_prime_amino_acid_count,
+                {'seq_length': 100},
+                [(protein.Protein.get_protein_sequence, True)]),
             '8p50aac': ('8-prime 50 AA count',
-                    ProteinFeatureExtraction._prime_amino_acid_count,
-                    ['prot_seq'],
-                    {'seq_length': 50, 'five_prime': False}),
+                protein.Protein.eight_prime_amino_acid_count,
+                {'seq_length': 50},
+                [(protein.Protein.get_protein_sequence, True)]),
             '8p75aac': ('8-prime 75 AA count',
-                    ProteinFeatureExtraction._prime_amino_acid_count,
-                    ['prot_seq'],
-                    {'seq_length': 75, 'five_prime': False}),
+                protein.Protein.eight_prime_amino_acid_count,
+                {'seq_length': 75},
+                [(protein.Protein.get_protein_sequence, True)]),
             '8p100aac': ('8-prime 100 AA count',
-                    ProteinFeatureExtraction._prime_amino_acid_count,
-                    ['prot_seq'],
-                    {'seq_length': 100, 'five_prime': False}),
+                protein.Protein.eight_prime_amino_acid_count,
+                {'seq_length': 100},
+                [(protein.Protein.get_protein_sequence, True)]),
             'clc': ('cluster composition',
-                    ProteinFeatureExtraction._cluster_composition,
-                    ['prot_seq'],
-                    {}),
+                protein.Protein.cluster_composition, {},
+                [(protein.Protein.get_protein_sequence, True)])
+        }
+        ''' TODO
             'ssc': ('secondary structure composition',
                     ProteinFeatureExtraction._ss_composition,
                     ['ss_seq'],
@@ -482,11 +475,11 @@ class ProteinFeatureCategoryFactory(FeatureCategoryFactory):
                     ['orf_seq'],
                     {})
         }
+        '''
 
         # make sure that all ids are in the ids list
-        assert(set(self.feature_category_ids) ==
-               set(self.feature_categories.keys()))
-'''
+        assert(set(self.feature_vector_ids) ==
+               set(self.feature_vectors.keys()))
 
 
 if __name__ == '__main__':
