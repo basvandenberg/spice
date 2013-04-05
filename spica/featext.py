@@ -411,11 +411,14 @@ class ProteinFeatureVectorFactory(FeatureVectorFactory):
         self.feature_vector_ids = [
             'aac',
             '5p50aac', '5p75aac', '5p100aac',
-            '8p50aac', '8p75aac', '8p100aac',
+            '3p50aac', '3p75aac', '3p100aac',
             'clc',
+        ]
+        '''
             'ssc', 'ssaac',
             'sac', 'saaac',
             'codc', 'codu']
+        '''
 
         self.feature_vectors = {
             'aac': ('amino acid composition',
@@ -433,16 +436,16 @@ class ProteinFeatureVectorFactory(FeatureVectorFactory):
                 protein.Protein.five_prime_amino_acid_count,
                 {'seq_length': 100},
                 [(protein.Protein.get_protein_sequence, True)]),
-            '8p50aac': ('8-prime 50 AA count',
-                protein.Protein.eight_prime_amino_acid_count,
+            '3p50aac': ('3-prime 50 AA count',
+                protein.Protein.three_prime_amino_acid_count,
                 {'seq_length': 50},
                 [(protein.Protein.get_protein_sequence, True)]),
-            '8p75aac': ('8-prime 75 AA count',
-                protein.Protein.eight_prime_amino_acid_count,
+            '3p75aac': ('3-prime 75 AA count',
+                protein.Protein.three_prime_amino_acid_count,
                 {'seq_length': 75},
                 [(protein.Protein.get_protein_sequence, True)]),
-            '8p100aac': ('8-prime 100 AA count',
-                protein.Protein.eight_prime_amino_acid_count,
+            '3p100aac': ('3-prime 100 AA count',
+                protein.Protein.three_prime_amino_acid_count,
                 {'seq_length': 100},
                 [(protein.Protein.get_protein_sequence, True)]),
             'clc': ('cluster composition',

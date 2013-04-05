@@ -71,20 +71,40 @@ class Protein(object):
             return (list(sequtil.aa_unambiguous_alph),
                     sequtil.aa_unambiguous_name)
 
-    def five_prime_amino_acid_count(self, seq_length):
-        return sequtil.aa_count(self.five_prime_seq(seq_length))
+    def five_prime_amino_acid_count(self, seq_length, feature_ids=False):
+        if not(feature_ids):
+            return sequtil.aa_count(self.five_prime_seq(seq_length))
+        else:
+            return (list(sequtil.aa_unambiguous_alph),
+                    sequtil.aa_unambiguous_name)
 
-    def thee_prime_amino_acid_count(self, seq_length):
-        return sequtil.aa_count(self.three_prime_seq(seq_length))
+    def three_prime_amino_acid_count(self, seq_length, feature_ids=False):
+        if not(feature_ids):
+            return sequtil.aa_count(self.three_prime_seq(seq_length))
+        else:
+            return (list(sequtil.aa_unambiguous_alph),
+                    sequtil.aa_unambiguous_name)
 
-    def cluster_composition(self):
-        return sequtil.aa_cluster_composition(self.protein_sequence)
+    def cluster_composition(self, feature_ids=False):
+        if not(feature_ids):
+            return sequtil.aa_cluster_composition(self.protein_sequence)
+        else:
+            return (list(sequtil.aa_unambiguous_alph),
+                    sequtil.aa_subsets)
 
-    def five_prime_cluster_count(self, seq_length):
-        return sequtil.aa_cluster_count(self.five_prime_seq(seq_length))
+    def five_prime_cluster_count(self, seq_length, feature_ids=False):
+        if not(feature_ids):
+            return sequtil.aa_cluster_count(self.five_prime_seq(seq_length))
+        else:
+            return (list(sequtil.aa_unambiguous_alph),
+                    sequtil.aa_subsets)
 
-    def three_prime_cluster_count(self, seq_length):
-        return sequtil.aa_cluster_count(self.three_prime_seq(seq_length))
+    def three_prime_cluster_count(self, seq_length, feature_ids=False):
+        if not(feature_ids):
+            return sequtil.aa_cluster_count(self.three_prime_seq(seq_length))
+        else:
+            return (list(sequtil.aa_unambiguous_alph),
+                    sequtil.aa_subsets)
 
     # feature calculation help functions
 
