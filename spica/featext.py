@@ -216,6 +216,16 @@ class FeatureVector():
         else:
             return(any([get_data_func(obj) for obj in self.object_list]))
 
+    def data_availability(self):
+        available_data = []
+        missing_data = []
+        for rdata, _all in self.required_data:
+            if(self.required_data_available(rdata, _all)):    
+                available_data.append(rdata)
+            else:
+                missing_data.append(rdata)
+        return (available_data, missing_data)
+
     def calc_feats(self):
 
         # init empty feature matrix
@@ -228,6 +238,7 @@ class FeatureVector():
 
     def feat_name_dict(self):
         return dict(zip(self.feat_ids, self.feat_names))
+
 
 class FeatureVectorFactory(object):
 
