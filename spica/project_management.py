@@ -56,7 +56,7 @@ class ProjectManager(object):
 
             # set paths to feature extraction and classification dir
             self.fe_dir = os.path.join(self.project_dir, 'feature_extraction')
-            self.fm_dir = os.path.join(self.fe_dir, 'feature_matrix')
+            self.fm_dir = os.path.join(self.fe_dir, 'feature_matrix_protein')
             self.cl_dir = os.path.join(self.project_dir, 'classification')
 
             # set paths to jobs dir, and job status sub-directories
