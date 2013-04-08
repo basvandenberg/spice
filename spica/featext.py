@@ -95,16 +95,21 @@ class FeatureExtraction(object):
         self.fm_missense.delete_feature_matrix()
         self.fm_protein.delete_feature_matrix()
 
-    #def available_features(self):
-    #    return [fc for fc in self.feature_categories if fc.available()]
+    def available_protein_feature_vectors(self):
+        available = []
+        obj_ids_set = set(self.fm_protein.object_ids)
+        for featvec in self.fv_dict_protein.values():
+            if(set(featvec.feat_ids) <= obj_ids_set):
+                available.append(featvec)
+        return available
 
-    #def feat_id_to_name_dict(self):
-    #    result = {}
-    #    for fc in self.feature_categories:
-    #        cat_dict = fc.feat_name_dict()
-    #        for key in cat_dict.keys():
-    #            result[key] = (fc.name, cat_dict[key])
-    #    return result
+    def protein_feat_id_to_name_dict(self):
+        result = {}
+        for featvec in self.fv_dict_protein.values():
+            featvec_dict = featvec.feat_name_dict()
+            for key in featvec_dict.keys():
+                result[key] = (featvec.name, featvec_dict[key])
+        return result
 
     def load(self):
 
