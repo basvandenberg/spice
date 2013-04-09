@@ -12,6 +12,7 @@ from scipy.spatial import distance
 
 # HACK TODO remove if sklearn is updated to 0.14
 sys.path.insert(1, os.environ['SKL'])
+assert(sklearn.__version__ == '0.14-git')
 from sklearn.datasets.base import Bunch
 
 from util import file_io
