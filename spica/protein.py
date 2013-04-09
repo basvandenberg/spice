@@ -89,8 +89,7 @@ class Protein(object):
         if not(feature_ids):
             return sequtil.aa_cluster_composition(self.protein_sequence)
         else:
-            return (list(sequtil.aa_unambiguous_alph),
-                    sequtil.aa_subsets)
+            return (sequtil.aa_subsets, sequtil.aa_subsets)
 
     def five_prime_cluster_count(self, seq_length, feature_ids=False):
         if not(feature_ids):
