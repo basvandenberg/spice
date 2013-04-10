@@ -1,6 +1,7 @@
 import os
 import operator
 import glob
+import datetime
 
 from spica import featext
 from spica import featmat
@@ -109,6 +110,9 @@ class ProjectManager(object):
             fm.set_root_dir(self.fm_dir)
             fm.load()
         return fm
+
+    def timestamp_str(self):
+        return datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]
 
     #
     # Job management stuff, would be nice to use some readily available
@@ -357,14 +361,14 @@ class ProjectManager(object):
 
         # build feature extraction (featext) command
         cmd = 'featext -r %s' % (self.fe_dir)
-        cmd += ' --features ' + ' '.join(feature_categories)
+        cmd += ' --protein_features ' + ' '.join(feature_categories)
 
         # output files
         log_f = os.path.join(self.fe_dir, 'log.txt')
         error_f = os.path.join(self.fe_dir, 'error.txt')
 
         # write the job to the queue
-        with open(os.path.join(self.queue_dir, jobid), 'w') as fout:
+        with open(os.path.join(self.job_waiting_dir, jobid), 'w') as fout:
             fout.write('%s\n' % (cmd))
             fout.write('%s\n' % (log_f))    # stdout
             fout.write('%s\n' % (error_f))  # stderr
