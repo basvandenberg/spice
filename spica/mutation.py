@@ -77,7 +77,6 @@ class MissenseMutation(object):
         else:
             names = sequtil.aa_unambiguous_name
             return (alph, names)
-
     '''
     def mutation_to_vector(self, fr='A', feature_ids=False):
         # NOTE: only for data sets in which all the wild-type aas (from) are
@@ -106,7 +105,6 @@ class MissenseMutation(object):
                     if alph[i] in non_zero[fr]]
             return (ids, names)
     '''
-
     # TODO get rid of this feature...
     def mutation_risk(self, feature_ids=False):
 

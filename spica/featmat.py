@@ -149,6 +149,8 @@ class FeatureMatrix(object):
         Where do I use this for??? Looks like a mistake, obtaining all
         feature indices, and then sort them??? sounds like the same as
         range(len(self.feature_ids))
+
+        update: is used in get_dataset, is voor feature subsets
         '''
         return sorted([self.feature_ids.index(f) for f in feature_ids])
 
