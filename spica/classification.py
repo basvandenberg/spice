@@ -600,7 +600,7 @@ def lda_weights(data, target):
     clf = lda.LDA()
     clf.fit(data, target)
 
-    return clf.scalings_
+    return clf.coef_
 
 #
 # helper methods
