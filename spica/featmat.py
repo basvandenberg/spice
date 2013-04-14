@@ -3,12 +3,10 @@ import sys
 import glob
 
 import numpy
-from matplotlib import pyplot
 from scipy import stats
 from scipy.cluster import hierarchy
 from scipy.spatial import distance
-#import cairo
-#import rsvg
+from matplotlib import pyplot
 
 # HACK TODO remove if sklearn is updated to 0.14
 sys.path.insert(1, os.environ['SKL'])
@@ -17,10 +15,10 @@ assert(sklearn.__version__ == '0.14-git')
 from sklearn.datasets.base import Bunch
 
 from util import file_io
-from spica.plotpy import histogram
-from spica.plotpy import scatter
+#from spica.plotpy import histogram
+#from spica.plotpy import scatter
 from spica.plotpy import heatmap
-from spica.plotpy import color
+#from spica.plotpy import color
 
 
 class FeatureMatrix(object):
@@ -310,27 +308,24 @@ class FeatureMatrix(object):
 
         return ts
 
-    def save_histogram(self, feat_id, labeling_name, labels=None, colors=None):
+    def save_histogram(self, feat_id, labeling_name, class_ids=None,
+            colors=None, img_format='png'):
 
         try:
             labeling = self.labeling_dict[labeling_name]
         except KeyError:
             raise ValueError('Labeling does not exist: %s.' % (labeling_name))
 
+        if(colors is None):
+            colors = ['#3465a4', '#73d216', '#f57900', '#5c3566', '#c17d11',
+                    '#729fcf', '#4e9a06', '#fcaf3e', '#ad7fa8', '#8f5902']
+
         # use all labels by default
-        if not(labels):
-            labels = labeling.class_names
+        if not(class_ids):
+            class_ids = labeling.class_names
 
         if not(os.path.exists(self.histogram_dir)):
             os.makedirs(self.histogram_dir)
-        #label_indices = [labeling.class_names.index(l) for l in labels]
-        #class_length = [labeling.labels.count(i) for i in label_indices]
-        #maxy = histogram.rounded_maxy(max(class_length) / 3)
-        #maxy = histogram.rounded_maxy(max(class_length))
-
-        # set some default colors, if None provided
-        #if not(colors):
-        #    colors = color.color_dict()
 
         try:
             feature_index = self.feature_ids.index(feat_id)
@@ -341,12 +336,12 @@ class FeatureMatrix(object):
         fm = self.standardized()
 
         #feat_hists = []
-        lab_str = labeling_name + '_' + '_'.join([str(l) for l in labels])
+        lab_str = labeling_name + '_' + '_'.join([str(l) for l in class_ids])
         out_f = os.path.join(self.histogram_dir,
-                '%s_%s.png' % (feat_id, lab_str))
+                '%s_%s.%s' % (feat_id, lab_str, img_format))
 
         hist_data = []
-        for lab_i, lab in enumerate(labels):
+        for lab_i, lab in enumerate(class_ids):
 
             lab_indices = labeling.object_indices_per_class[lab]
 
@@ -354,133 +349,40 @@ class FeatureMatrix(object):
             h_data = fm[lab_indices, feature_index]
             hist_data.append(h_data)
 
-            # create histogrom object
-            #h = histogram.Histogram(h_data)
-            #h.settings(color=colors[lab_i], maxy=maxy, legend=lab)
-            #h.calc()
-            #feat_hists.append(h)
-
-        fig = pyplot.figure(figsize=(12, 6))
+        fig = pyplot.figure(figsize=(8.8, 2.5))
         ax = fig.add_subplot(1, 1, 1)
-        ax.hist(hist_data, bins=40, color=colors)
-        ax.legend(labels)
+        ax.hist(hist_data, bins=40, color=colors[:len(class_ids)])
+        ax.set_xlabel(feat_id)
+        ax.legend(class_ids)
         ax.grid()
         fig.savefig(out_f, bbox_inches='tight')
 
         pyplot.close(fig)
 
-    def get_hist_object(self, feat_id, labeling_name, labels=None,
-            colors=None):
-
-        try:
-            labeling = self.labeling_dict[labeling_name]
-        except KeyError:
-            raise ValueError('Labeling does not exist: %s.' % (labeling_name))
-
-        # use all labels by default
-        if not(labels):
-            labels = labeling.class_names
-
-        # TODO get length of largest class
-        label_indices = [labeling.class_names.index(l) for l in labels]
-        class_length = [labeling.labels.count(i) for i in label_indices]
-        #maxy = histogram.rounded_maxy(max(class_length) / 3)
-        maxy = histogram.rounded_maxy(max(class_length))
-
-        # set some default colors, if None provided
-        if not(colors):
-            colors = color.color_dict()
-
-        try:
-            feature_index = self.feature_ids.index(feat_id)
-        except ValueError:
-            raise ValueError('Feature %s does not exist.' % (feat_id))
-
-        # standardize data
-        fm = self.standardized()
-
-        feat_hists = []
-
-        for lab_i, lab in enumerate(labels):
-
-            lab_indices = labeling.object_indices_per_class[lab]
-
-            # fetch feature column with only the object rows with label lab
-            h_data = fm[lab_indices, feature_index]
-
-            # create histogrom object
-            h = histogram.Histogram(h_data)
-            h.settings(color=colors[lab_i], maxy=maxy, legend=lab)
-            h.calc()
-            feat_hists.append(h)
-
-        return feat_hists
-
-    def get_hist_svg(self, feat_id, labeling_name=None, labels=None,
-            colors=None):
-        hists = self.get_hist_object(feat_id, labeling_name, labels, colors)
-        return hists[0].get_norm_svg_hist(others=hists[1:],
-                title=feat_id, svg_id=feat_id)
-
-    def get_hist_svg_path(self, feat_id, labeling_name=None, labels=None):
-
-        if not(os.path.exists(self.histogram_dir)):
-            os.makedirs(self.histogram_dir)
-
-        if not(labeling_name):
-            labeling_name = self.labeling_dict[sorted(
-                    self.labeling_dict.keys())[0]].name
-
-        if not(labels):
-            labels = self.labeling_dict[labeling_name].class_names
-
-        lab_str = labeling_name + '_' + '_'.join([str(l) for l in labels])
-        out_f = os.path.join(self.histogram_dir,
-                '%s_%s.svg' % (feat_id, lab_str))
-
-        if not(os.path.exists(out_f)):
-            with open(out_f, 'w') as fout:
-                fout.write(self.get_hist_svg(feat_id, labeling_name, labels))
-
         return out_f
 
-    '''
-    def get_hist_png_path(self, feat_id, labeling_name=None, labels=None,
-            scale=1.0):
-
-        # TODO implement scale
-
-        svg_f = self.get_hist_svg_path(feat_id, labeling_name, labels)
-        png_f = '%s.png' % (svg_f)
-
-        if not(os.path.exists(png_f)):
-            img = cairo.ImageSurface(cairo.FORMAT_ARGB32, 640, 210)
-            ctx = cairo.Context(img)
-            handler= rsvg.Handle(svg_f)
-            handler.render_cairo(ctx)
-            img.write_to_png(png_f)
-
-        return png_f
-    '''
     def save_scatter(self, feat_id0, feat_id1, labeling_name=None,
-            classes=None):
+            class_ids=None, colors=None, img_format='png'):
+
         if not(os.path.exists(self.scatter_dir)):
             os.makedirs(self.scatter_dir)
 
-        if not(labeling_name):
-            labeling_name = self.labeling_dict[sorted(
-                    self.labeling_dict.keys())[0]].name
-
-        if not(classes):
-            classes = self.labeling_dict[labeling_name].class_names
-
         try:
             labeling = self.labeling_dict[labeling_name]
         except KeyError:
             raise ValueError('Labeling does not exist: %s.' % (labeling_name))
 
-        #if not(colors):
-        colors = color.color_dict()
+        if(colors is None):
+            colors = ['#3465a4', '#edd400', '#73d216', '#f57900', '#5c3566',
+                    '#c17d11', '#729fcf', '#4e9a06', '#fcaf3e', '#ad7fa8',
+                    '#8f5902']
+
+        if not(labeling_name):
+            labeling_name = self.labeling_dict[sorted(
+                    self.labeling_dict.keys())[0]].name
+
+        if not(class_ids):
+            class_ids = self.labeling_dict[labeling_name].class_names
 
         try:
             feature_index0 = self.feature_ids.index(feat_id0)
@@ -489,25 +391,34 @@ class FeatureMatrix(object):
             raise ValueError('Feature %s or %s does not exist.' %
                     (feat_id0, feat_id1))
 
+        out_f = os.path.join(self.scatter_dir, 'scatter.%s' % (img_format))
+
         # standardize data NOTE that fm is standardized before the objects
         # are sliced out!!!
         # not sure if this is the desired situation...
         fm = self.standardized()
 
-        # slice two feature columns
-        data = fm[:, [feature_index0, feature_index1]]
+        fig = pyplot.figure(figsize=(6, 6))
+        ax = fig.add_subplot(1, 1, 1)
 
-        # slice labels subdata
-        subdata = []
-        labels = []
-        for index, c in enumerate(classes):
-            #class_index = labeling.class_names.index(c)
-            object_indices = labeling.object_indices_per_class[c]
-            subdata.append(data[object_indices, :])
-            labels.extend(len(object_indices) * [index])
-        data = numpy.vstack(subdata)
+        # for each class id, add object ids that have that class label
+        for index, class_id in enumerate(class_ids):
+            object_is = labeling.object_indices_per_class[class_id]
+            x = fm[object_is, feature_index0]
+            y = fm[object_is, feature_index1]
+            c = colors[index]
+            ax.scatter(x, y, s=30, c=c, marker='o', label=class_id)
 
-        return scatter.Scatter(data, labels, feat_id0, feat_id1, classes)
+        ax.set_xlabel(feat_id0)
+        ax.set_ylabel(feat_id1)
+        ax.legend(loc='upper right')
+        ax.grid()
+        fig.savefig(out_f, bbox_inches='tight')
+
+        pyplot.close(fig)
+
+        return out_f
+
 
     def get_scatter_object(self, feat_id0, feat_id1, labeling_name=None,
             classes=None, colors=None, standardized=True):
@@ -561,65 +472,6 @@ class FeatureMatrix(object):
         data = numpy.vstack(subdata)
 
         return scatter.Scatter(data, labels, feat_id0, feat_id1, classes)
-
-    def get_scatter_svg(self, feat_id0, feat_id1, labeling_name=None,
-            classes=None, colors=None, standardized=True):
-
-        print standardized
-        scat = self.get_scatter_object(feat_id0, feat_id1,
-                labeling_name=labeling_name, classes=classes, colors=colors,
-                standardized=standardized)
-        return scat.get_norm_svg_scatter(title='%s_%s' % (feat_id0, feat_id1))
-
-    def get_scatter_svg_path(self, feat_id0, feat_id1, labeling_name=None,
-            classes=None, standardized=True):
-
-        if not(os.path.exists(self.scatter_dir)):
-            os.makedirs(self.scatter_dir)
-
-        if not(labeling_name):
-            labeling_name = self.labeling_dict[sorted(
-                    self.labeling_dict.keys())[0]].name
-
-        if not(classes):
-            classes = self.labeling_dict[labeling_name].class_names
-
-        lab_str = labeling_name + '_' + '_'.join([str(l) for l in classes])
-        out_f = os.path.join(self.scatter_dir,
-                '%s_%s_%s.svg' % (feat_id0, feat_id1, lab_str))
-
-        if not(os.path.exists(out_f)):
-            print standardized
-            with open(out_f, 'w') as fout:
-                fout.write(self.get_scatter_svg(feat_id0, feat_id1,
-                        labeling_name=labeling_name, classes=classes,
-                        standardized=standardized))
-
-        return out_f
-
-    # TODO create general function that creates paths to images...
-    # TODO create general function that converts svg into png
-    # TODO use width as parameter
-
-    '''
-    def get_scatter_png_path(self, feat_id0, feat_id1, labeling_name=None,
-            classes=None, scale=1.0):
-
-        # TODO implement scale
-
-        svg_f = self.get_scatter_svg_path(feat_id0, feat_id1, labeling_name,
-                classes)
-        png_f = '%s.png' % (svg_f)
-
-        if not(os.path.exists(png_f)):
-            img = cairo.ImageSurface(cairo.FORMAT_ARGB32, 550, 550)
-            ctx = cairo.Context(img)
-            handler= rsvg.Handle(svg_f)
-            handler.render_cairo(ctx)
-            img.write_to_png(png_f)
-
-        return png_f
-    '''
 
     def get_clustdist_path(self, feature_ids=None, labeling_name=None,
                 class_ids=None, vmin=-3.0, vmax=3.0):
@@ -709,7 +561,7 @@ class FeatureMatrix(object):
         ylab = self.feature_ids
         heatmap.heatmap_fig(corr_matrix, xlab, ylab, f, vmin=-1.0, vmax=1.0)
         return f
-        
+
     #
     # Data storage help functions
     #
