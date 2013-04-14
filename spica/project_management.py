@@ -173,7 +173,7 @@ class ProjectManager(object):
                         app = os.path.splitext(os.path.basename(app_path))[0]
                         if(app == 'featext'):
                             try:
-                                seqfeat_i = tokens.index('--features')
+                                seqfeat_i = tokens.index('--protein_features')
                                 index = seqfeat_i + 1
                                 while(index < len(tokens) and
                                         not tokens[index][0] == '-'):
