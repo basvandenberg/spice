@@ -1,3 +1,9 @@
+"""
+.. module:: spica
+
+.. moduleauthor:: Bastiaan van den Berg <bbrennerdd@gmail.com>
+"""
+
 import os
 import sys
 import glob
@@ -22,6 +28,9 @@ from spica.plotpy import heatmap
 
 
 class FeatureMatrix(object):
+    """This class is used to manage the feature matrix.
+
+    """
 
     # files used for data persistence
     objects_f = 'object_ids.txt'
@@ -47,9 +56,34 @@ class FeatureMatrix(object):
     #
 
     def set_object_ids(self, object_ids):
+        '''This function sets the object ids (feature matrix rows).
+
+        This function sets the list of object ids which are the rows of the 
+        feature matrix. It is not allowed to have duplicate ids in object_ids,
+        a ValueError will be raised in this case.
+
+        The object ids can only be set once, a ValueError will be raised if
+        this function is called while a list of objects is allready available.
+
+        Args:
+            object_ids ([str]): A list with object ids (strings)
+
+        >>> fm = featmat.FeatureMatrix()
+        >>> fm.set_object_ids(['same_id', 'same_id'])
+        Traceback (most recent call last):
+            ...
+        ValueError: There are multiple objects with the same id.
+
+        '''
+
+        # check if the objects are allready set
+        if not(self.object_ids is None):
+            raise ValueError('Object ids are allready set.')
 
         # check and store object ids
-        self._check_object_ids(object_ids)
+        if not(len(object_ids) == len(set(object_ids))):
+            raise ValueError('There are multiple objects with the same id.')
+
         self.object_ids = object_ids
 
         # by default set one_class labeling
@@ -112,14 +146,6 @@ class FeatureMatrix(object):
         self.feature_matrix = None
         self.feature_ids = None
 
-    def set_root_dir(self, root_dir):
-        self.root_dir = root_dir
-        self.labels_dir = os.path.join(self.root_dir, 'labels')
-        self.img_dir = os.path.join(self.root_dir, 'img')
-        self.histogram_dir = os.path.join(self.img_dir, 'histogram')
-        self.scatter_dir = os.path.join(self.img_dir, 'scatter')
-        self.heatmap_dir = os.path.join(self.img_dir, 'heatmap')
-
     def slice(self, feat_is, object_is):
         data = self.feature_matrix[:, feat_is]
         return data[object_is, :]
@@ -169,9 +195,8 @@ class FeatureMatrix(object):
         if not(self.object_ids == other.object_ids):
             raise ValueError('Object of the two feature matrices ' +
                              'do not correspond.')
-        if not(self.labels_list == other.labels_list):
-            raise ValueError('Labels of the two feature matrices ' +
-                             'do not correspond.')
+
+        # TODO merge labelings???
 
         # add the feature ids and extend the feature matrix
         self.add_features(other.feature_ids, other.feature_matrix)
@@ -234,6 +259,13 @@ class FeatureMatrix(object):
     #
     # Data storage functions
     #
+    def set_root_dir(self, root_dir):
+        self.root_dir = root_dir
+        self.labels_dir = os.path.join(self.root_dir, 'labels')
+        self.img_dir = os.path.join(self.root_dir, 'img')
+        self.histogram_dir = os.path.join(self.img_dir, 'histogram')
+        self.scatter_dir = os.path.join(self.img_dir, 'scatter')
+        self.heatmap_dir = os.path.join(self.img_dir, 'heatmap')
 
     def load(self):
         self._check_root_dir_set()
@@ -523,8 +555,8 @@ class FeatureMatrix(object):
     def dist_feat(self, fm, metric='euclidian'):
         return self._dist(fm, 1, metric)
 
-    #def dist_object(self, metric='euclidian'):
-    #    return self._dist(fm, 0, metric)
+    def dist_object(self, metric='euclidian'):
+        return self._dist(fm, 0, metric)
 
     def _dist(self, fm, axis, metric):
         fm = fm.copy()
@@ -630,10 +662,6 @@ class FeatureMatrix(object):
     def _check_root_dir_set(self):
         if(self.root_dir is None):
             raise ValueError('The root directory has not been set.')
-
-    def _check_object_ids(self, ids):
-        if not(len(ids) == len(set(ids))):
-            raise ValueError('There are multiple objects with the same id.')
 
     def _check_features(self, feature_ids, feature_matrix):
 
