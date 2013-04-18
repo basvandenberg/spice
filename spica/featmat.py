@@ -32,6 +32,8 @@ class FeatureMatrix(object):
 
     """
 
+    CUSTOM_FEAT_PRE = 'cus'
+
     # files used for data persistence
     objects_f = 'object_ids.txt'
     feature_matrix_f = 'feature_matrix.mat'
@@ -58,7 +60,7 @@ class FeatureMatrix(object):
     def set_object_ids(self, object_ids):
         '''This function sets the object ids (feature matrix rows).
 
-        This function sets the list of object ids which are the rows of the 
+        This function sets the list of object ids which are the rows of the
         feature matrix. It is not allowed to have duplicate ids in object_ids,
         a ValueError will be raised in this case.
 
@@ -140,6 +142,30 @@ class FeatureMatrix(object):
             self.feature_ids = feature_ids
             self.feature_matrix = feature_matrix
 
+    def add_custom_features(self, feature_matrix):
+
+        num_obj, num_feat = feature_matrix.shape
+
+        if not(num_obj == len(self.object_ids)):
+            raise ValueError('Feature matrix size does not correspond to ' +
+                             'number of objects.')
+
+        cust_feats = self.get_custom_features().values()
+        print cust_feats
+
+        if(len(cust_feats) == 0):
+            new_cust_feat_i = 0
+        else:
+            last_cust_feat = sorted(cust_feats)[-1]
+            new_cust_feat_i = last_cust_feat[(len(self.CUSTOM_FEAT_PRE) + 1):]
+        print new_cust_feat_i
+
+        featvec_id = '%s%i' % (self.CUSTOM_FEAT_PRE, new_cust_feat_i)
+        feat_ids = ['%s_%i' % (featvec_id, i) for i in xrange(num_feat)]
+        print featvec_id
+        print feat_ids
+        self.add_features(feat_ids, feature_matrix)
+
     #TODO remove_features
 
     def delete_feature_matrix(self):
@@ -201,8 +227,24 @@ class FeatureMatrix(object):
         # add the feature ids and extend the feature matrix
         self.add_features(other.feature_ids, other.feature_matrix)
 
+    def get_custom_features(self):
+        ''' This function returns the available custom feature vector ids.
+
+        Returns a dictionary with the custom feature vector ids as keys and the
+        number of features in this vector as value. Custom feature vectors are
+        named cus0 (the next would be cus1) and the features are named cus0_0,
+        cus0_1, ..., cus_0_5. If this would be the only custom feature vector,
+        the function returns {'cus0': ['cus0_0', 'cus0_1', ...]}
+        '''
+        feat_dict = {}
+        for fid in self.feature_ids:
+            if(fid[:len(self.CUSTOM_FEAT_PRE)] == self.CUSTOM_FEAT_PRE):
+                pre = fid.split('_')[0]
+                feat_dict.setdefault(pre, []).append(fid)
+        return feat_dict
+
     def get_dataset(self, feat_ids=None, labeling_name=None, class_ids=None,
-            standardized=True):
+                    standardized=True):
 
         if not(labeling_name):
             labeling_name = 'one_class'
@@ -243,11 +285,10 @@ class FeatureMatrix(object):
         return (fm, sample_names, feature_names, target, target_names)
 
     def get_sklearn_dataset(self, feat_ids=None, labeling_name=None,
-            class_ids=None, standardized=True):
+                            class_ids=None, standardized=True):
 
         (fm, sample_names, feature_names, target, target_names) =\
-                self.get_dataset(feat_ids, labeling_name, class_ids,
-                standardized)
+            self.get_dataset(feat_ids, labeling_name, class_ids, standardized)
 
         return Bunch(data=fm,
                      target=target,
@@ -316,7 +357,7 @@ class FeatureMatrix(object):
                 labeling = self.labeling_dict[labeling_name]
             except KeyError:
                 raise ValueError('Labeling does not exist: %s.' %
-                        (labeling_name))
+                                 (labeling_name))
             try:
                 obj_is_per_class = labeling.get_obj_is_per_class(object_is)
                 lab0_indices = obj_is_per_class[label0]
@@ -335,13 +376,13 @@ class FeatureMatrix(object):
                 # DONE: looks like the unequal sample sizes, equal variance
                 #       formula
                 ts.append(stats.ttest_ind(
-                        self.feature_matrix[lab0_indices, f_i],
-                        self.feature_matrix[lab1_indices, f_i]))
+                          self.feature_matrix[lab0_indices, f_i],
+                          self.feature_matrix[lab1_indices, f_i]))
 
         return ts
 
     def save_histogram(self, feat_id, labeling_name, class_ids=None,
-            colors=None, img_format='png'):
+                       colors=None, img_format='png'):
 
         try:
             labeling = self.labeling_dict[labeling_name]
@@ -350,7 +391,7 @@ class FeatureMatrix(object):
 
         if(colors is None):
             colors = ['#3465a4', '#73d216', '#f57900', '#5c3566', '#c17d11',
-                    '#729fcf', '#4e9a06', '#fcaf3e', '#ad7fa8', '#8f5902']
+                      '#729fcf', '#4e9a06', '#fcaf3e', '#ad7fa8', '#8f5902']
 
         # use all labels by default
         if not(class_ids):
@@ -370,7 +411,7 @@ class FeatureMatrix(object):
         #feat_hists = []
         lab_str = labeling_name + '_' + '_'.join([str(l) for l in class_ids])
         out_f = os.path.join(self.histogram_dir,
-                '%s_%s.%s' % (feat_id, lab_str, img_format))
+                             '%s_%s.%s' % (feat_id, lab_str, img_format))
 
         hist_data = []
         for lab_i, lab in enumerate(class_ids):
@@ -394,7 +435,7 @@ class FeatureMatrix(object):
         return out_f
 
     def save_scatter(self, feat_id0, feat_id1, labeling_name=None,
-            class_ids=None, colors=None, img_format='png'):
+                     class_ids=None, colors=None, img_format='png'):
 
         if not(os.path.exists(self.scatter_dir)):
             os.makedirs(self.scatter_dir)
@@ -406,12 +447,12 @@ class FeatureMatrix(object):
 
         if(colors is None):
             colors = ['#3465a4', '#edd400', '#73d216', '#f57900', '#5c3566',
-                    '#c17d11', '#729fcf', '#4e9a06', '#fcaf3e', '#ad7fa8',
-                    '#8f5902']
+                      '#c17d11', '#729fcf', '#4e9a06', '#fcaf3e', '#ad7fa8',
+                      '#8f5902']
 
         if not(labeling_name):
             labeling_name = self.labeling_dict[sorted(
-                    self.labeling_dict.keys())[0]].name
+                self.labeling_dict.keys())[0]].name
 
         if not(class_ids):
             class_ids = self.labeling_dict[labeling_name].class_names
@@ -421,7 +462,7 @@ class FeatureMatrix(object):
             feature_index1 = self.feature_ids.index(feat_id1)
         except ValueError:
             raise ValueError('Feature %s or %s does not exist.' %
-                    (feat_id0, feat_id1))
+                             (feat_id0, feat_id1))
 
         out_f = os.path.join(self.scatter_dir, 'scatter.%s' % (img_format))
 
@@ -451,7 +492,7 @@ class FeatureMatrix(object):
 
         return out_f
 
-
+    '''
     def get_scatter_object(self, feat_id0, feat_id1, labeling_name=None,
             classes=None, colors=None, standardized=True):
 
@@ -504,9 +545,9 @@ class FeatureMatrix(object):
         data = numpy.vstack(subdata)
 
         return scatter.Scatter(data, labels, feat_id0, feat_id1, classes)
-
+    '''
     def get_clustdist_path(self, feature_ids=None, labeling_name=None,
-                class_ids=None, vmin=-3.0, vmax=3.0):
+                           class_ids=None, vmin=-3.0, vmax=3.0):
 
         if not(os.path.exists(self.heatmap_dir)):
             os.makedirs(self.heatmap_dir)
@@ -516,7 +557,7 @@ class FeatureMatrix(object):
         #labeling = self.labeling_dict[labeling_name]
 
         (fm, sample_names, feature_names, target, target_names) =\
-                self.get_dataset(feature_ids, labeling_name, class_ids)
+            self.get_dataset(feature_ids, labeling_name, class_ids)
 
         #fistr = '_'.join([str(self.feature_ids.index(f)) for f in
         #    feature_names])
@@ -548,15 +589,15 @@ class FeatureMatrix(object):
         gs = [sample_names for i in object_indices]
 
         heatmap.heatmap_labeled_fig(fm, fs, gs, lablists, class_names,
-                                          file_path, vmin=vmin, vmax=vmax)
+                                    file_path, vmin=vmin, vmax=vmax)
 
         return file_path
 
     def dist_feat(self, fm, metric='euclidian'):
         return self._dist(fm, 1, metric)
 
-    def dist_object(self, metric='euclidian'):
-        return self._dist(fm, 0, metric)
+    #def dist_object(self, metric='euclidian'):
+    #    return self._dist(fm, 0, metric)
 
     def _dist(self, fm, axis, metric):
         fm = fm.copy()
@@ -737,7 +778,7 @@ class Labeling(object):
         for index, o in enumerate(self.feature_matrix.object_ids):
             l = self.labels[index]
             self.object_indices_per_class.setdefault(self.class_names[l],
-                    []).append(index)
+                                                     []).append(index)
 
     def get_label_dict(self):
         return dict(zip(self.feature_matrix.object_ids, self.labels))
@@ -759,4 +800,4 @@ class Labeling(object):
 
     def save(self, labels_f):
         file_io.write_labeling(labels_f, self.feature_matrix.object_ids,
-                self.labels, self.class_names)
+                               self.labels, self.class_names)
