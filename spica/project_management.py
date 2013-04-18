@@ -2,6 +2,7 @@ import os
 import operator
 import glob
 import datetime
+import numpy
 
 from spica import featext
 from spica import featmat
@@ -350,6 +351,40 @@ class ProjectManager(object):
 
         # close the temporary file, not sure if this is neccesary
         fasta_file.file.close()
+
+    # add custom features
+    def add_custom_features(self, project_id, object_ids_f, feature_matrix_f):
+        '''
+        '''
+
+        self.set_project(project_id)
+
+        try:
+            object_ids = [i for i in file_io.read_ids(object_ids_f.file)]
+        except Exception as e:
+            print '\n%s\n%s\n%s\n' % (e, type(e), e.args)
+            return 'Error in object ids file.'
+        object_ids_f.file.close()
+
+        try:
+            featmat = numpy.loadtxt(feature_matrix_f.file)
+        except Exception as e:
+            print '\n%s\n%s\n%s\n' % (e, type(e), e.args)
+            return 'Error in feature matrix file.'
+        feature_matrix_f.file.close()
+
+        fm = self.get_feature_matrix()
+
+        if not(object_ids == fm.object_ids):
+            return 'The object ids do not correspond.'
+
+        try:
+            fm.add_custom_features(featmat)
+        except ValueError:
+            return 'Something went wrong while adding custom features.'
+
+        fm.save()
+        return None        
 
     def get_job_id(self):
         return self.timestamp_str()
