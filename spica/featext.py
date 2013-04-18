@@ -101,7 +101,6 @@ class FeatureExtraction(object):
         for featvec in self.fv_dict_protein.values():
             if(set(featvec.feat_ids) <= feat_ids_set):
                 available.append(featvec)
-        print available
         return available
 
     def protein_feat_id_to_name_dict(self):
