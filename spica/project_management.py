@@ -3,11 +3,13 @@ import operator
 import glob
 import datetime
 import numpy
+import shutil
 
 from spica import featext
 from spica import featmat
 from util import sequtil
 from util import file_io
+
 
 class ProjectManager(object):
 
@@ -36,7 +38,8 @@ class ProjectManager(object):
         if not(self.user_id is None):
             for d in glob.glob(os.path.join(self.user_dir, '*')):
                 if(os.path.isdir(d)):
-                    with open(os.path.join(d, 'project_details.txt'), 'r') as fin:
+                    f = os.path.join(d, 'project_details.txt')
+                    with open(f, 'r') as fin:
                         name = fin.readline().split()[1]
                         init = fin.readline().split()[1]
                     project_ids.append((name, init))
@@ -70,18 +73,18 @@ class ProjectManager(object):
 
             # path to project details file
             self.project_details_f = os.path.join(self.project_dir,
-                    'project_details.txt')
+                                                  'project_details.txt')
 
             # paths to data files
-            self.object_ids_f =  os.path.join(self.project_dir, 'ids.txt')
+            self.object_ids_f = os.path.join(self.project_dir, 'ids.txt')
             self.labels_f = os.path.join(self.project_dir, 'labels.txt')
             self.protein_seqs_f = os.path.join(self.project_dir,
-                    'proteins.fsa')
+                                               'proteins.fsa')
             self.orf_seqs_f = os.path.join(self.project_dir, 'orfs.fsa')
             self.sec_struct_f = os.path.join(self.project_dir,
-                    'sec_struct.fsa')
+                                             'sec_struct.fsa')
             self.solv_access_f = os.path.join(self.project_dir,
-                    'solv_access.fsa')
+                                              'solv_access.fsa')
             self.hist_dir = os.path.join(self.fe_dir, 'histograms')
             self.fm_f = os.path.join(self.fm_dir, 'feat.mat')
             self.feat_ids_f = os.path.join(self.fe_dir, 'feat_ids.txt')
@@ -384,7 +387,7 @@ class ProjectManager(object):
             return 'Something went wrong while adding custom features.'
 
         fm.save()
-        return None        
+        return None
 
     def get_job_id(self):
         return self.timestamp_str()
@@ -409,7 +412,7 @@ class ProjectManager(object):
             fout.write('%s\n' % (error_f))  # stderr
 
     def run_classification(self, classifier, n_fold_cv, featsel, labeling_name,
-            class_ids, feat_ids):
+                           class_ids, feat_ids):
 
         # obtain job id
         jobid = self.get_job_id()
@@ -424,8 +427,8 @@ class ProjectManager(object):
 
         # build command
         cmd = 'classification -f %s -l %s -c %s -n %s -s %s -o %s' % (
-                self._get_feature_matrix_dir(), labeling_name, classifier,
-                n_fold_cv, featsel, out_dir)
+            self._get_feature_matrix_dir(), labeling_name, classifier,
+            n_fold_cv, featsel, out_dir)
         if(class_ids):
             cstr = ' '.join([c.strip() for c in class_ids.split(',')])
             cmd += ' --classes ' + cstr
