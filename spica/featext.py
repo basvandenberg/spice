@@ -15,6 +15,7 @@ from spica import data_set
 from spica import protein
 from spica import mutation
 
+from util import file_io
 
 class FeatureExtraction(object):
 
@@ -53,13 +54,16 @@ class FeatureExtraction(object):
         self.protein_data_set_d = os.path.join(root_dir, 'protein_data_set')
         self.protein_data_set.set_root_dir(self.protein_data_set_d)
 
-    def load_protein_ids(self, protein_ids_f):
-
-        # use the ids to create protein objects in the protein data set
-        self.protein_data_set.load_proteins(protein_ids_f)
-
-        # and use the protein ids as object ids in the protein feature matrix
+    def set_protein_ids(self, protein_ids):
+        # use protein ids to initiate protein objects in data set
+        self.protein_data_set.set_proteins(protein_ids)
+        # use the protein ids as object ids in the protein feature matrix
         self.fm_protein.set_object_ids(self.protein_data_set.get_protein_ids())
+
+    def load_protein_ids(self, protein_ids_f):
+        with open(protein_ids_f, 'r') as fin:
+            protein_ids = [i for i in file_io.read_ids(fin)]
+        self.set_protein_ids(protein_ids)
 
     def load_mutation_data(self, mutation_f):
 
@@ -70,15 +74,15 @@ class FeatureExtraction(object):
         mut_ids = self.protein_data_set.get_mutation_ids()
         self.fm_missense.set_object_ids(mut_ids)
 
-    def set_object_ids(self, object_type):
-        if(object_type == 'protein'):
-            object_ids = self.protein_data_set.get_protein_ids()
-            self.fm_protein.set_object_ids(object_ids)
-        elif(object_type == 'missense_mutation'):
-            object_ids = self.protein_data_set.get_mutation_ids()
-            self.fm_missense.set_object_ids(object_ids)
-        else:
-            raise Exception('Wrong object type provided.')
+    #def set_object_ids(self, object_type):
+    #    if(object_type == 'protein'):
+    #        object_ids = self.protein_data_set.get_protein_ids()
+    #        self.fm_protein.set_object_ids(object_ids)
+    #    elif(object_type == 'missense_mutation'):
+    #        object_ids = self.protein_data_set.get_mutation_ids()
+    #        self.fm_missense.set_object_ids(object_ids)
+    #    else:
+    #        raise Exception('Wrong object type provided.')
 
     def calculate_protein_features(self, feat_vector_id):
         assert(self.fm_protein.object_ids)
@@ -103,13 +107,13 @@ class FeatureExtraction(object):
                 available.append(featvec)
         return available
 
-    def protein_feat_id_to_name_dict(self):
-        result = {}
-        for featvec in self.fv_dict_protein.values():
-            featvec_dict = featvec.feat_name_dict()
-            for key in featvec_dict.keys():
-                result[key] = (featvec.name, featvec_dict[key])
-        return result
+    #def protein_feat_id_to_name_dict(self):
+    #    result = {}
+    #    for featvec in self.fv_dict_protein.values():
+    #        featvec_dict = featvec.feat_name_dict()
+    #        for key in featvec_dict.keys():
+    #            result[key] = (featvec.name, featvec_dict[key])
+    #    return result
 
     def load(self):
 
@@ -892,9 +896,3 @@ if __name__ == '__main__':
     if(args.delete_feature_matrices):
         fe.delete_feature_matrices()
         fe.save()
-
-
-    # print feature matrix overview
-    # they become a bit large now...
-    #print(str(fe.fm_protein))
-    #print(str(fe.fm_missense))

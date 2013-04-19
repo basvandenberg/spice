@@ -58,11 +58,12 @@ class ProteinDataSet(object):
                 object_ids=self.get_protein_ids())
         self.propagate_data_source_data(ds)
 
+    # TODO mapping? like in the function above
     def set_data_source(self, src_id, data):
         assert(self.proteins)
         ds = self.ds_dict[src_id]
-        ds.set_data(data, self.get_protein_ids())
-        self.propagate_data_source_data(src_id)
+        ds.set_data(data)
+        self.propagate_data_source_data(ds)
 
     # TODO change names sequence_data --> data source
     def propagate_data_source_data(self, data_source):

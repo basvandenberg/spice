@@ -4,6 +4,7 @@ import glob
 import datetime
 import numpy
 import shutil
+import traceback
 
 from spica import featext
 from spica import featmat
@@ -303,18 +304,21 @@ class ProjectManager(object):
         # read sequences from fasta file (to abtain object ids...)
         try:
             seqs = [s for s in file_io.read_fasta(fasta_file.file)]
+            ids = [s[0] for s in seqs]
         except Exception as e:
             print '\n%s\n%s\n%s\n' % (e, type(e), e.args)
             return
 
         # reset pointer to begin of file
-        fasta_file.file.seek(0)
+        #fasta_file.file.seek(0)
+        # close the temporary file, not sure if this is neccesary
+        fasta_file.file.close()
 
         # create sequence feature extraction object to check input
         fe = featext.FeatureExtraction()
         try:
-            fe.feature_matrix.set_object_ids([item[0] for item in seqs])
-            fe.read_data_source(sequence_type, fasta_file.file)
+            fe.set_protein_ids(ids)
+            fe.protein_data_set.set_data_source(sequence_type, seqs)
             # translate to prot seq if orf provided
             if(sequence_type == 'orf_seq'):
                 ids = [s[0] for s in seqs]
@@ -323,8 +327,10 @@ class ProjectManager(object):
                 prot_seqs = [s[:-1] if s[-1] == '*' else s for s in prot_seqs]
                 fe.set_data_source('prot_seq', zip(ids, prot_seqs))
         except ValueError as e:
-            print e
+            print(traceback.format_exc())
             return
+        except:
+            print(traceback.format_exc())
 
         # create data directory for this project (just to be sure, check again)
         if not(os.path.exists(self.project_dir)):
@@ -344,16 +350,13 @@ class ProjectManager(object):
             pass  # TODO handle project allready exists situation
 
         # create project details file
-        with open(self._get_project_details_f(), 'w') as fout:
+        with open(self.project_details_f, 'w') as fout:
             fout.write('project_id\t%s\n' % (self.project_id))
             fout.write('project_init\t%s\n' % (self.timestamp_str()))
 
         # store feature extraction data
         fe.set_root_dir(self.fe_dir)
         fe.save()
-
-        # close the temporary file, not sure if this is neccesary
-        fasta_file.file.close()
 
     # add custom features
     def add_custom_features(self, project_id, object_ids_f, feature_matrix_f):
