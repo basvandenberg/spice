@@ -21,10 +21,7 @@ assert(sklearn.__version__ == '0.14-git')
 from sklearn.datasets.base import Bunch
 
 from util import file_io
-#from spica.plotpy import histogram
-#from spica.plotpy import scatter
 from spica.plotpy import heatmap
-#from spica.plotpy import color
 
 
 class FeatureMatrix(object):
@@ -33,11 +30,13 @@ class FeatureMatrix(object):
     """
 
     CUSTOM_FEAT_PRE = 'cus'
+    CUSTOM_FEAT_NAME = 'Custom feature vector'
 
     # files used for data persistence
     objects_f = 'object_ids.txt'
     feature_matrix_f = 'feature_matrix.mat'
     features_f = 'feature_ids.txt'
+    feature_names_f = 'feature_names.txt'
     labels_f = 'labels.txt'
 
     def __init__(self):
@@ -45,6 +44,7 @@ class FeatureMatrix(object):
         # init feature matrix to None, set with init
         self.object_ids = None
         self.feature_ids = None
+        self.feature_names = None
         self.feature_matrix = None
 
         # define file location if we want to store data, set_root_dir
@@ -128,7 +128,7 @@ class FeatureMatrix(object):
         # add to labeling_dict
         self.labeling_dict[labeling.name] = labeling
 
-    def add_features(self, feature_ids, feature_matrix):
+    def add_features(self, feature_ids, feature_matrix, feature_names=None):
 
         # check for errors
         self._check_features(feature_ids, feature_matrix)
@@ -141,6 +141,14 @@ class FeatureMatrix(object):
         else:
             self.feature_ids = feature_ids
             self.feature_matrix = feature_matrix
+            self.feature_names = {}
+
+        if(feature_names is None):
+            feat_name_dict = dict(zip(feature_ids, feature_ids))
+        else:
+            feat_name_dict = dict(zip(feature_ids, feature_names))
+
+        self.feature_names.update(feat_name_dict)
 
     def add_custom_features(self, feature_matrix):
 
@@ -162,9 +170,9 @@ class FeatureMatrix(object):
 
         featvec_id = '%s%i' % (self.CUSTOM_FEAT_PRE, new_cust_feat_i)
         feat_ids = ['%s_%i' % (featvec_id, i) for i in xrange(num_feat)]
-        print featvec_id
-        print feat_ids
-        self.add_features(feat_ids, feature_matrix)
+        feat_names = ['%s %i - %i' % (self.CUSTOM_FEAT_NAME, new_cust_feat_i,
+                                      i) for i in xrange(num_feat)]
+        self.add_features(feat_ids, feature_matrix, feature_names=feat_names)
 
     #TODO remove_features
 
@@ -312,6 +320,7 @@ class FeatureMatrix(object):
         self._check_root_dir_set()
         self._load_object_ids()
         self._load_feature_ids()
+        self._load_feature_names()
         self._load_feature_matrix()
         self._load_labels()
 
@@ -321,6 +330,7 @@ class FeatureMatrix(object):
             os.makedirs(self.root_dir)
         self._store_object_ids()
         self._store_feature_ids()
+        self._store_feature_names()
         self._store_feature_matrix()
         self._store_labels()
 
@@ -492,60 +502,6 @@ class FeatureMatrix(object):
 
         return out_f
 
-    '''
-    def get_scatter_object(self, feat_id0, feat_id1, labeling_name=None,
-            classes=None, colors=None, standardized=True):
-
-        if not(os.path.exists(self.scatter_dir)):
-            os.makedirs(self.scatter_dir)
-
-        if not(labeling_name):
-            labeling_name = self.labeling_dict[sorted(
-                    self.labeling_dict.keys())[0]].name
-
-        if not(classes):
-            classes = self.labeling_dict[labeling_name].class_names
-
-        try:
-            labeling = self.labeling_dict[labeling_name]
-        except KeyError:
-            raise ValueError('Labeling does not exist: %s.' % (labeling_name))
-
-        if not(colors):
-            colors = color.color_dict()
-
-        try:
-            feature_index0 = self.feature_ids.index(feat_id0)
-            feature_index1 = self.feature_ids.index(feat_id1)
-        except ValueError:
-            raise ValueError('Feature %s or %s does not exist.' %
-                    (feat_id0, feat_id1))
-
-        # standardize data NOTE that fm is standardized before the objects
-        # are sliced out!!!
-        # not sure if this is the desired situation...
-        print standardized
-        if(standardized):
-            print 'standardize'
-            fm = self.standardized()
-        else:
-            fm = numpy.copy(self.feature_matrix)
-        # slice two feature columns
-        data = fm[:, [feature_index0, feature_index1]]
-        print data
-
-        # slice labels subdata
-        subdata = []
-        labels = []
-        for index, c in enumerate(classes):
-            #class_index = labeling.class_names.index(c)
-            object_indices = labeling.object_indices_per_class[c]
-            subdata.append(data[object_indices, :])
-            labels.extend(len(object_indices) * [index])
-        data = numpy.vstack(subdata)
-
-        return scatter.Scatter(data, labels, feat_id0, feat_id1, classes)
-    '''
     def get_clustdist_path(self, feature_ids=None, labeling_name=None,
                            class_ids=None, vmin=-3.0, vmax=3.0):
 
@@ -653,6 +609,15 @@ class FeatureMatrix(object):
         elif(os.path.exists(f)):
             os.remove(f)
 
+    def _store_feature_names(self):
+        f = os.path.join(self.root_dir, FeatureMatrix.feature_names_f)
+        if not(self.feature_names is None):
+            feat_names = [self.feature_names[fid] for fid in self.feature_ids]
+            with open(f, 'w') as fout:
+                file_io.write_names(fout, feat_names)
+        elif(os.path.exists(f)):
+            os.remove(f)
+
     def _store_feature_matrix(self):
         f = os.path.join(self.root_dir, FeatureMatrix.feature_matrix_f)
         if not(self.feature_matrix is None):
@@ -685,6 +650,13 @@ class FeatureMatrix(object):
         if(os.path.exists(f)):
             with open(f, 'r') as fin:
                 self.feature_ids = [i for i in file_io.read_ids(fin)]
+
+    def _load_feature_names(self):
+        f = os.path.join(self.root_dir, FeatureMatrix.feature_names_f)
+        if(os.path.exists(f)):
+            with open(f, 'r') as fin:
+                feat_names = [n for n in file_io.read_names(fin)]
+            self.feature_names = dict(zip(self.feature_ids, feat_names))
 
     def _load_feature_matrix(self):
         f = os.path.join(self.root_dir, FeatureMatrix.feature_matrix_f)
