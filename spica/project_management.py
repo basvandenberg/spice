@@ -411,8 +411,9 @@ class ProjectManager(object):
             fout.write('%s\n' % (log_f))    # stdout
             fout.write('%s\n' % (error_f))  # stderr
 
-    def run_classification(self, classifier, n_fold_cv, featsel, labeling_name,
-                           class_ids, feat_ids):
+    def run_classification(self, classifier, n_fold_cv, labeling_name,
+                           class_ids, feat_ids, eval_score='roc_auc',
+                           featsel=None):
 
         # obtain job id
         jobid = self.get_job_id()
@@ -425,18 +426,28 @@ class ProjectManager(object):
         progress_f = os.path.join(out_dir, 'progress.txt')
         error_f = os.path.join(out_dir, 'error.txt')
 
-        # build command
-        cmd = 'classification -f %s -l %s -c %s -n %s -s %s -o %s' % (
-            self._get_feature_matrix_dir(), labeling_name, classifier,
-            n_fold_cv, featsel, out_dir)
-        if(class_ids):
-            cstr = ' '.join([c.strip() for c in class_ids.split(',')])
-            cmd += ' --classes ' + cstr
-        if(feat_ids):
-            fstr = ' '.join([f.strip() for f in feat_ids.split(',')])
-            cmd += ' --features ' + fstr
+        # set feature selection to none if not providede
+        if(featsel is None):
+            featsel = 'none'
 
-        with open(os.path.join(self.waiting_dir, jobid), 'w') as fout:
+        # create the list of options for the classification command
+        options = [
+            '-f %s' % (self.fm_dir),
+            '-l %s' % (labeling_name),
+            '-c %s' % (classifier),
+            '-n %s' % (n_fold_cv),
+            '-s %s' % (featsel),
+            '-e %s' % (eval_score),
+            '--classes %s' % (' '.join(class_ids.split(','))),
+            '--features %s' % (' '.join(feat_ids.split(','))),
+            '--standardize',
+            '-o %s' % (out_dir)]
+
+        # create command
+        cmd = 'classification %s' % (' '.join(options))
+
+        # create job file
+        with open(os.path.join(self.job_waiting_dir, jobid), 'w') as fout:
             fout.write('%s\n' % (cmd))
             fout.write('%s\n' % (progress_f))
             fout.write('%s\n' % (error_f))
