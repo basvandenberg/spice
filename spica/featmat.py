@@ -245,10 +245,11 @@ class FeatureMatrix(object):
         the function returns {'cus0': ['cus0_0', 'cus0_1', ...]}
         '''
         feat_dict = {}
-        for fid in self.feature_ids:
-            if(fid[:len(self.CUSTOM_FEAT_PRE)] == self.CUSTOM_FEAT_PRE):
-                pre = fid.split('_')[0]
-                feat_dict.setdefault(pre, []).append(fid)
+        if(self.feature_ids):
+            for fid in self.feature_ids:
+                if(fid[:len(self.CUSTOM_FEAT_PRE)] == self.CUSTOM_FEAT_PRE):
+                    pre = fid.split('_')[0]
+                    feat_dict.setdefault(pre, []).append(fid)
         return feat_dict
 
     def get_dataset(self, feat_ids=None, labeling_name=None, class_ids=None,
