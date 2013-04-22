@@ -279,9 +279,6 @@ class ProjectManager(object):
         project_dir = os.path.join(self.user_dir, project_id)
         if(os.path.exists(project_dir)):
             shutil.rmtree(project_dir)
-            return True
-        else:
-            return False
 
     # start a new project
     def start_new_project(self, project_id, fasta_file, sequence_type):

@@ -107,13 +107,13 @@ class FeatureExtraction(object):
                 available.append(featvec)
         return available
 
-    #def protein_feat_id_to_name_dict(self):
-    #    result = {}
-    #    for featvec in self.fv_dict_protein.values():
-    #        featvec_dict = featvec.feat_name_dict()
-    #        for key in featvec_dict.keys():
-    #            result[key] = (featvec.name, featvec_dict[key])
-    #    return result
+    def protein_feat_id_to_name_dict(self):
+        result = {}
+        for featvec in self.fv_dict_protein.values():
+            featvec_dict = featvec.feat_name_dict()
+            for key in featvec_dict.keys():
+                result[key] = (featvec.name, featvec_dict[key])
+        return result
 
     def load(self):
 
