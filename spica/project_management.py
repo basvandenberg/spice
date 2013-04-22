@@ -277,6 +277,9 @@ class ProjectManager(object):
         pre: user_id is set
         '''
         project_dir = os.path.join(self.user_dir, project_id)
+        print
+        print project_dir
+        print
         if(os.path.exists(project_dir)):
             shutil.rmtree(project_dir)
 
