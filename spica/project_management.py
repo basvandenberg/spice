@@ -305,9 +305,8 @@ class ProjectManager(object):
         try:
             seqs = [s for s in file_io.read_fasta(fasta_file.file)]
             ids = [s[0] for s in seqs]
-        except Exception as e:
-            print '\n%s\n%s\n%s\n' % (e, type(e), e.args)
-            return
+        except Exception:
+            return 'Error in fasta file'
 
         # reset pointer to begin of file
         #fasta_file.file.seek(0)
@@ -328,9 +327,10 @@ class ProjectManager(object):
                 fe.set_data_source('prot_seq', zip(ids, prot_seqs))
         except ValueError as e:
             print(traceback.format_exc())
-            return
+            return str(e)
         except:
             print(traceback.format_exc())
+            return 'Error during initiation new project'
 
         # create data directory for this project (just to be sure, check again)
         if not(os.path.exists(self.project_dir)):
@@ -347,7 +347,7 @@ class ProjectManager(object):
             os.mkdir(self.cl_dir)
 
         else:
-            pass  # TODO handle project allready exists situation
+            return 'A project with the same project id allready exists'
 
         # create project details file
         with open(self.project_details_f, 'w') as fout:
@@ -357,6 +357,8 @@ class ProjectManager(object):
         # store feature extraction data
         fe.set_root_dir(self.fe_dir)
         fe.save()
+
+        return ''
 
     def add_data_source(self, data_type, data_file, mapping_f=None):
         
