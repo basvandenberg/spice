@@ -429,21 +429,41 @@ class ProteinFeatureVectorFactory(FeatureVectorFactory):
     def __init__(self):
 
         self.feature_vector_ids = [
-            'aac',
-            '5p50aac', '5p75aac', '5p100aac',
-            '3p50aac', '3p75aac', '3p100aac',
-            'clc',
-        ]
-        '''
+            'aac', 'clc',
             'ssc', 'ssaac',
             'sac', 'saaac',
-            'codc', 'codu']
-        '''
+            'codc', 'codu',
+            '5p50aac', '5p75aac', '5p100aac',
+            '3p50aac', '3p75aac', '3p100aac'
+        ]
 
         self.feature_vectors = {
             'aac': ('amino acid composition',
                 protein.Protein.amino_acid_composition, {},
                 [(protein.Protein.get_protein_sequence, True)]),
+            'clc': ('cluster composition',
+                protein.Protein.cluster_composition, {},
+                [(protein.Protein.get_protein_sequence, True)]),
+            'ssc': ('secondary structure composition',
+                protein.Protein.ss_composition, {},
+                [(protein.Protein.get_ss_sequence, True)]),
+            'ssaac': ('secondary structure amino acid composition',
+                protein.Protein.ss_aa_composition, {},
+                [(protein.Protein.get_ss_sequence, True),
+                (protein.Protein.get_protein_sequence, True)]),
+            'sac': ('solvent accessibility composition',
+                protein.Protein.sa_composition, {},
+                [(protein.Protein.get_sa_sequence, True)]),
+            'saaac': ('solvent accessibility amino acid composition',
+                protein.Protein.sa_aa_composition, {},
+                [(protein.Protein.get_sa_sequence, True),
+                (protein.Protein.get_protein_sequence, True)]),
+            'codc': ('codon composition',
+                protein.Protein.codon_composition, {},
+                [(protein.Protein.get_orf_sequence, True)]),
+            'codu': ('codon usage',
+                protein.Protein.codon_usage, {},
+                [(protein.Protein.get_orf_sequence, True)]),
             '5p50aac': ('5-prime 50 AA count',
                 protein.Protein.five_prime_amino_acid_count,
                 {'seq_length': 50},
@@ -467,35 +487,8 @@ class ProteinFeatureVectorFactory(FeatureVectorFactory):
             '3p100aac': ('3-prime 100 AA count',
                 protein.Protein.three_prime_amino_acid_count,
                 {'seq_length': 100},
-                [(protein.Protein.get_protein_sequence, True)]),
-            'clc': ('cluster composition',
-                protein.Protein.cluster_composition, {},
                 [(protein.Protein.get_protein_sequence, True)])
-            'ssc': ('secondary structure composition',
-                protein.Protein.ss_composition, {},
-                [(protein.Protein.get_ss_sequence, True)]),
-            'ssaac': ('secondary structure amino acid composition',
-                    ProteinFeatureExtraction._ss_aa_composition,
-                    ['prot_seq', 'ss_seq'],
-                    {}),
-            'sac': ('solvent accessibility composition',
-                    ProteinFeatureExtraction._sa_composition,
-                    ['sa_seq'],
-                    {}),
-            'saaac': ('solvent accessibility amino acid composition',
-                    ProteinFeatureExtraction._sa_aa_composition,
-                    ['prot_seq', 'sa_seq'],
-                    {}),
-            'codc': ('codon composition',
-                    ProteinFeatureExtraction._codon_composition,
-                    ['orf_seq'],
-                    {}),
-            'codu': ('codon usage',
-                    ProteinFeatureExtraction._codon_usage,
-                    ['orf_seq'],
-                    {})
         }
-        '''
 
         # make sure that all ids are in the ids list
         assert(set(self.feature_vector_ids) ==
