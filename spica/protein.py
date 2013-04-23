@@ -90,7 +90,28 @@ class Protein(object):
             return sequtil.sa_composition(self.sa_sequence)
         else:
             return (list(sequtil.sa_alph), sequtil.sa_name)
-        
+ 
+    def ss_aa_composition(self, feature_ids=False):
+        if not(feature_ids):
+            return sequtil.ss_aa_composition(self.protein_sequence,
+                                             self.ss_sequence)
+        else:
+            ids = ['%s%s' (s, a) for s in sequtil.ss_alph
+                                 for a in sequtil.aa_unambiguous_alph]
+            names = ['%s-%s' (s, a) for s in sequtil.ss_name
+                                    for a in sequtil.aa_unambiguous_name]
+            return (ids, names)
+       
+    def sa_aa_composition(self, feature_ids=False):
+        if not(feature_ids):
+            return sequtil.sa_aa_composition(self.protein_sequence,
+                                             self.sa_sequence)
+        else:
+            ids = ['%s%s' (s, a) for s in sequtil.sa_alph
+                                 for a in sequtil.aa_unambiguous_alph]
+            names = ['%s-%s' (s, a) for s in sequtil.sa_name
+                                    for a in sequtil.aa_unambiguous_name]
+            return (ids, names)
 
     def five_prime_amino_acid_count(self, seq_length, feature_ids=False):
         if not(feature_ids):
