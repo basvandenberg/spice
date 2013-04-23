@@ -115,6 +115,9 @@ class FeatureExtraction(object):
                 result[key] = (featvec.name, featvec_dict[key])
         return result
 
+    def get_protein_feature_vector_ids(self):
+        return ProteinFeatureVectorFactory.FEATVEC_IDS
+
     def load(self):
 
         assert(self.root_dir)
@@ -229,10 +232,11 @@ class FeatureVector():
         available_data = []
         missing_data = []
         for rdata, _all in self.required_data:
-            if(self.required_data_available(rdata, _all)):    
-                available_data.append(rdata)
+            data_name = ' '.join(rdata.__name__.split('_')[1:])
+            if(self.required_data_available(rdata, _all)):
+                available_data.append(data_name)
             else:
-                missing_data.append(rdata)
+                missing_data.append(data_name)
         return (available_data, missing_data)
 
     def calc_feats(self):
@@ -252,9 +256,9 @@ class FeatureVector():
 class FeatureVectorFactory(object):
 
     def get_feature_vectors(self, object_list):
-        return dict(zip(self.feature_vector_ids,
+        return dict(zip(self.FEATVEC_IDS,
                 [FeatureVector(fid, object_list, *self.feature_vectors[fid])
-                for fid in self.feature_vector_ids]))
+                for fid in self.FEATVEC_IDS]))
 
 
 class MutationFeatureVectorFactory(FeatureVectorFactory):
@@ -426,16 +430,16 @@ class MutationFeatureVectorFactory(FeatureVectorFactory):
 
 class ProteinFeatureVectorFactory(FeatureVectorFactory):
 
-    def __init__(self):
+    FEATVEC_IDS = [
+        'aac', 'clc',
+        'ssc', 'ssaac',
+        'sac', 'saaac',
+        'codc', 'codu',
+        '5p50aac', '5p75aac', '5p100aac',
+        '3p50aac', '3p75aac', '3p100aac'
+    ]
 
-        self.feature_vector_ids = [
-            'aac', 'clc',
-            'ssc', 'ssaac',
-            'sac', 'saaac',
-            'codc', 'codu',
-            '5p50aac', '5p75aac', '5p100aac',
-            '3p50aac', '3p75aac', '3p100aac'
-        ]
+    def __init__(self):
 
         self.feature_vectors = {
             'aac': ('amino acid composition',
@@ -491,8 +495,7 @@ class ProteinFeatureVectorFactory(FeatureVectorFactory):
         }
 
         # make sure that all ids are in the ids list
-        assert(set(self.feature_vector_ids) ==
-               set(self.feature_vectors.keys()))
+        assert(set(self.FEATVEC_IDS) == set(self.feature_vectors.keys()))
 
 
 if __name__ == '__main__':
