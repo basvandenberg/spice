@@ -471,12 +471,9 @@ class ProteinFeatureVectorFactory(FeatureVectorFactory):
             'clc': ('cluster composition',
                 protein.Protein.cluster_composition, {},
                 [(protein.Protein.get_protein_sequence, True)])
-        }
-        ''' TODO
             'ssc': ('secondary structure composition',
-                    ProteinFeatureExtraction._ss_composition,
-                    ['ss_seq'],
-                    {}),
+                protein.Protein.ss_composition, {},
+                [(protein.Protein.get_ss_sequence, True)]),
             'ssaac': ('secondary structure amino acid composition',
                     ProteinFeatureExtraction._ss_aa_composition,
                     ['prot_seq', 'ss_seq'],
