@@ -96,10 +96,10 @@ class Protein(object):
             return sequtil.ss_aa_composition(self.protein_sequence,
                                              self.ss_sequence)
         else:
-            ids = ['%s%s' (s, a) for s in sequtil.ss_alph
-                                 for a in sequtil.aa_unambiguous_alph]
-            names = ['%s-%s' (s, a) for s in sequtil.ss_name
-                                    for a in sequtil.aa_unambiguous_name]
+            ids = ['%s%s' % (s, a) for s in sequtil.ss_alph
+                                   for a in sequtil.aa_unambiguous_alph]
+            names = ['%s-%s' % (s, a) for s in sequtil.ss_name
+                                      for a in sequtil.aa_unambiguous_name]
             return (ids, names)
        
     def sa_aa_composition(self, feature_ids=False):
@@ -107,10 +107,10 @@ class Protein(object):
             return sequtil.sa_aa_composition(self.protein_sequence,
                                              self.sa_sequence)
         else:
-            ids = ['%s%s' (s, a) for s in sequtil.sa_alph
-                                 for a in sequtil.aa_unambiguous_alph]
-            names = ['%s-%s' (s, a) for s in sequtil.sa_name
-                                    for a in sequtil.aa_unambiguous_name]
+            ids = ['%s%s' % (s, a) for s in sequtil.sa_alph
+                                   for a in sequtil.aa_unambiguous_alph]
+            names = ['%s-%s' % (s, a) for s in sequtil.sa_name
+                                      for a in sequtil.aa_unambiguous_name]
             return (ids, names)
 
     def five_prime_amino_acid_count(self, seq_length, feature_ids=False):
@@ -146,6 +146,18 @@ class Protein(object):
         else:
             return (list(sequtil.aa_unambiguous_alph),
                     sequtil.aa_subsets)
+
+    def codon_composition(self, feature_ids=False):
+        if not(feature_ids):
+            return sequtil.codon_composition(self.orf_sequence)
+        else:
+            return (sequtil.codons_unambiguous, sequtil.codons_unambiguous)
+
+    def codon_usage(self, feature_ids=False):
+        if not(feature_ids):
+            return sequtil.codon_usage(self.orf_sequence)
+        else:
+            return (sequtil.codons_unambiguous, sequtil.codons_unambiguous)
 
     # feature calculation help functions
 
