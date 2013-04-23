@@ -59,13 +59,12 @@ class ProteinDataSet(object):
         self.propagate_data_source_data(ds)
 
     # TODO mapping? like in the function above
-    def set_data_source(self, src_id, data):
+    def set_data_source(self, src_id, data, mapping_file=None):
         assert(self.proteins)
         ds = self.ds_dict[src_id]
         ds.set_data(data)
         self.propagate_data_source_data(ds)
 
-    # TODO change names sequence_data --> data source
     def propagate_data_source_data(self, data_source):
         '''
         Propagate the data that has been read/set by data source to the
@@ -215,7 +214,6 @@ class DataSource():
 
         # or from a single data file
         else:
-
             data = [a for a in self.read_func(data_path)]
 
             # set the data
@@ -284,6 +282,9 @@ class DataSource():
                 #uni_ids = [d[0] for d in self.data]
                 tuples = [(d[0], self.data_mapping[d[0]]) for d in self.data]
                 file_io.write_tuple_list(self.get_mapping_file(), tuples)
+            elif(self.get_mapping_file()):
+                tuples = [(d[0], d[0]) for d in self.data]
+                file_io.write_tuple_list(self.get_mapping_file(), tuples)
 
             # store the data
             self.write_func(self.get_data_path(), out_data)
@@ -304,11 +305,12 @@ class DataSourceFactory(object):
 
     def __init__(self):
 
-        self.data_source_ids = ['orf_seq', 'prot_seq', 'prot_struct',
-                'residue_rasa', 'residue_rank', 'pfam']
+        self.data_source_ids = ['orf_seq', 'prot_seq', 'ss_seq', 'sa_seq',
+                                'prot_struct', 'residue_rasa', 'residue_rank',
+                                'pfam']
 
         self.data_sources = {
-            'prot_seq': ('protein sequence',
+            'prot_seq': ('Protein sequence',
                     file_io.read_fasta, file_io.write_fasta,
                     Protein.set_protein_sequence,
                     [
@@ -323,6 +325,20 @@ class DataSourceFactory(object):
                         lambda x: len(x) > 0,
                         sequtil.is_nucleotide_sequence
                     ], 'orf.fsa', 'uni_orf.map'),
+            'ss_seq': ('Secundary structure sequence',
+                    file_io.read_fasta, file_io.write_fasta,
+                    Protein.set_ss_sequence,
+                    [
+                        lambda x: len(x) > 0,
+                        sequtil.is_sec_struct_sequence
+                    ], 'ss.fsa', 'uni_ss.map'),
+            'sa_seq': ('Solvent accessible sequence',
+                    file_io.read_fasta, file_io.write_fasta,
+                    Protein.set_sa_sequence,
+                    [
+                        lambda x: len(x) > 0,
+                        sequtil.is_solv_access_sequence
+                    ], 'sa.fsa', 'uni_sa.map'),
             'prot_struct': ('protein structure',
                     file_io.read_pdb_dir, file_io.write_pdb_dir,
                     Protein.set_protein_structure,

@@ -116,8 +116,12 @@ class ProjectManager(object):
             fm.load()
         return fm
 
+    # helper functions
     def timestamp_str(self):
         return datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]
+
+    def get_job_id(self):
+        return self.timestamp_str()
 
     #
     # Job management stuff, would be nice to use some readily available
@@ -267,8 +271,7 @@ class ProjectManager(object):
         return cl_results
 
     #
-    # Functions that check the input and create the necessary directory
-    # structure before putting the job in queue.
+    # Functions that check the form input and forward it to data structures
     #
 
     def delete_project(self, project_id):
@@ -276,7 +279,7 @@ class ProjectManager(object):
         Delete the project with project_id
         pre: user_id is set
         '''
-        project_dir = os.path.join(self.user_dir, project_id)
+        project_dir = os.path.join(self.user_dir, self.project_id)
         if(os.path.exists(project_dir)):
             shutil.rmtree(project_dir)
 
@@ -355,6 +358,71 @@ class ProjectManager(object):
         fe.set_root_dir(self.fe_dir)
         fe.save()
 
+    def add_data_source(self, data_type, data_file, mapping_f=None):
+        
+        # for now, only fasta files are handled as data_path, no dirs or zips
+        # with data and correspondig mapping_files.
+
+        # for now, it is also required that there is a data item for each
+        # object for which we have an id.
+
+        # read sequences from fasta file
+        try:
+            seqs = [s for s in file_io.read_fasta(data_file)]
+            ids = [s[0] for s in seqs]
+        except Exception as e:
+            # TODO
+            print '\n%s\n%s\n%s\n' % (e, type(e), e.args)
+            return 'Error in fasta file.'
+
+        # close the temporary file, not sure if this is neccesary
+        data_file.close()
+
+        if not(len(set(ids)) == len(ids)):
+            return 'Fasta file contains duplicate ids.'
+
+        fe = self.get_feature_extraction()
+
+        if not(set(fe.fm_protein.object_ids) == set(ids)):
+            return 'Ids in provided file do not correspond to ids in project.'
+
+        # reorder the sequence to the project object ids
+        seq_dict = dict(seqs)
+        seqs = [(sid, seq_dict[sid]) for sid in fe.fm_protein.object_ids]
+
+        # create a uni_orf_mapping???
+
+        try:
+            fe.protein_data_set.set_data_source(data_type, seqs)
+        except ValueError as e:
+            return str(e)
+
+        # save feature extraction, if it all went well
+        fe.save()
+
+        return ''
+
+    def add_labeling(self, labeling_name, labeling_f):
+
+        # read labeling
+        try:
+            label_dict, class_names = file_io.read_labeling(labeling_f)
+        except:
+            return 'Error in labeling file.'
+        labeling_f.close()
+
+        # add to feature matrix
+        fm = self.get_feature_matrix()
+        try:
+            fm.add_labels(labeling_name, label_dict, class_names)
+        except ValueError as e:
+            return str(e)
+
+        # save if everything went well
+        fm.save()
+
+        return ''
+
     # add custom features
     def add_custom_features(self, project_id, object_ids_f, feature_matrix_f):
         '''
@@ -389,8 +457,11 @@ class ProjectManager(object):
         fm.save()
         return None
 
-    def get_job_id(self):
-        return self.timestamp_str()
+    ###########################################################################
+    # Functions that write a job file and add the job to the job queue (put it 
+    # in the waiting dir) These are the jobs which need to be runned using
+    # SPiCa on the compute servers.
+    ###########################################################################
 
     def run_feature_extraction(self, feature_categories):
 

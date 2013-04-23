@@ -11,6 +11,8 @@ class Protein(object):
 
         self.orf_sequence = None
         self.protein_sequence = None
+        self.ss_sequence = None
+        self.sa_sequence = None
         self.protein_structure = None
 
         self.rasa = None
@@ -35,6 +37,12 @@ class Protein(object):
 
     def set_protein_structure(self, struct):
         self.protein_structure = struct
+
+    def set_ss_sequence(self, seq):
+        self.ss_sequence = seq
+
+    def set_sa_sequence(self, seq):
+        serf.sa_sequence = seq
 
     def set_msa_data(self, msa_data):
 
@@ -70,6 +78,19 @@ class Protein(object):
         else:
             return (list(sequtil.aa_unambiguous_alph),
                     sequtil.aa_unambiguous_name)
+
+    def ss_composition(self, feature_ids=False):
+        if not(feature_ids):
+            return sequtil.ss_composition(self.ss_sequence)
+        else:
+            return (list(sequtil.ss_alph), sequtil.ss_name)
+
+    def sa_composition(self, feature_ids=False):
+        if not(feature_ids):
+            return sequtil.sa_composition(self.sa_sequence)
+        else:
+            return (list(sequtil.sa_alph), sequtil.sa_name)
+        
 
     def five_prime_amino_acid_count(self, seq_length, feature_ids=False):
         if not(feature_ids):
@@ -160,6 +181,12 @@ class Protein(object):
 
     def get_orf_sequence(self):
         return self.orf_sequence
+
+    def get_ss_sequence(self):
+        return self.ss_sequence
+
+    def get_sa_sequence(self):
+        return self.sa_sequence
 
     def get_structure(self):
         return self.protein_structure
