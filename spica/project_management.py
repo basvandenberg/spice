@@ -31,22 +31,6 @@ class ProjectManager(object):
         # set path to user dir
         self.user_dir = os.path.join(self.root_dir, self.user_id)
 
-    def get_projects(self):
-        '''
-        Returns all project ids and initiation times for the current user.
-        '''
-        project_ids = []
-        if not(self.user_id is None):
-            for d in glob.glob(os.path.join(self.user_dir, '*')):
-                if(os.path.isdir(d)):
-                    f = os.path.join(d, 'project_details.txt')
-                    with open(f, 'r') as fin:
-                        name = fin.readline().split()[1]
-                        init = fin.readline().split()[1]
-                    project_ids.append((name, init))
-            project_ids = sorted(project_ids, reverse=True)
-        return project_ids
-
     def set_project(self, project_id):
         '''
         Sets the current project to project_id and sets project paths
@@ -90,6 +74,22 @@ class ProjectManager(object):
             self.fm_f = os.path.join(self.fm_dir, 'feat.mat')
             self.feat_ids_f = os.path.join(self.fe_dir, 'feat_ids.txt')
 
+    def get_projects(self):
+        '''
+        Returns all project ids and initiation times for the current user.
+        '''
+        project_ids = []
+        if not(self.user_id is None):
+            for d in glob.glob(os.path.join(self.user_dir, '*')):
+                if(os.path.isdir(d)):
+                    f = os.path.join(d, 'project_details.txt')
+                    with open(f, 'r') as fin:
+                        name = fin.readline().split()[1]
+                        init = fin.readline().split()[1]
+                    project_ids.append((name, init))
+            project_ids = sorted(project_ids, reverse=True)
+        return project_ids
+
     def get_feature_extraction(self):
         '''
         Returns feature extraction object of the project with project_id for
@@ -116,17 +116,17 @@ class ProjectManager(object):
             fm.load()
         return fm
 
-    # helper functions
+    # helper function
     def timestamp_str(self):
         return datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]
 
-    def get_job_id(self):
-        return self.timestamp_str()
-
-    #
+    ###########################################################################
     # Job management stuff, would be nice to use some readily available
     # module are anything for this...
-    #
+    ###########################################################################
+
+    def get_job_id(self):
+        return self.timestamp_str()
 
     def fetch_job_files(self, app):
         '''
@@ -199,21 +199,64 @@ class ProjectManager(object):
             app = os.path.splitext(os.path.basename(app_path))[0]
         return app
 
+    ###########################################################################
+    # Functions to obtain classification data
+    ###########################################################################
+
+    def get_cl_dir(self, cl_id):
+        ''' This function returns the results directory for classifier cl_id.
+        '''
+        
+        # there should be only one dir... this is a bit of hack to get it
+        cl_base_dir = os.path.join(self.cl_dir, cl_id)
+        dirs = []
+        for d in glob.glob('%s/*/*/' % (cl_base_dir)):
+            dirs.append(d)
+
+        assert(len(dirs) < 2)
+
+        if(len(dirs) == 0):
+            return None
+        else:
+            return dirs[0]
+
+    def get_roc_f(self, cl_id):
+        roc_f = os.path.join(self.get_cl_dir(cl_id), 'roc.png')
+        if(os.path.exists(roc_f)):
+            return roc_f
+        else:
+            return None
+
+    def get_prediction_f(self, cl_id):
+        pred_f = os.path.join(self.get_cl_dir(cl_id), 'predictions.txt')
+        return pred_f
+
     def get_classifier_progress(self, cl_id):
-        f = os.path.join(self.cl_dir(), cl_id, 'progress.txt')
+
+        f = os.path.join(self.cl_dir, cl_id, 'progress.txt')
         result = ''
         with open(f, 'r') as fin:
             for line in fin:
                 result += line
         return result
+    
+    def get_classifier_error(self, cl_id):
+
+        f = os.path.join(self.cl_dir, cl_id, 'error.txt')
+        error = ''
+        with open(f, 'r') as fin:
+            for line in fin:
+                error += line
+        return error
 
     def get_classifier_finished(self, cl_id):
-        f = os.path.join(self.cl_dir, cl_id, 'result.txt')
-        return os.path.exists(f) and os.path.getsize(f) > 0
+        result_f = os.path.join(self.get_cl_dir(cl_id), 'result.txt')
+        return os.path.exists(result_f) and os.path.getsize(result_f) > 0
 
     def get_classifier_settings(self, cl_id):
-        f = os.path.join(self.cl_dir, cl_id, 'settings.txt')
-        with open(f, 'r') as fin:
+        
+        with open(os.path.join(self.get_cl_dir(cl_id), 'settings.txt'), 'r')\
+                as fin:
             keys = fin.readline().strip().split(',')
             settings = {}
             for key in keys:
@@ -222,7 +265,19 @@ class ProjectManager(object):
                     settings[key] = eval(line)
                 except Exception:
                     settings[key] = line
+
         return settings
+
+    def get_classifier_ids(self):
+
+        cl_ids = []
+
+        # iterate over all directories in the classification dir
+        for d in glob.glob(os.path.join(self.cl_dir, '*')):
+            cl_id = os.path.basename(d)
+            cl_ids.append(cl_id)
+
+        return cl_ids
 
     def get_classifier_result(self, cl_id):
         '''
@@ -230,13 +285,18 @@ class ProjectManager(object):
         {score_name: [cv_scores, ...], ...}
         '''
 
-        cl_result = {}
-        f = os.path.join(self.cl_dir, cl_id, 'result.txt')
-        with open(f, 'r') as fin:
+        cv_results = {}
+        avg_results = {}
+        with open(os.path.join(self.get_cl_dir(cl_id), 'result.txt'), 'r')\
+                as fin:
+            # TODO use a file_io read function?
             score_names = fin.readline().strip().split(',')
             for key in score_names:
-                cl_result[key] = eval(fin.readline())
-        return cl_result
+                cv_s = eval(fin.readline())
+                cv_results[key] = cv_s
+                avg_results[key] = (numpy.mean(cv_s), numpy.std(cv_s))
+
+        return (cv_results, avg_results)
 
     def get_all_classifier_results(self):
 
@@ -245,10 +305,7 @@ class ProjectManager(object):
         cl_results = {}
 
         # iterate over all directories in the classification dir
-        for d in glob.glob(os.path.join(self.cl_dir, '*')):
-
-            # obtain the classifier id (name of the dir)
-            cl_id = os.path.basename(d)
+        for cl_id in self.get_classifier_ids():
 
             cl_result = None
             cl_settings = None
@@ -257,7 +314,7 @@ class ProjectManager(object):
             if(self.get_classifier_finished(cl_id)):
 
                 # obtain classifier settings and result
-                cl_result = self.get_classifier_result(cl_id)
+                cv_results, avg_results = self.get_classifier_result(cl_id)
                 cl_settings = self.get_classifier_settings(cl_id)
 
                 # create class_ids key
@@ -265,14 +322,15 @@ class ProjectManager(object):
                 cl_results.setdefault(key, {})
 
                 cl_dict = {'cl_settings': cl_settings,
-                           'cl_result': cl_result}
+                           'cv_results': cv_results,
+                           'avg_results': avg_results}
                 cl_results[key][cl_id] = cl_dict
 
         return cl_results
 
-    #
-    # Functions that check the form input and forward it to data structures
-    #
+    ###########################################################################
+    # Functions that check form input and forward it to data structures
+    ###########################################################################
 
     def delete_project(self, project_id):
         '''
@@ -300,6 +358,22 @@ class ProjectManager(object):
         # check if a project with the same name exists
         if os.path.exists(self.project_dir):
             return  # TODO
+
+        # check file size
+        max_size = 52430000  # bytes (50MB)
+        size = 0
+        while True:
+            data = fasta_file.file.read(8192)
+            if(size > max_size):
+                return 'Fasta file exeeds the maximum allowed size (50MB)'
+            if not(data):
+                break
+            size += len(data)
+        if(size > max_size):
+            return 'Fasta file exeeds the maximum allowed size (1GB)'
+
+        # reset to beginning of fasta file
+        fasta_file.file.seek(0)
 
         # read sequences from fasta file (to abtain object ids...)
         try:
@@ -503,6 +577,11 @@ class ProjectManager(object):
         if(featsel is None):
             featsel = 'none'
 
+        # set evaluation score to f1 in case of multiple class classification
+        class_ids = class_ids.split(',')
+        if(len(class_ids) > 2):
+            eval_score = 'f1'
+
         # create the list of options for the classification command
         options = [
             '-f %s' % (self.fm_dir),
@@ -511,7 +590,7 @@ class ProjectManager(object):
             '-n %s' % (n_fold_cv),
             '-s %s' % (featsel),
             '-e %s' % (eval_score),
-            '--classes %s' % (' '.join(class_ids.split(','))),
+            '--classes %s' % (' '.join(class_ids)),
             '--features %s' % (' '.join(feat_ids.split(','))),
             '--standardize',
             '-o %s' % (out_dir)]

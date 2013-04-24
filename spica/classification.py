@@ -6,6 +6,7 @@ import operator
 import argparse
 import time
 import warnings
+import traceback
 
 import numpy
 #from matplotlib import pyplot
@@ -207,7 +208,8 @@ def cv_score(data, target, classifier, n, scoring, param=None, cv=None, cpu=1,
         cv_scores.append(score)
         cv_all_scores.append(all_scores)
         cv_confusion.append(confusion)
-        cv_roc_curves.add(roc_curve)
+        if(roc_curve):
+            cv_roc_curves.add(roc_curve)
         predictions.extend(zip(tst_indices, probas, tst_target))
 
         # store classifier parameters
@@ -362,7 +364,8 @@ def ffs(data, target, classifier, n, scoring, param=None, cv=None,
         cv_scores.append(score)
         cv_all_scores.append(all_scores)
         cv_confusion.append(confusion)
-        cv_roc_curves.add(roc_curve)
+        if(roc_curve):
+            cv_roc_curves.add(roc_curve)
         predictions.extend(zip(tst_indices, probas, tst_target))
 
         # store classifier parameters
@@ -521,7 +524,8 @@ def bfs(data, target, classifier, n, scoring, param=None, cv=None,
         cv_scores.append(score)
         cv_all_scores.append(all_scores)
         cv_confusion.append(confusion)
-        cv_roc_curves.add(roc_curve)
+        if(roc_curve):
+            cv_roc_curves.add(roc_curve)
         predictions.extend(zip(tst_indices, probas, tst_target))
 
         # store classifier parameters
@@ -582,8 +586,10 @@ def test_classifier(tst_data, tst_target, classifier, scoring):
     # obtain confusion matrix
     confusion = metrics.confusion_matrix(tst_target, tst_pred)
 
-    # creat ROC curve (for now my own, since sklearn's seems buggy)
-    roc_curve = roc.ROC(*args_proba, class0=0, class1=1)
+    roc_curve = None
+    if(len(set(tst_target)) == 2):
+        # creat ROC curve
+        roc_curve = roc.ROC(*args_proba, class0=0, class1=1)
 
     # TODO tst_probas do not are not always probabilities... maybe return both
     # raw predictions, probas, and decision_function?
@@ -968,8 +974,15 @@ if __name__ == '__main__':
                     else:
                         cv_scores = 'Feature selection method does not exist.'
 
-                except(RuntimeWarning) as rw:
-                    cv_scores = 'RuntimeWarning occured: %s' % rw
+                except(RuntimeWarning) as e:
+                    #cv_scores = 'RuntimeWarning occured: %s' % rw
+                    print traceback.format_exc()
+                    raise e
+                    sys.exit()
+                except Exception as e:
+                    print traceback.format_exc()
+                    raise e
+                    sys.exit()
 
             # write results to output files
             if(type(cv_scores) == str):
@@ -1007,7 +1020,7 @@ if __name__ == '__main__':
                         fout.write('%s\n\n' % (str(cm)))
 
                 # plot roc curves
-                if(cv_roc_curves):
+                if not(cv_roc_curves.is_empty()):
                     cv_roc_curves.save_avg_roc_plot(roc_fig_f)
 
                 # sort predictions by object index

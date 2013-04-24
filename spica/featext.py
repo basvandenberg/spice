@@ -101,10 +101,11 @@ class FeatureExtraction(object):
 
     def available_protein_feature_vectors(self):
         available = []
-        feat_ids_set = set(self.fm_protein.feature_ids)
-        for featvec in self.fv_dict_protein.values():
-            if(set(featvec.feat_ids) <= feat_ids_set):
-                available.append(featvec)
+        if(self.fm_protein.feature_ids):
+            feat_ids_set = set(self.fm_protein.feature_ids)
+            for featvec in self.fv_dict_protein.values():
+                if(set(featvec.feat_ids) <= feat_ids_set):
+                    available.append(featvec)
         return available
 
     def protein_feat_id_to_name_dict(self):
