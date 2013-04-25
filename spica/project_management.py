@@ -307,9 +307,6 @@ class ProjectManager(object):
         # iterate over all directories in the classification dir
         for cl_id in self.get_classifier_ids():
 
-            cl_result = None
-            cl_settings = None
-
             # check if the classifier is finished
             if(self.get_classifier_finished(cl_id)):
 
@@ -337,7 +334,7 @@ class ProjectManager(object):
         Delete the project with project_id
         pre: user_id is set
         '''
-        project_dir = os.path.join(self.user_dir, self.project_id)
+        project_dir = os.path.join(self.user_dir, project_id)
         if(os.path.exists(project_dir)):
             shutil.rmtree(project_dir)
 
@@ -357,7 +354,7 @@ class ProjectManager(object):
 
         # check if a project with the same name exists
         if os.path.exists(self.project_dir):
-            return  # TODO
+            return 'A project with the same project id allready exists'
 
         # check file size
         max_size = 52430000  # bytes (50MB)
@@ -398,7 +395,8 @@ class ProjectManager(object):
                 prot_seqs = [(sequtil.translate(s[1])) for s in seqs]
                 # chop off translated stop codons at terminus
                 prot_seqs = [s[:-1] if s[-1] == '*' else s for s in prot_seqs]
-                fe.set_data_source('prot_seq', zip(ids, prot_seqs))
+                fe.protein_data_set.set_data_source('prot_seq',
+                                                    zip(ids, prot_seqs))
         except ValueError as e:
             print(traceback.format_exc())
             return str(e)
@@ -423,6 +421,92 @@ class ProjectManager(object):
         else:
             return 'A project with the same project id allready exists'
 
+        # create project details file
+        with open(self.project_details_f, 'w') as fout:
+            fout.write('project_id\t%s\n' % (self.project_id))
+            fout.write('project_init\t%s\n' % (self.timestamp_str()))
+
+        # store feature extraction data
+        fe.set_root_dir(self.fe_dir)
+        fe.save()
+
+        return ''
+
+    # TODO naming is not so nice..., considering function above...
+    # also to much of a duplicate of above function
+    def start_example_project(self, project_id, fasta_f, seq_type, labeling_f):
+        ''' Start new project without checking input data
+        '''
+
+        self.set_project(project_id)
+
+        # check if user allready has a dir and create one if needed
+        if not os.path.exists(self.user_dir):
+            os.mkdir(self.user_dir)
+
+        # check if a project with the same name exists, otherwise add number
+        if(os.path.exists(self.project_dir)):
+            index = 0
+            while(os.path.exists(self.project_dir)):
+                project_id = '%s_%i' % (self.project_id.split('_')[0], index)
+                self.set_project(project_id)
+                index += 1
+
+        # read data from file
+        print fasta_f
+        try:
+            seqs = [s for s in file_io.read_fasta(fasta_f)]
+            ids = [s[0] for s in seqs]
+        except Exception as e:
+            print e
+            return 'Error in fasta file'
+
+        # create sequence feature extraction object
+        fe = featext.FeatureExtraction()
+
+        # set protein data
+        try:
+            fe.set_protein_ids(ids)
+            fe.protein_data_set.set_data_source(seq_type, seqs)
+            # translate to prot seq if orf provided
+            if(seq_type == 'orf_seq'):
+                ids = [s[0] for s in seqs]
+                prot_seqs = [(sequtil.translate(s[1])) for s in seqs]
+                # chop off translated stop codons at terminus
+                prot_seqs = [s[:-1] if s[-1] == '*' else s for s in prot_seqs]
+                fe.protein_data_set.set_data_source('prot_seq',
+                                                    zip(ids, prot_seqs))
+        except ValueError as e:
+            print(traceback.format_exc())
+            return str(e)
+        except:
+            print(traceback.format_exc())
+            return 'Error during initiation new project'
+
+        # add to feature matrix
+        try:
+            labeling_name = os.path.splitext(os.path.basename(labeling_f))[0]
+            fe.fm_protein.load_labels(labeling_name, labeling_f)
+        except ValueError as e:
+            return str(e)
+
+        # create data directory for this project (just to be sure, check again)
+        if not(os.path.exists(self.project_dir)):
+            os.mkdir(self.project_dir)
+
+            # and create directories to store job status
+            os.mkdir(self.job_dir)
+            os.mkdir(self.job_waiting_dir)
+            os.mkdir(self.job_running_dir)
+            os.mkdir(self.job_done_dir)
+            os.mkdir(self.job_error_dir)
+
+            # create classification dir
+            os.mkdir(self.cl_dir)
+
+        else:
+            return 'A project with the same project id allready exists'
+        
         # create project details file
         with open(self.project_details_f, 'w') as fout:
             fout.write('project_id\t%s\n' % (self.project_id))
