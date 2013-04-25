@@ -19,6 +19,9 @@ from sklearn import svm
 from sklearn import neighbors
 from sklearn import lda
 from sklearn import qda
+from sklearn import naive_bayes
+from sklearn import tree
+from sklearn import ensemble
 from sklearn.grid_search import GridSearchCV
 from sklearn import preprocessing
 from sklearn import cross_validation
@@ -203,6 +206,7 @@ def cv_score(data, target, classifier, n, scoring, param=None, cv=None, cpu=1,
                 tst_data, tst_target, best_cl, scoring)
 
         print 'fold %i: %.3f' % (fold_i, score)
+        sys.stdout.flush()
 
         # store test scores for this cv loop
         cv_scores.append(score)
@@ -218,6 +222,7 @@ def cv_score(data, target, classifier, n, scoring, param=None, cv=None, cpu=1,
     print
     print 'cross-validation result: %.3f' % (numpy.mean(cv_scores))
     print
+    sys.stdout.flush()
 
     # return average score over the cv loops
     return (cv_scores, cv_params, cv_confusion, cv_all_scores, cv_roc_curves,
@@ -727,8 +732,17 @@ def get_classifier(classifier_str):
         cl = qda.QDA()
     # Gaussion naive bayes
     # from the code it is unclear how priors are set
-    #elif(classifier_str == 'gnb'):
-    #    cl = naive_bayes.GaussianNB()
+    elif(classifier_str == 'gnb'):
+        cl = naive_bayes.GaussianNB()
+    elif(classifier_str == 'mnb'):
+        cl = naive_bayes.MultinomialNB()
+    elif(classifier_str == 'bnb'):
+        cl = naive_bayes.BernoulliNB()
+    # Decision tree
+    elif(classifier_str == 'dtree'):
+        cl = tree.DecisionTreeClassifier()
+    elif(classifier_str == 'rforest'):
+        cl = ensemble.RandomForestClassifier()
     else:
         # raise error if classifier not found
         raise ValueError('Classifier not implemented: %s' % (classifier_str))
@@ -1002,7 +1016,7 @@ if __name__ == '__main__':
                     fout.write('%s\n' % (str(ds['target_names'])))
                     fout.write('%s\n' % (str(classifier_str)))
                     fout.write('%s\n' % (str(cl.get_params())))
-                    fout.write('%s\n' % (str(param)))
+                    fout.write('%s\n' % (str(param).replace('\n', '')))
                     fout.write('%i\n' % (args.n_fold_cv))
                     fout.write('%s\n' % (args.feature_selection))
 

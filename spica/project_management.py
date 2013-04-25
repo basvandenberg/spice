@@ -14,6 +14,8 @@ from util import file_io
 
 class ProjectManager(object):
 
+    TIMEOUT = 20  # sec
+
     def __init__(self, root_dir):
         self.root_dir = root_dir
         self.user_id = None
@@ -250,8 +252,12 @@ class ProjectManager(object):
         return error
 
     def get_classifier_finished(self, cl_id):
-        result_f = os.path.join(self.get_cl_dir(cl_id), 'result.txt')
-        return os.path.exists(result_f) and os.path.getsize(result_f) > 0
+        cl_d = self.get_cl_dir(cl_id)
+        if(cl_d):
+            result_f = os.path.join(self.get_cl_dir(cl_id), 'result.txt')
+            return os.path.exists(result_f) and os.path.getsize(result_f) > 0
+        else:
+            return False
 
     def get_classifier_settings(self, cl_id):
         
@@ -677,6 +683,7 @@ class ProjectManager(object):
             '--classes %s' % (' '.join(class_ids)),
             '--features %s' % (' '.join(feat_ids.split(','))),
             '--standardize',
+            '--timeout %i' % (self.TIMEOUT),
             '-o %s' % (out_dir)]
 
         # create command
