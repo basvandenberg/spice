@@ -1,7 +1,8 @@
 """
-.. module:: spica
+.. module:: featmat
 
-.. moduleauthor:: Bastiaan van den Berg <bbrennerdd@gmail.com>
+.. moduleauthor:: Bastiaan van den Berg <b.a.vandenberg@gmail.com>
+
 """
 
 import os
@@ -25,40 +26,115 @@ from spica.plotpy import heatmap
 
 
 class FeatureMatrix(object):
-    """This class is used to manage the feature matrix.
+    """This class is used to manage a feature matrix.
+
+    The FeatureMatrix object manages an *m* x *n* matrix in which *m* is the
+    number of objects (rows) and *n* the number of features (columns).
+
+    The feature matrix is initiated as an empty matrix. First the objects
+    (`object_ids`) need to be set. These cannot be altered afterwards or
+    a ValueError will be raised. This is to make life a bit easier for now.
+    Thus far, for our functionality, there is no need to modify the objects
+    after creation of the feature matrix.
+
+    When the objects are set, the `add_features` function can be used to add
+    features and thereby fill the feature matrix with values. A list with
+    feature ids and a feature matrix need are required for this, in which the
+    provided matrix is a numpy matrix with feature values. The rows of this
+    matrix should have the same order as the object ids in the FeatureMatrix
+    object (this is a bit tricky, how could this be improved?). Optionally
+    a list of feature names could also be provided.
+
+    The `feature_matrix` and `feature_ids` variable cannot be set directly,
+    features can only be added throug the `add_features` function. Both
+    variables can be deleted using the default `del` function. However, to
+    guarantee a consistent state, as soon as one of the two variables is
+    deleted, the other will be deleted as well (as well as the feature names).
+
+    Zero or more `Labeling` objects can be attatched to the feature matrix.
 
     """
 
+    # labeling name and class name of the default one-class labeling
+    ONE_CLASS_LABELING = 'one_class'
+    ONE_CLASS_LABEL = 'all'
+
+    # file names and directory structure used when saving a feature matrix
+    OBJECT_IDS_F = 'object_ids.txt'
+    FEATURE_MATRIX_F = 'feature_matrix.mat'
+    FEATURE_IDS_F = 'feature_ids.txt'
+    FEATURE_NAMES_F = 'feature_names.txt'
+    LABELING_D = 'labels'
+    IMG_D = 'img'
+    HISTOGRAM_D = os.path.join(IMG_D, 'histogram')
+    SCATTER_D = os.path.join(IMG_D, 'scatter')
+    HEATMAP_D = os.path.join(IMG_D, 'heatmap')
+
+    # default name prefix for added features without feature id/name
     CUSTOM_FEAT_PRE = 'cus'
     CUSTOM_FEAT_NAME = 'Custom feature vector'
 
-    # files used for data persistence
-    objects_f = 'object_ids.txt'
-    feature_matrix_f = 'feature_matrix.mat'
-    features_f = 'feature_ids.txt'
-    feature_names_f = 'feature_names.txt'
-    labels_f = 'labels.txt'
-
     def __init__(self):
 
-        # init feature matrix to None, set with init
-        self.object_ids = None
-        self.feature_ids = None
-        self.feature_names = None
-        self.feature_matrix = None
+        # The feature matrix, object ids (rows), and feature ids (columns)
+        self._feature_matrix = None
+        self._object_ids = None
+        self._feature_ids = []
 
-        # define file location if we want to store data, set_root_dir
-        self.root_dir = None
+        # optional feature annotation
+        self._feature_names = {}
 
         # labelings
-        self.labeling_dict = None
+        self._labeling_dict = {}
 
-    #
-    # Initialization functions
-    #
+    @property
+    def object_ids(self):
+        return self._object_ids
 
-    def set_object_ids(self, object_ids):
+    @property
+    def feature_ids(self):
+        return self._feature_ids
+
+    @feature_ids.deleter
+    def feature_ids(self):
+        self._delete_all_features()
+
+    @property
+    def feature_matrix(self):
+        return self._feature_matrix
+
+    @feature_matrix.deleter
+    def feature_matrix(self):
+        self._delete_all_features()
+
+    def _delete_all_features(self):
+        self.feature_matrix = None
+        self.feature_ids = []
+        self.feature_names = {}
+
+    @property
+    def feature_names(self):
+        return self._feature_names
+
+    @feature_names.deleter
+    def feature_names(self):
+        self.feature_names = dict(zip(self.feature_ids, self.feature_ids))
+
+    @property
+    def labeling_dict(self):
+        return self._labeling_dict
+
+    @object_ids.setter
+    def object_ids(self, object_ids):
         '''This function sets the object ids (feature matrix rows).
+
+        Args:
+            object_ids ([str]): The list with unique object ids.
+
+        Raises:
+            ValueError: If object_ids contains duplicates.
+            ValueError: If object_ids is empty.
+            ValueError: If the object ids are already set.
 
         This function sets the list of object ids which are the rows of the
         feature matrix. It is not allowed to have duplicate ids in object_ids,
@@ -67,8 +143,8 @@ class FeatureMatrix(object):
         The object ids can only be set once, a ValueError will be raised if
         this function is called while a list of objects is allready available.
 
-        Args:
-            object_ids ([str]): A list with object ids (strings)
+        As soon as the objects are set, a (one class) labeling is created in
+        which all objects obtain the same label.
 
         >>> fm = featmat.FeatureMatrix()
         >>> fm.set_object_ids(['same_id', 'same_id'])
@@ -82,75 +158,161 @@ class FeatureMatrix(object):
         if not(self.object_ids is None):
             raise ValueError('Object ids are allready set.')
 
+        # check if there are ids in the list
+        if(len(object_ids) == 0):
+            raise ValueError('The object ids list is empty.')
+
         # check and store object ids
         if not(len(object_ids) == len(set(object_ids))):
-            raise ValueError('There are multiple objects with the same id.')
+            raise ValueError('The list of object ids contains duplicates.')
 
-        self.object_ids = object_ids
+        self._object_ids = object_ids
 
         # by default set one_class labeling
-        label_dict = dict(zip(self.object_ids, [0] * len(self.object_ids)))
-        self.add_labels('one_class', label_dict, ['all'])
+        label_dict = dict(zip(self._object_ids, [0] * len(self._object_ids)))
+        self.add_labeling(self.ONE_CLASS_LABELING, label_dict,
+                          [self.ONE_CLASS_LABEL])
 
-    def load_object_ids(self, objects_f):
-        with open(objects_f, 'r') as fin:
-            object_ids = [i for i in file_io.read_ids(fin)]
-        self.set_object_ids(object_ids)
+    def load_object_ids(self, object_ids_f):
+        '''
+        This function reads ids from files and sets them as the object ids.
 
-    def load_labels(self, labeling_name, labeling_f):
+        Args:
+            object_ids_f (str or file): The ids file.
 
-        l = Labeling(labeling_name, self)
-        l.load(labeling_f)
-        self.add_labeling(l)
+        Raises:
+            FileIOError: If the file does not exist.
+        '''
+        with open(object_ids_f, 'r') as fin:
+            ids = [i for i in file_io.read_ids(fin)]
+        self.object_ids = ids
 
-    def add_labels(self, labeling_name, label_dict, class_names):
+    def add_labeling(self, labeling_name, label_dict, class_names):
+        '''
+        This function adds a labeling to the feature matrix.
 
-        l = Labeling(labeling_name, self)
-        l.set_labels(label_dict, class_names)
-        self.add_labeling(l)
+        Args:
+            | **labeling_name** *(str)*: The name of the labeling.
+            | **label_dict** *(dict)*: An object_id to label mapping.
+            | **class_names** *([str])*: A list with class names
+        Raises:
+            | **ValueError**: If a labeling with the same name already exists.
+            | **ValueError**: If the labeling object ids do not correspond to
+                              the object ids of this feature matrix
+        '''
+        if(labeling_name in self.labeling_dict.keys()):
+            raise ValueError('A labeling with the same name already exists.')
 
-    def add_labeling(self, labeling):
+        if not(sorted(label_dict.keys()) == sorted(self.object_ids)):
+            raise ValueError('Labeling object ids do not correspond to ' +
+                             'object ids in this feature matrix.')
 
-        assert(type(labeling) == Labeling)
+        # get labels in the same order as our object ids
+        labels = [label_dict[oid] for oid in self.object_ids]
 
-        if not(self.object_ids):
-            raise ValueError('Objects are not set.')
+        # create labeling object
+        l = Labeling(labeling_name, self.object_ids, labels, class_names)
 
-        # store self as callback if not there yet
-        if not(labeling.feature_matrix):
-            labeling.set_feature_matrix(self)
-        elif not(labeling.feature_matrix == self):
-            raise ValueError('Labeling already linked to other feature matrix')
+        # add labeling
+        self.labeling_dict[labeling_name] = l
 
-        if not(self.labeling_dict):
-            self.labeling_dict = {}
+    def add_labeling_from_file(self, labeling_name, labeling_f):
+        '''
+        This function loads labelinf from a file and adds it as to the feature
+        matrix.
 
-        # add to labeling_dict
-        self.labeling_dict[labeling.name] = labeling
+        Args:
+            labeling_name (str): The name of the labeling
+            labeling_f (str or file): The labeling file
+        '''
+        l = Labeling.load_from_file(labeling_name, labeling_f)
+        self.add_labeling(l.name, l.label_dict, l.class_names)
 
     def add_features(self, feature_ids, feature_matrix, feature_names=None):
+        '''
+        This function extends the feature matrix, adding the provided features.
+
+        It is the users responsebility that the rows of the feature matrix are
+        in the same order as the object ids. TODO how to improve this? Use
+        merge instead?
+
+        Args:
+            feature_ids ([str]): List with feature ids.
+            feature_matrix (numpy.array): The feature values.
+
+        Kwargs:
+            feature_names ([str]): Optional list of feature names.
+
+        Raises:
+            ValueError: If feature_ids contains duplicates.
+            ValueError: If any of the feature ids already exists
+            ValueError: If the feature matrix row count does not correspond to
+                        the number of objects
+            ValueError: If the feature matrix column count does not correspond
+                        to the number of feature ids.
+        '''
 
         # check for errors
-        self._check_features(feature_ids, feature_matrix)
+        #self._check_features(feature_ids, feature_matrix)
+        #def _check_features(self, feature_ids, feature_matrix):
 
-        # store arguments
-        if(self.feature_ids):
-            self.feature_ids.extend(feature_ids)
-            self.feature_matrix = numpy.hstack([self.feature_matrix,
-                                                feature_matrix])
+        # check for duplicate features in the newly added list of features
+        if not(len(feature_ids) == len(set(feature_ids))):
+            raise ValueError('The added features contain duplicate ids.')
+
+        # when adding new features, check for overlap with existing features
+        if not(self.feature_ids is None):
+            inter = set(feature_ids) & set(self.feature_ids)
+            if not(len(inter) == 0):
+                raise ValueError('Feature ids %s already exist.' % (inter))
+
+        # check if the number of rows corresponds to the number of objects
+        if not(feature_matrix.shape[0] == len(self.object_ids)):
+            raise ValueError('The number of rows in the feature matrix ' +
+                             'does not correspond to the number of objects')
+
+        # check if the number of features corresponds to the number of feat ids
+        if not(feature_matrix.shape[1] == len(feature_ids)):
+            raise ValueError('The number of columns in the feature matrix ' +
+                             'does not correspond to the number of ' +
+                             'provided feature ids.')
+
+        # append feature ids
+        self.feature_ids.extend(feature_ids)
+        # create feature matrix or append to feature matrix
+        if(self.feature_matrix is None):
+            self._feature_matrix = feature_matrix
         else:
-            self.feature_ids = feature_ids
-            self.feature_matrix = feature_matrix
-            self.feature_names = {}
+            self._feature_matrix = numpy.hstack([self._feature_matrix,
+                                                feature_matrix])
 
+        # create feature id to name mapping
         if(feature_names is None):
             feat_name_dict = dict(zip(feature_ids, feature_ids))
         else:
             feat_name_dict = dict(zip(feature_ids, feature_names))
 
+        # add feature names
         self.feature_names.update(feat_name_dict)
 
+    def merge(self, other):
+
+        # check if other has the some objects and labels (same order as well)
+        if not(self.object_ids == other.object_ids):
+            raise ValueError('Object of the two feature matrices ' +
+                             'do not correspond.')
+
+        # TODO merge labelings???
+
+        # add the feature ids and extend the feature matrix
+        self.add_features(other.feature_ids, other.feature_matrix)
+
     def add_custom_features(self, feature_matrix):
+        '''
+        Rename this... is the same as add_features, but without supplying
+        feature_ids (names). So maybe combine the two and turn feature_ids
+        into a kwargs which defaults to None.
+        '''
 
         num_obj, num_feat = feature_matrix.shape
 
@@ -171,12 +333,6 @@ class FeatureMatrix(object):
         feat_names = ['%s %i - %i' % (self.CUSTOM_FEAT_NAME, new_cust_feat_i,
                                       i) for i in xrange(num_feat)]
         self.add_features(feat_ids, feature_matrix, feature_names=feat_names)
-
-    #TODO remove_features
-
-    def delete_feature_matrix(self):
-        self.feature_matrix = None
-        self.feature_ids = None
 
     def slice(self, feat_is, object_is):
         data = self.feature_matrix[:, feat_is]
@@ -220,18 +376,6 @@ class FeatureMatrix(object):
     def class_indices(self, labeling_name, class_ids):
         labeling = self.labeling_dict[labeling_name]
         return sorted([labeling.class_names.index(c) for c in class_ids])
-
-    def merge(self, other):
-
-        # check if other has the some objects and labels (same order as well)
-        if not(self.object_ids == other.object_ids):
-            raise ValueError('Object of the two feature matrices ' +
-                             'do not correspond.')
-
-        # TODO merge labelings???
-
-        # add the feature ids and extend the feature matrix
-        self.add_features(other.feature_ids, other.feature_matrix)
 
     def get_custom_features(self):
         ''' This function returns the available custom feature vector ids.
@@ -304,38 +448,118 @@ class FeatureMatrix(object):
                      feature_names=feature_names)
                      #DESCR='')# TODO
 
-    #
-    # Data storage functions
-    #
-    def set_root_dir(self, root_dir):
-        self.root_dir = root_dir
-        self.labels_dir = os.path.join(self.root_dir, 'labels')
-        self.img_dir = os.path.join(self.root_dir, 'img')
-        self.histogram_dir = os.path.join(self.img_dir, 'histogram')
-        self.scatter_dir = os.path.join(self.img_dir, 'scatter')
-        self.heatmap_dir = os.path.join(self.img_dir, 'heatmap')
+    @classmethod
+    def load_from_dir(cls, d):
+        '''
+        This class method returns a FeatureMatrix object that has been
+        constructed using data loaded from a feature matrix directory.
 
-    def load(self):
-        self._check_root_dir_set()
-        self._load_object_ids()
-        self._load_feature_ids()
-        self._load_feature_names()
-        self._load_feature_matrix()
-        self._load_labels()
+        Args:
+            | **d** *(str)*: The path to the feature matrix directory.
+        Raises:
 
-    def save(self):
-        self._check_root_dir_set()
-        if not(os.path.exists(self.root_dir)):
-            os.makedirs(self.root_dir)
-        self._store_object_ids()
-        self._store_feature_ids()
-        self._store_feature_names()
-        self._store_feature_matrix()
-        self._store_labels()
+        '''
+        # initilaze empty feature matrix object
+        fm = cls()
 
-    #
-    # String representation
-    #
+        # first load object ids, if available
+        f = os.path.join(d, cls.OBJECT_IDS_F)
+        if(os.path.exists(f)):
+            fm.load_object_ids(f)
+
+            # read and add labelings
+            lab_d = os.path.join(d, cls.LABELING_D)
+            if(os.path.exists(lab_d)):
+                for f in glob.glob(os.path.join(lab_d, '*.txt')):
+                    lname = os.path.splitext(os.path.basename(f))[0]
+                    if not(lname == cls.ONE_CLASS_LABELING):
+                        (label_dict, class_names) = file_io.read_labeling(f)
+                        fm.add_labeling(lname, label_dict, class_names)
+
+            fids = None
+            fnames = None
+            featmat = None
+
+            # read feature ids
+            f = os.path.join(d, cls.FEATURE_IDS_F)
+            if(os.path.exists(f)):
+                with open(f, 'r') as fin:
+                    fids = [i for i in file_io.read_ids(fin)]
+
+            # read feature names
+            f = os.path.join(d, cls.FEATURE_NAMES_F)
+            if(os.path.exists(f)):
+                with open(f, 'r') as fin:
+                    fnames = [n for n in file_io.read_names(fin)]
+
+            # read feature matrix
+            f = os.path.join(d, cls.FEATURE_MATRIX_F)
+            if(os.path.exists(f)):
+                featmat = numpy.loadtxt(f)
+                # in case of 1D matrix, reshape to single column 2D matrix
+                fm_shape = featmat.shape
+                if(len(fm_shape) == 1):
+                    n = fm_shape[0]
+                    featmat = featmat.reshape((n, 1))
+
+            if not(featmat is None):
+                fm.add_features(fids, featmat, fnames)
+
+        return fm
+
+    def save_to_dir(self, d):
+        '''
+        This function stores the current feature matrix object to directory.
+
+        Args:
+            | **d** *(str)*: The path to the directory where the feature matrix
+                             data will be stored.
+        Raises:
+
+        '''
+        if not(os.path.exists(d)):
+            os.makedirs(d)
+        self._save_object_ids(os.path.join(d, self.OBJECT_IDS_F))
+        self._save_feature_ids(os.path.join(d, self.FEATURE_IDS_F))
+        self._save_feature_names(os.path.join(d, self.FEATURE_NAMES_F))
+        self._save_feature_matrix(os.path.join(d, self.FEATURE_MATRIX_F))
+        self._save_labelings(os.path.join(d, self.LABELING_D))
+
+    def _save_object_ids(self, f):
+        if(self.object_ids):
+            with open(f, 'w') as fout:
+                file_io.write_ids(fout, self.object_ids)
+
+    def _save_feature_ids(self, f):
+        if not(self.feature_ids is None):
+            with open(f, 'w') as fout:
+                file_io.write_ids(fout, self.feature_ids)
+        elif(os.path.exists(f)):
+            os.remove(f)
+
+    def _save_feature_names(self, f):
+        if not(self.feature_names is None):
+            feat_names = [self.feature_names[fid] for fid in self.feature_ids]
+            with open(f, 'w') as fout:
+                file_io.write_names(fout, feat_names)
+        elif(os.path.exists(f)):
+            os.remove(f)
+
+    def _save_feature_matrix(self, f):
+        if not(self.feature_matrix is None):
+            numpy.savetxt(f, self.feature_matrix)
+        elif(os.path.exists(f)):
+            os.remove(f)
+
+    def _save_labelings(self, d):
+        if(self.labeling_dict):
+            if not(os.path.exists(d)):
+                os.makedirs(d)
+            for lname, l in self.labeling_dict.iteritems():
+                f = os.path.join(d, '%s.txt' % (lname))
+                file_io.write_labeling(f, self.object_ids, l.labels,
+                                       l.class_names)
+
     def __str__(self):
 
         s = '\nFeatureMatrix:\n\n'
@@ -349,12 +573,6 @@ class FeatureMatrix(object):
             s += 'feature matrix:\n%s\n\n' % (str(self.feature_matrix))
 
         return s
-
-    # TODO __repr__
-
-    #
-    # Feature matrix based calculation / visualization functions
-    #
 
     def ttest(self, labeling_name, label0, label1, object_is=None):
 
@@ -406,8 +624,8 @@ class FeatureMatrix(object):
         if not(class_ids):
             class_ids = labeling.class_names
 
-        if not(os.path.exists(self.histogram_dir)):
-            os.makedirs(self.histogram_dir)
+        if not(os.path.exists(self.HISTOGRAM_D)):
+            os.makedirs(self.HISTOGRAM_D)
 
         try:
             feature_index = self.feature_ids.index(feat_id)
@@ -419,7 +637,7 @@ class FeatureMatrix(object):
 
         #feat_hists = []
         lab_str = labeling_name + '_' + '_'.join([str(l) for l in class_ids])
-        out_f = os.path.join(self.histogram_dir,
+        out_f = os.path.join(self.HISTOGRAM_D,
                              '%s_%s.%s' % (feat_id, lab_str, img_format))
 
         hist_data = []
@@ -446,8 +664,8 @@ class FeatureMatrix(object):
     def save_scatter(self, feat_id0, feat_id1, labeling_name=None,
                      class_ids=None, colors=None, img_format='png'):
 
-        if not(os.path.exists(self.scatter_dir)):
-            os.makedirs(self.scatter_dir)
+        if not(os.path.exists(self.SCATTER_D)):
+            os.makedirs(self.SCATTER_D)
 
         try:
             labeling = self.labeling_dict[labeling_name]
@@ -473,7 +691,7 @@ class FeatureMatrix(object):
             raise ValueError('Feature %s or %s does not exist.' %
                              (feat_id0, feat_id1))
 
-        out_f = os.path.join(self.scatter_dir, 'scatter.%s' % (img_format))
+        out_f = os.path.join(self.SCATTER_D, 'scatter.%s' % (img_format))
 
         # standardize data NOTE that fm is standardized before the objects
         # are sliced out!!!
@@ -504,8 +722,8 @@ class FeatureMatrix(object):
     def get_clustdist_path(self, feature_ids=None, labeling_name=None,
                            class_ids=None, vmin=-3.0, vmax=3.0):
 
-        if not(os.path.exists(self.heatmap_dir)):
-            os.makedirs(self.heatmap_dir)
+        if not(os.path.exists(self.HEATMAP_D)):
+            os.makedirs(self.HEATMAP_D)
 
         if not(labeling_name):
             labeling_name = 'one_class'
@@ -522,7 +740,7 @@ class FeatureMatrix(object):
 
         #png_f = os.path.join(self.heatmap_dir, 'fm_clustered_%s.png' %
         #        (lab_str))
-        file_path = os.path.join(self.heatmap_dir, 'fm_clustered')
+        file_path = os.path.join(self.HEATMAP_D, 'fm_clustered')
 
         # reorder feature matrix rows (objects)
         object_indices = hierarchy.leaves_list(self.clust_object(fm))
@@ -581,181 +799,75 @@ class FeatureMatrix(object):
         return numpy.corrcoef(self.feature_matrix, rowvar=0)
 
     def feature_correlation_heatmap(self):
-        if not(os.path.exists(self.heatmap_dir)):
-            os.makedirs(self.heatmap_dir)
-        f = os.path.join(self.heatmap_dir, 'feature_correlation.png')
+        if not(os.path.exists(self.HEATMAP_D)):
+            os.makedirs(self.HEATMAP_D)
+        f = os.path.join(self.HEATMAP_D, 'feature_correlation.png')
         corr_matrix = self.feature_correlation_matrix()
         xlab = self.feature_ids
         ylab = self.feature_ids
         heatmap.heatmap_fig(corr_matrix, xlab, ylab, f, vmin=-1.0, vmax=1.0)
         return f
 
-    #
-    # Data storage help functions
-    #
-
-    def _store_object_ids(self):
-        if(self.object_ids):
-            f = os.path.join(self.root_dir, FeatureMatrix.objects_f)
-            with open(f, 'w') as fout:
-                file_io.write_ids(fout, self.object_ids)
-
-    def _store_feature_ids(self):
-        f = os.path.join(self.root_dir, FeatureMatrix.features_f)
-        if not(self.feature_ids is None):
-            with open(f, 'w') as fout:
-                file_io.write_ids(fout, self.feature_ids)
-        elif(os.path.exists(f)):
-            os.remove(f)
-
-    def _store_feature_names(self):
-        f = os.path.join(self.root_dir, FeatureMatrix.feature_names_f)
-        if not(self.feature_names is None):
-            feat_names = [self.feature_names[fid] for fid in self.feature_ids]
-            with open(f, 'w') as fout:
-                file_io.write_names(fout, feat_names)
-        elif(os.path.exists(f)):
-            os.remove(f)
-
-    def _store_feature_matrix(self):
-        f = os.path.join(self.root_dir, FeatureMatrix.feature_matrix_f)
-        if not(self.feature_matrix is None):
-            numpy.savetxt(f, self.feature_matrix)
-        elif(os.path.exists(f)):
-            os.remove(f)
-
-    def _store_labels(self):
-        if(self.labeling_dict):
-            if not(os.path.exists(self.labels_dir)):
-                os.makedirs(self.labels_dir)
-            for key, value in self.labeling_dict.iteritems():
-                value.save(os.path.join(self.labels_dir, '%s.txt' % (key)))
-
-    def _load_object_ids(self):
-        f = os.path.join(self.root_dir, FeatureMatrix.objects_f)
-        if(os.path.exists(f)):
-            self.load_object_ids(f)
-
-    def _load_labels(self):
-        if(os.path.exists(self.labels_dir)):
-            for f in glob.glob(os.path.join(self.labels_dir, '*.txt')):
-                name = os.path.splitext(os.path.basename(f))[0]
-                l = Labeling(name, self)
-                l.load(f)
-                self.add_labeling(l)
-
-    def _load_feature_ids(self):
-        f = os.path.join(self.root_dir, FeatureMatrix.features_f)
-        if(os.path.exists(f)):
-            with open(f, 'r') as fin:
-                self.feature_ids = [i for i in file_io.read_ids(fin)]
-
-    def _load_feature_names(self):
-        f = os.path.join(self.root_dir, FeatureMatrix.feature_names_f)
-        if(os.path.exists(f)):
-            with open(f, 'r') as fin:
-                feat_names = [n for n in file_io.read_names(fin)]
-            self.feature_names = dict(zip(self.feature_ids, feat_names))
-
-    def _load_feature_matrix(self):
-        f = os.path.join(self.root_dir, FeatureMatrix.feature_matrix_f)
-        if(os.path.exists(f)):
-            self.feature_matrix = numpy.loadtxt(f)
-            # in case of 1D matrix, reshape to single column 2D matrix
-            fm_shape = self.feature_matrix.shape
-            if(len(fm_shape) == 1):
-                n = fm_shape[0]
-                self.feature_matrix = self.feature_matrix.reshape((n, 1))
-
-    #
-    # Check for consistency functions
-    #
-
-    def _check_root_dir_set(self):
-        if(self.root_dir is None):
-            raise ValueError('The root directory has not been set.')
-
-    def _check_features(self, feature_ids, feature_matrix):
-
-        # check for duplicate features in the newly added list of features
-        if not(len(feature_ids) == len(set(feature_ids))):
-            raise ValueError('The added features contain duplicate ids.')
-
-        # when adding new features, check for overlap with existing features
-        if not(self.feature_ids is None):
-            inter = set(feature_ids) & set(self.feature_ids)
-            if not(len(inter) == 0):
-                raise ValueError('Feature ids %s already exist.' % (inter))
-
-        # check if the number of rows corresponds to the number of objects
-        if not(feature_matrix.shape[0] == len(self.object_ids)):
-            raise ValueError('The number of rows in the feature matrix ' +
-                             'does not correspond to the number of objects')
-
-        # check if the number of features corresponds to the number fo feat ids
-        if not(feature_matrix.shape[1] == len(feature_ids)):
-            raise ValueError('The number of columns in the feature matrix ' +
-                             'does not correspond to the number of ' +
-                             'provided feature ids.')
-
 
 class Labeling(object):
 
-    def __init__(self, name, feature_matrix):
+    #def __init__(self, name, feature_matrix):
+    def __init__(self, name, object_ids, labels, class_names):
 
-        self.name = name
-        self.feature_matrix = feature_matrix
+        label_set = set(labels)
 
-        self.labels = None
-        self.class_names = None
+        if not(len(object_ids) == len(labels)):
+            raise ValueError('Number of object ids and labels is different.')
+        # ??? should I add this ???
+        if not(label_set == set(range(len(label_set)))):
+            raise ValueError('Labels should be 0, 1, ...')
+        if not(len(label_set) == len(class_names)):
+            raise ValueError('Number of class names does not correspond to ' +
+                             'the number of different labels.')
 
-        self.object_indices_per_class = None
+        self._name = name
+        self._object_ids = object_ids
+        self._labels = labels
+        self._label_dict = dict(zip(object_ids, labels))
+        self._class_names = class_names
 
-    def set_class_names(self, names):
-        '''
-        Parameter names is a mapping {int: str}.
-        '''
+        self._object_indices_per_class = {}
+        for index, o in enumerate(self._object_ids):
+            c = self._class_names[self.labels[index]]
+            self._object_indices_per_class.setdefault(c, []).append(index)
 
-        if not(self.labels):
-            raise ValueError('Cannot set label names, no labels set yet.')
+    @property
+    def name(self):
+        return self._name
 
-        if not(len(names) > max(self.labels)):
-            raise ValueError('Not enough label names provided.')
+    @property
+    def object_ids(self):
+        return self._object_ids
 
-        if not(all([type(n) == str for n in names])):
-            raise ValueError('Class names should be of type str.')
+    @property
+    def labels(self):
+        return self._labels
 
-        self.class_names = names
+    @property
+    def label_dict(self):
+        return self._label_dict
 
-    def set_labels(self, labels_dict, class_names):
+    @property
+    def class_names(self):
+        return self._class_names
 
-        # check label values
-        if not(all([type(i) == int for i in labels_dict.values()])):
-            raise ValueError('Label values must be of type int.')
+    @property
+    def object_indices_per_class(self):
+        return self._object_indices_per_class
 
-        # check if there is a label for all objects
-        missing = set(self.feature_matrix.object_ids) - set(labels_dict.keys())
-        if(missing):
-            raise ValueError('Labels are missing: %s' % str(missing))
-
-        # create list of labels in same order as object ids
-        self.labels = [labels_dict[o] for o in self.feature_matrix.object_ids]
-
-        # set the label names
-        self.set_class_names(class_names)
-
-        # create dict with object indices per label
-        self.object_indices_per_class = {}
-        for index, o in enumerate(self.feature_matrix.object_ids):
-            l = self.labels[index]
-            self.object_indices_per_class.setdefault(self.class_names[l],
-                                                     []).append(index)
-
-    def get_label_dict(self):
-        return dict(zip(self.feature_matrix.object_ids, self.labels))
+    # replaced by label_dict property
+    #def get_label_dict(self):
+    #    return dict(zip(self.feature_matrix.object_ids, self.labels))
 
     def get_obj_is_per_class(self, object_is=None):
-
+        '''
+        This is for object subsets, who uses this???
+        '''
         if(object_is is None):
             return self.object_indices_per_class
         else:
@@ -765,10 +877,7 @@ class Labeling(object):
                 obj_is.setdefault(cl, []).append(object_i)
             return obj_is
 
-    def load(self, labels_f):
-        (label_dict, class_names) = file_io.read_labeling(labels_f)
-        self.set_labels(label_dict, class_names)
-
-    def save(self, labels_f):
-        file_io.write_labeling(labels_f, self.feature_matrix.object_ids,
-                               self.labels, self.class_names)
+    @classmethod
+    def load_from_file(cls, f, labeling_name):
+        (label_dict, class_names) = file_io.read_labeling(f)
+        return cls(labeling_name, label_dict, class_names)

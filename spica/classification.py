@@ -811,9 +811,7 @@ if __name__ == '__main__':
 
     # load feature matrix
     print '\nLoading feature matrix...'
-    fm = featmat.FeatureMatrix()
-    fm.set_root_dir(args.feature_matrix_dir)
-    fm.load()
+    fm = featmat.FeatureMatrix.load_from_dir(args.feature_matrix_dir)
     print 'Done.\n'
 
     # track runtime

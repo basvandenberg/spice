@@ -113,9 +113,7 @@ class ProjectManager(object):
         '''
         fm = None
         if not(self.project_id is None):
-            fm = featmat.FeatureMatrix()
-            fm.set_root_dir(self.fm_dir)
-            fm.load()
+            fm = featmat.FeatureMatrix.load_from_dir(self.fm_dir)
         return fm
 
     # helper function
@@ -580,12 +578,12 @@ class ProjectManager(object):
         # add to feature matrix
         fm = self.get_feature_matrix()
         try:
-            fm.add_labels(labeling_name, label_dict, class_names)
+            fm.add_labeling(labeling_name, label_dict, class_names)
         except ValueError as e:
             return str(e)
 
         # save if everything went well
-        fm.save()
+        fm.save_to_dir(self.fm_dir)
 
         return ''
 

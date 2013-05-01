@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 
+"""
+.. module:: featext
+
+.. moduleauthor:: Bastiaan van den Berg <b.a.vandenberg@gmail.com>
+
+"""
+
 import os
 import sys
 import argparse
 import traceback
-
-# tmp for debugging
-#import pdb
 
 import numpy
 
@@ -16,6 +20,7 @@ from spica import protein
 from spica import mutation
 
 from util import file_io
+
 
 class FeatureExtraction(object):
 
@@ -44,11 +49,11 @@ class FeatureExtraction(object):
 
         # set the protein feature matrix root dir
         self.fm_protein_d = os.path.join(root_dir, 'feature_matrix_protein')
-        self.fm_protein.set_root_dir(self.fm_protein_d)
+        #self.fm_protein.set_root_dir(self.fm_protein_d)
 
         # set the missense mutation feature matrix root dir
         self.fm_missense_d = os.path.join(root_dir, 'feature_matrix_missense')
-        self.fm_missense.set_root_dir(self.fm_missense_d)
+        #self.fm_missense.set_root_dir(self.fm_missense_d)
 
         # set the protein data set root dir
         self.protein_data_set_d = os.path.join(root_dir, 'protein_data_set')
@@ -58,7 +63,7 @@ class FeatureExtraction(object):
         # use protein ids to initiate protein objects in data set
         self.protein_data_set.set_proteins(protein_ids)
         # use the protein ids as object ids in the protein feature matrix
-        self.fm_protein.set_object_ids(self.protein_data_set.get_protein_ids())
+        self.fm_protein.object_ids = self.protein_data_set.get_protein_ids()
 
     def load_protein_ids(self, protein_ids_f):
         with open(protein_ids_f, 'r') as fin:
@@ -74,16 +79,6 @@ class FeatureExtraction(object):
         mut_ids = self.protein_data_set.get_mutation_ids()
         self.fm_missense.set_object_ids(mut_ids)
 
-    #def set_object_ids(self, object_type):
-    #    if(object_type == 'protein'):
-    #        object_ids = self.protein_data_set.get_protein_ids()
-    #        self.fm_protein.set_object_ids(object_ids)
-    #    elif(object_type == 'missense_mutation'):
-    #        object_ids = self.protein_data_set.get_mutation_ids()
-    #        self.fm_missense.set_object_ids(object_ids)
-    #    else:
-    #        raise Exception('Wrong object type provided.')
-
     def calculate_protein_features(self, feat_vector_id):
         assert(self.fm_protein.object_ids)
         (fm, feat_ids) = self.fv_dict_protein[feat_vector_id].calc_feats()
@@ -94,10 +89,6 @@ class FeatureExtraction(object):
         assert(self.fm_protein.object_ids)
         (fm, feat_ids) = self.fv_dict_missense[feat_vector_id].calc_feats()
         self.fm_missense.add_features(feat_ids, fm)
-
-    def delete_feature_matrices(self):
-        self.fm_missense.delete_feature_matrix()
-        self.fm_protein.delete_feature_matrix()
 
     def available_protein_feature_vectors(self):
         available = []
@@ -124,8 +115,11 @@ class FeatureExtraction(object):
         assert(self.root_dir)
 
         # load the feature matrices
-        self.fm_protein.load()
-        self.fm_missense.load()
+        fmp = featmat.FeatureMatrix.load_from_dir(self.fm_protein_d)
+        self.fm_protein = fmp
+
+        fmm = featmat.FeatureMatrix.load_from_dir(self.fm_missense_d)
+        self.fm_missense = fmm
 
         # load protein data set
         self.protein_data_set.load()
@@ -149,8 +143,8 @@ class FeatureExtraction(object):
             os.makedirs(self.root_dir)
 
         # save feature matrix
-        self.fm_protein.save()
-        self.fm_missense.save()
+        self.fm_protein.save_to_dir(self.fm_protein_d)
+        self.fm_missense.save_to_dir(self.fm_missense_d)
 
         # save protein data set
         self.protein_data_set.save()
@@ -606,9 +600,9 @@ if __name__ == '__main__':
                 sys.exit()
             try:
                 if(label_type == 'protein'):
-                    fe.fm_protein.load_labels(label_name, label_path)
+                    fe.fm_protein.load_labeling(label_name, label_path)
                 elif(label_type == 'missense'):
-                    fe.fm_missense.load_labels(label_name, label_path)
+                    fe.fm_missense.load_labeling(label_name, label_path)
                 else:
                     print '\nWrong label type, error should not occur...\n'
                     sys.exit()
@@ -852,9 +846,10 @@ if __name__ == '__main__':
             try:
                 fe.calculate_missense_features(feature_vector)
             except ValueError, e:
-                print('\nFeature category error: %s\n' % (e))
+                #print('\nFeature category error: %s\n' % (e))
                 print traceback.print_exc()
-                sys.exit()
+                #sys.exit()
+                raise e
             except Exception as e:
                 print('\nFeature calculation error: %s\n' % (e))
                 print traceback.print_exc()
@@ -870,11 +865,12 @@ if __name__ == '__main__':
                 fe.calculate_protein_features(feature_vector)
             except ValueError, e:
                 print('\nFeature category error: %s\n' % (e))
-                sys.exit()
+                print traceback.print_exc()
+                raise e
             except Exception as e:
                 print('\nFeature calculation error: %s\n' % (e))
                 print traceback.print_exc()
-                sys.exit()
+                raise e
 
         fe.save()
 
