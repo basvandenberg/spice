@@ -609,7 +609,7 @@ class FeatureMatrix(object):
         return ts
 
     def save_histogram(self, feat_id, labeling_name, class_ids=None,
-                       colors=None, img_format='png'):
+                       colors=None, img_format='png', root_dir='.'):
 
         try:
             labeling = self.labeling_dict[labeling_name]
@@ -637,8 +637,11 @@ class FeatureMatrix(object):
 
         #feat_hists = []
         lab_str = labeling_name + '_' + '_'.join([str(l) for l in class_ids])
-        out_f = os.path.join(self.HISTOGRAM_D,
-                             '%s_%s.%s' % (feat_id, lab_str, img_format))
+
+        d = os.path.join(root_dir, self.HISTOGRAM_D)
+        if not(os.path.exists(d)):
+            os.makedirs(d)
+        out_f = os.path.join(d, '%s_%s.%s' % (feat_id, lab_str, img_format))
 
         hist_data = []
         for lab_i, lab in enumerate(class_ids):
@@ -662,7 +665,8 @@ class FeatureMatrix(object):
         return out_f
 
     def save_scatter(self, feat_id0, feat_id1, labeling_name=None,
-                     class_ids=None, colors=None, img_format='png'):
+                     class_ids=None, colors=None, img_format='png',
+                     root_dir='.'):
 
         if not(os.path.exists(self.SCATTER_D)):
             os.makedirs(self.SCATTER_D)
@@ -691,8 +695,11 @@ class FeatureMatrix(object):
             raise ValueError('Feature %s or %s does not exist.' %
                              (feat_id0, feat_id1))
 
-        out_f = os.path.join(self.SCATTER_D, 'scatter.%s' % (img_format))
-
+        d = os.path.join(root_dir, self.SCATTER_D)
+        if not(os.path.exists(d)):
+            os.makedirs(d)
+        out_f = os.path.join(d, 'scatter.%s' % (img_format))
+        
         # standardize data NOTE that fm is standardized before the objects
         # are sliced out!!!
         # not sure if this is the desired situation...
@@ -720,7 +727,7 @@ class FeatureMatrix(object):
         return out_f
 
     def get_clustdist_path(self, feature_ids=None, labeling_name=None,
-                           class_ids=None, vmin=-3.0, vmax=3.0):
+                           class_ids=None, vmin=-3.0, vmax=3.0, root_dir='.'):
 
         if not(os.path.exists(self.HEATMAP_D)):
             os.makedirs(self.HEATMAP_D)
@@ -740,7 +747,11 @@ class FeatureMatrix(object):
 
         #png_f = os.path.join(self.heatmap_dir, 'fm_clustered_%s.png' %
         #        (lab_str))
-        file_path = os.path.join(self.HEATMAP_D, 'fm_clustered')
+        d = os.path.join(root_dir, self.HEATMAP_D)
+        if not(os.path.exists(d)):
+            os.makedirs(d)
+        img_format = 'png'
+        file_path = os.path.join(d, 'fm_clustered.%s' % (img_format))
 
         # reorder feature matrix rows (objects)
         object_indices = hierarchy.leaves_list(self.clust_object(fm))
