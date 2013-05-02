@@ -128,7 +128,7 @@ def grid_search(data, target, classifier, n, scoring, param, cv=None, cpu=1,
 
     # log results if requested
     if(log_f):
-        for params, mean_score, scores in clf.grid_scores_:
+        for params, mean_score, scores in clf.cv_scores_:
             log_f.write('%0.3f;%0.3f;[%s];%r\n' % (mean_score, scores.std(),
                     ', '.join(['%.3f' % (s) for s in scores]), params))
         log_f.write('\n')
