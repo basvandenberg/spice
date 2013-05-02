@@ -824,6 +824,10 @@ class Labeling(object):
 
     #def __init__(self, name, feature_matrix):
     def __init__(self, name, object_ids, labels, class_names):
+        '''
+        Is it really necesary to retain the order of the object ids? Why not 
+        initiate with a dict?
+        '''
 
         label_set = set(labels)
 
@@ -889,6 +893,8 @@ class Labeling(object):
             return obj_is
 
     @classmethod
-    def load_from_file(cls, f, labeling_name):
+    def load_from_file(cls, labeling_name, f):
         (label_dict, class_names) = file_io.read_labeling(f)
-        return cls(labeling_name, label_dict, class_names)
+        object_ids = sorted(label_dict.keys())
+        labels = [label_dict[oid] for oid in object_ids]
+        return cls(labeling_name, object_ids, labels, class_names)
