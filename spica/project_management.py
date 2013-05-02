@@ -457,7 +457,6 @@ class ProjectManager(object):
                 index += 1
 
         # read data from file
-        print fasta_f
         try:
             seqs = [s for s in file_io.read_fasta(fasta_f)]
             ids = [s[0] for s in seqs]
@@ -490,7 +489,7 @@ class ProjectManager(object):
         # add to feature matrix
         try:
             labeling_name = os.path.splitext(os.path.basename(labeling_f))[0]
-            fe.fm_protein.load_labels(labeling_name, labeling_f)
+            fe.fm_protein.add_labeling_from_file(labeling_name, labeling_f)
         except ValueError as e:
             return str(e)
 
