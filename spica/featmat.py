@@ -317,16 +317,27 @@ class FeatureMatrix(object):
         num_obj, num_feat = feature_matrix.shape
 
         if not(num_obj == len(self.object_ids)):
-            raise ValueError('Feature matrix size does not correspond to ' +
-                             'number of objects.')
+            raise ValueError('Number of feature matrix rows does not '
+                             'correspond to number of objects.')
 
         cust_feats = self.get_custom_features().values()
+        cust_feats = [c[0].split('_')[0] for c in cust_feats]
+        print
+        print cust_feats
+        print
 
         if(len(cust_feats) == 0):
             new_cust_feat_i = 0
         else:
             last_cust_feat = sorted(cust_feats)[-1]
-            new_cust_feat_i = last_cust_feat[(len(self.CUSTOM_FEAT_PRE) + 1):]
+            print last_cust_feat
+            print len(self.CUSTOM_FEAT_PRE) + 1
+            new_cust_feat_i =\
+                    int(last_cust_feat[(len(self.CUSTOM_FEAT_PRE)):]) + 1
+
+        print
+        print new_cust_feat_i
+        print
 
         featvec_id = '%s%i' % (self.CUSTOM_FEAT_PRE, new_cust_feat_i)
         feat_ids = ['%s_%i' % (featvec_id, i) for i in xrange(num_feat)]

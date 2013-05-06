@@ -597,28 +597,33 @@ class ProjectManager(object):
             object_ids = [i for i in file_io.read_ids(object_ids_f.file)]
         except Exception as e:
             print '\n%s\n%s\n%s\n' % (e, type(e), e.args)
-            return 'Error in object ids file.'
+            return 'Error in object ids file'
         object_ids_f.file.close()
 
         try:
             featmat = numpy.loadtxt(feature_matrix_f.file)
         except Exception as e:
             print '\n%s\n%s\n%s\n' % (e, type(e), e.args)
-            return 'Error in feature matrix file.'
+            return 'Error in feature matrix file'
         feature_matrix_f.file.close()
 
         fm = self.get_feature_matrix()
 
         if not(object_ids == fm.object_ids):
-            return 'The object ids do not correspond.'
+            return 'The protein ids do not correspond to the proteins ' +\
+                   'in this project'
 
         try:
             fm.add_custom_features(featmat)
-        except ValueError:
-            return 'Something went wrong while adding custom features.'
+        except ValueError as e:
+            return str(e)
+        except Exception as e:
+            print e
+            return 'Something went wrong while adding custom features'
 
-        fm.save()
-        return None
+        fm.save_to_dir(self.fm_dir)
+
+        return ''
 
     ###########################################################################
     # Functions that write a job file and add the job to the job queue (put it 
