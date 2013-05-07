@@ -558,6 +558,7 @@ class ProjectManager(object):
         try:
             fe.protein_data_set.set_data_source(data_type, seqs)
         except ValueError as e:
+            print(traceback.format_exc())
             return str(e)
 
         # save feature extraction, if it all went well
@@ -572,7 +573,8 @@ class ProjectManager(object):
             label_dict, class_names = file_io.read_labeling(labeling_f)
         except:
             return 'Error in labeling file.'
-        labeling_f.close()
+        finally:
+            labeling_f.close()
 
         # add to feature matrix
         fm = self.get_feature_matrix()

@@ -240,7 +240,7 @@ class DataSource():
             items_to_check = [s[1] for s in self.data if not s[1] is None]
             if not(all(map(func, items_to_check))):
                 self.data = None
-                raise ValueError('Error in data %s. (%s)' % (self.name, func))
+                raise ValueError('Error in data %s. (%s)' % (self.name, func.__name__))
 
     def get_data_path(self):
         return(os.path.join(self.root_dir, self.data_path))
