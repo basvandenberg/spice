@@ -27,7 +27,7 @@ from sklearn import preprocessing
 from sklearn import cross_validation
 from sklearn import metrics
 
-from spica import featmat
+from spice import featmat
 
 from util import timeout
 from util import roc

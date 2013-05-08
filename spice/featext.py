@@ -14,10 +14,10 @@ import traceback
 
 import numpy
 
-from spica import featmat
-from spica import data_set
-from spica import protein
-from spica import mutation
+from spice import featmat
+from spice import data_set
+from spice import protein
+from spice import mutation
 
 from util import file_io
 

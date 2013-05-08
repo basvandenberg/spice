@@ -1,6 +1,6 @@
 import numpy
 from matplotlib import pyplot
-from spica.plotpy import color
+from spice.plotpy import color
 
 def rounded_maxy(maxy):
     boundaries = [1, 2, 3, 4, 5, 6, 7, 8, 9, 

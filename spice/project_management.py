@@ -6,8 +6,8 @@ import numpy
 import shutil
 import traceback
 
-from spica import featext
-from spica import featmat
+from spice import featext
+from spice import featmat
 from util import sequtil
 from util import file_io
 

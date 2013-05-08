@@ -1,7 +1,7 @@
 import os
 
-from spica.protein import Protein
-from spica.mutation import MissenseMutation
+from spice.protein import Protein
+from spice.mutation import MissenseMutation
 
 from util import file_io
 from util import sequtil

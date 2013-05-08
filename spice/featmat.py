@@ -22,7 +22,7 @@ assert(sklearn.__version__ == '0.14-git')
 from sklearn.datasets.base import Bunch
 
 from util import file_io
-from spica.plotpy import heatmap
+from spice.plotpy import heatmap
 
 
 class FeatureMatrix(object):

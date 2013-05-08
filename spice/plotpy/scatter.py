@@ -1,6 +1,6 @@
 import numpy
 from matplotlib import pyplot
-from spica.plotpy import color
+from spice.plotpy import color
 
 class Scatter(object):
 
