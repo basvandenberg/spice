@@ -620,7 +620,8 @@ class FeatureMatrix(object):
         return ts
 
     def save_histogram(self, feat_id, labeling_name, class_ids=None,
-                       colors=None, img_format='png', root_dir='.'):
+                       colors=None, img_format='png', root_dir='.',
+                       title=None):
 
         try:
             labeling = self.labeling_dict[labeling_name]
@@ -642,6 +643,8 @@ class FeatureMatrix(object):
             feature_index = self.feature_ids.index(feat_id)
         except ValueError:
             raise ValueError('Feature %s does not exist.' % (feat_id))
+
+        feat_name = self.feature_names[feat_id]
 
         # standardize data
         fm = self.standardized()
@@ -666,9 +669,11 @@ class FeatureMatrix(object):
         fig = pyplot.figure(figsize=(8.8, 2.5))
         ax = fig.add_subplot(1, 1, 1)
         ax.hist(hist_data, bins=40, color=colors[:len(class_ids)])
-        ax.set_xlabel(feat_id)
+        ax.set_xlabel(feat_name)
         ax.legend(class_ids)
         ax.grid()
+        if(title):
+            ax.set_title(title)
         fig.savefig(out_f, bbox_inches='tight')
 
         pyplot.close(fig)
@@ -677,7 +682,7 @@ class FeatureMatrix(object):
 
     def save_scatter(self, feat_id0, feat_id1, labeling_name=None,
                      class_ids=None, colors=None, img_format='png',
-                     root_dir='.'):
+                     root_dir='.', feat0_pre=None, feat1_pre=None):
 
         if not(os.path.exists(self.SCATTER_D)):
             os.makedirs(self.SCATTER_D)
@@ -706,6 +711,14 @@ class FeatureMatrix(object):
             raise ValueError('Feature %s or %s does not exist.' %
                              (feat_id0, feat_id1))
 
+        feat_name0 = self.feature_names[feat_id0]
+        feat_name1 = self.feature_names[feat_id1]
+
+        if(feat0_pre):
+            feat_name0 = ' - '.join([feat0_pre, feat_name0])
+        if(feat1_pre):
+            feat_name1 = ' - '.join([feat1_pre, feat_name1])
+
         d = os.path.join(root_dir, self.SCATTER_D)
         if not(os.path.exists(d)):
             os.makedirs(d)
@@ -727,8 +740,8 @@ class FeatureMatrix(object):
             c = colors[index]
             ax.scatter(x, y, s=30, c=c, marker='o', label=class_id)
 
-        ax.set_xlabel(feat_id0)
-        ax.set_ylabel(feat_id1)
+        ax.set_xlabel(feat_name0)
+        ax.set_ylabel(feat_name1)
         ax.legend(loc='upper right')
         ax.grid()
         fig.savefig(out_f, bbox_inches='tight')

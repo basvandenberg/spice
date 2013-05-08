@@ -81,14 +81,14 @@ class FeatureExtraction(object):
 
     def calculate_protein_features(self, feat_vector_id):
         assert(self.fm_protein.object_ids)
-        (fm, feat_ids) = self.fv_dict_protein[feat_vector_id].calc_feats()
-        self.fm_protein.add_features(feat_ids, fm)
+        (fm, fids, fnames) = self.fv_dict_protein[feat_vector_id].calc_feats()
+        self.fm_protein.add_features(fids, fm, feature_names=fnames)
 
     # TODO split in calculate and add function? or add remove from featmat
     def calculate_missense_features(self, feat_vector_id):
         assert(self.fm_protein.object_ids)
-        (fm, feat_ids) = self.fv_dict_missense[feat_vector_id].calc_feats()
-        self.fm_missense.add_features(feat_ids, fm)
+        (fm, fids, fnames) = self.fv_dict_missense[feat_vector_id].calc_feats()
+        self.fm_missense.add_features(fids, fm, feature_names=fnames)
 
     def available_protein_feature_vectors(self):
         available = []
@@ -210,7 +210,8 @@ class FeatureVector():
         self.short_names = names
 
         self.feat_ids = ['%s_%s' % (self.uid, i) for i in ids]
-        self.feat_names = ['%s %s' % (self.name, n) for n in names]
+        #self.feat_names = ['%s %s' % (self.name, n) for n in names]
+        self.feat_names = names
 
     def required_data_available(self, get_data_func, all_objects=True):
         '''
@@ -242,7 +243,7 @@ class FeatureVector():
         # fill the matrix
         for index, o in enumerate(self.object_list):
             fm[index, :] = self.feature_func(o, **self.kwargs)
-        return(fm, self.feat_ids)
+        return(fm, self.feat_ids, self.feat_names)
 
     def feat_name_dict(self):
         return dict(zip(self.feat_ids, self.feat_names))
