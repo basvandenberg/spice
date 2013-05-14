@@ -113,14 +113,14 @@ class Protein(object):
                                       for a in sequtil.aa_unambiguous_name]
             return (ids, names)
 
-    def five_prime_amino_acid_count(self, seq_length, feature_ids=False):
+    def five_prime_amino_acid_count(self, seq_length=75, feature_ids=False):
         if not(feature_ids):
             return sequtil.aa_count(self.five_prime_seq(seq_length))
         else:
             return (list(sequtil.aa_unambiguous_alph),
                     sequtil.aa_unambiguous_name)
 
-    def three_prime_amino_acid_count(self, seq_length, feature_ids=False):
+    def three_prime_amino_acid_count(self, seq_length=75, feature_ids=False):
         if not(feature_ids):
             return sequtil.aa_count(self.three_prime_seq(seq_length))
         else:
@@ -133,14 +133,14 @@ class Protein(object):
         else:
             return (sequtil.aa_subsets, sequtil.aa_subsets)
 
-    def five_prime_cluster_count(self, seq_length, feature_ids=False):
+    def five_prime_cluster_count(self, seq_length=75, feature_ids=False):
         if not(feature_ids):
             return sequtil.aa_cluster_count(self.five_prime_seq(seq_length))
         else:
             return (list(sequtil.aa_unambiguous_alph),
                     sequtil.aa_subsets)
 
-    def three_prime_cluster_count(self, seq_length, feature_ids=False):
+    def three_prime_cluster_count(self, seq_length=75, feature_ids=False):
         if not(feature_ids):
             return sequtil.aa_cluster_count(self.three_prime_seq(seq_length))
         else:
@@ -158,6 +158,42 @@ class Protein(object):
             return sequtil.codon_usage(self.orf_sequence)
         else:
             return (sequtil.codons_unambiguous, sequtil.codons_unambiguous)
+
+    def average_signal(self, window=9, edge=0, feature_ids=False):
+
+        if not(feature_ids):
+
+            scales = sequtil.georgiev_scales
+            result = []
+            
+            for scale in scales:
+                result.append(sequtil.avg_seq_signal(
+                              self.protein_sequence, scale, window, edge))
+
+            return result
+        else:
+            return (['%02d' % (i) for i in range(19)], 
+                    ['Georgiev %i' % (i) for i in  range(19)])
+
+    def signal_peaks_area(self, window=9, edge=0, threshold=1.0,
+                          feature_ids=False):
+        
+        if not(feature_ids):
+
+            scales = sequtil.georgiev_scales
+            result = []
+            
+            for scale in scales:
+                top, bot = sequtil.auc_seq_signal(self.protein_sequence, scale,
+                                                  window, edge, threshold)
+                result.append(top)
+                result.append(bot)
+
+            return result
+        else:
+            return (['%02d%s' % (i, s) for s in ['t', 'b'] for i in range(19)], 
+                    ['Georgiev %i %s' % (i, s) for s in ['top', 'bottom']
+                    for i in  range(19)])
 
     # feature calculation help functions
 
