@@ -361,17 +361,17 @@ class ProjectManager(object):
             return 'A project with the same project id allready exists'
 
         # check file size
-        max_size = 52430000  # bytes (50MB)
+        max_size = 5243000  # bytes (5MB)
         size = 0
         while True:
             data = fasta_file.file.read(8192)
             if(size > max_size):
-                return 'Fasta file exeeds the maximum allowed size (50MB)'
+                return 'Fasta file exeeds the maximum allowed size (5MB)'
             if not(data):
                 break
             size += len(data)
         if(size > max_size):
-            return 'Fasta file exeeds the maximum allowed size (1GB)'
+            return 'Fasta file exeeds the maximum allowed size (5MB)'
 
         # reset to beginning of fasta file
         fasta_file.file.seek(0)
