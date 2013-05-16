@@ -195,6 +195,12 @@ class Protein(object):
                     ['Georgiev %i %s' % (i, s) for s in ['top', 'bottom']
                     for i in  range(19)])
 
+    def length(self, feature_ids=False):
+        if not(feature_ids):
+            return [len(self.protein_sequence)]
+        else:
+            return (['len'], ['Protein length'])
+
     # feature calculation help functions
 
     def five_prime_seq(self, seq_length):

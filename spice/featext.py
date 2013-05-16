@@ -432,7 +432,8 @@ class ProteinFeatureVectorFactory(FeatureVectorFactory):
         'sac', 'saaac',
         'codc', 'codu',
         '5p75aac', '3p75aac', '5p75clc', '3p75clc',
-        'sigavg', 'sigpeak'
+        'sigavg', 'sigpeak',
+        'len'
     ]
 
     def __init__(self):
@@ -487,6 +488,9 @@ class ProteinFeatureVectorFactory(FeatureVectorFactory):
             'sigpeak': ('signal value peaks area', 
                 protein.Protein.signal_peaks_area,
                 {'window': 5, 'edge':0.5, 'threshold':1.0},
+                [(protein.Protein.get_protein_sequence, True)]),
+            'len': ('protein length',
+                protein.Protein.length, {},
                 [(protein.Protein.get_protein_sequence, True)])
         }
 
