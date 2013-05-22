@@ -151,13 +151,17 @@ class Protein(object):
         if not(feature_ids):
             return sequtil.codon_composition(self.orf_sequence)
         else:
-            return (sequtil.codons_unambiguous, sequtil.codons_unambiguous)
+            names = ['%s (%s)' % (c, sequtil.translate(c)) 
+                     for c in sequtil.codons_unambiguous]
+            return (sequtil.codons_unambiguous, names)
 
     def codon_usage(self, feature_ids=False):
         if not(feature_ids):
             return sequtil.codon_usage(self.orf_sequence)
         else:
-            return (sequtil.codons_unambiguous, sequtil.codons_unambiguous)
+            names = ['%s (%s)' % (c, sequtil.translate(c)) 
+                     for c in sequtil.codons_unambiguous]
+            return (sequtil.codons_unambiguous, names)
 
     def average_signal(self, window=9, edge=0, feature_ids=False):
 
