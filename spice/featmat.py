@@ -614,8 +614,8 @@ class FeatureMatrix(object):
                 # DONE: looks like the unequal sample sizes, equal variance
                 #       formula
                 ts.append(stats.ttest_ind(
-                          self.feature_matrix[lab0_indices, f_i],
-                          self.feature_matrix[lab1_indices, f_i]))
+                          self.feature_matrix[lab1_indices, f_i],
+                          self.feature_matrix[lab0_indices, f_i]))
 
         return ts
 
