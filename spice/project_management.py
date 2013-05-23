@@ -5,6 +5,7 @@ import datetime
 import numpy
 import shutil
 import traceback
+import urllib2
 
 from spice import featext
 from spice import featmat
@@ -343,7 +344,8 @@ class ProjectManager(object):
             shutil.rmtree(project_dir)
 
     # start a new project
-    def start_new_project(self, project_id, fasta_file, sequence_type):
+    def start_new_project(self, project_id, fasta_file, sequence_type,
+                          reference_taxon=None):
         '''
         TOCHECK: what is fasta_file for type ???
         pre: sequence_type is orf_seq or prot_seq
@@ -360,18 +362,43 @@ class ProjectManager(object):
         if os.path.exists(self.project_dir):
             return 'A project with the same project id allready exists'
 
+        # download reference fasta file
+        ref_seqs = []
+        if not(reference_taxon is None):
+
+            # 
+            if(sequence_type == 'orf_seq'):
+                return 'Reference set can only be compared to protein' +\
+                       'amino acid sequences, not to ORF sequences.'
+
+            # fetch reference data set
+            url = 'http://www.uniprot.org/uniref/' +\
+                  '?query=uniprot:(organism:%i+' % (reference_taxon) +\
+                  'keyword:181)+identity:0.5&format=fasta'
+            response = urllib2.urlopen(url)
+            try:
+                ref_seqs = [s for s in file_io.read_fasta(response)]
+            except Exception:
+                return 'There appears to be an error in the reference data fasta file'
+
+        # check if reference data set is not too large
+        if(len(ref_seqs) > 17000):
+            return 'Sorry, this reference set is too large (max 17000 seqs)'
+
+        # estimate reference data set size
+        size = len(ref_seqs) * 285  # estimate 285 bytes per seq
+
         # check file size
         max_size = 5243000  # bytes (5MB)
-        size = 0
         while True:
             data = fasta_file.file.read(8192)
             if(size > max_size):
-                return 'Fasta file exeeds the maximum allowed size (5MB)'
+                return 'Fasta file (+ reference data) exeeds the maximum allowed size (5MB)'
             if not(data):
                 break
             size += len(data)
         if(size > max_size):
-            return 'Fasta file exeeds the maximum allowed size (5MB)'
+            return 'Fasta file (+ reference data) exeeds the maximum allowed size (5MB)'
 
         # reset to beginning of fasta file
         fasta_file.file.seek(0)
@@ -379,6 +406,7 @@ class ProjectManager(object):
         # read sequences from fasta file (to abtain object ids...)
         try:
             seqs = [s for s in file_io.read_fasta(fasta_file.file)]
+            seqs.extend(ref_seqs)
             ids = [s[0] for s in seqs]
         except Exception:
             return 'Error in fasta file'
@@ -407,6 +435,13 @@ class ProjectManager(object):
         except:
             print(traceback.format_exc())
             return 'Error during initiation new project'
+
+        # add labeling in case of added reference set
+        if(len(ref_seqs) > 0):
+            l = [(s[0], 0) for s in seqs]
+            l.extend([(s[0], 1) for s in ref_seqs])
+            class_names = ['dataset', 'ref_taxon%i' % (reference_taxon)]
+            fe.fm_protein.add_labeling('reference', dict(l), class_names)
 
         # create data directory for this project (just to be sure, check again)
         if not(os.path.exists(self.project_dir)):
