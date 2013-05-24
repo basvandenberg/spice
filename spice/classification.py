@@ -28,10 +28,9 @@ from sklearn import cross_validation
 from sklearn import metrics
 
 from spice import featmat
-
-from util import timeout
-from util import roc
-from util import file_io
+from spice.util import timeout
+from spice.util import roc
+from spice.util import file_io
 
 # classification performance measures
 all_score_names = ['roc_auc', 'f1', 'precision', 'average_precision',

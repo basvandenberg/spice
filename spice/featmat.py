@@ -21,7 +21,7 @@ import sklearn
 assert(sklearn.__version__ == '0.14-git')
 from sklearn.datasets.base import Bunch
 
-from util import file_io
+from spice.util import file_io
 from spice.plotpy import heatmap
 
 

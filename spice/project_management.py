@@ -10,8 +10,8 @@ import random
 
 from spice import featext
 from spice import featmat
-from util import sequtil
-from util import file_io
+from spice.util import sequtil
+from spice.util import file_io
 
 
 class ProjectManager(object):

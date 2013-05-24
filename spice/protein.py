@@ -1,4 +1,4 @@
-from util import sequtil
+from spice.util import sequtil
 
 
 class Protein(object):
