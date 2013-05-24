@@ -6,6 +6,7 @@ import numpy
 import shutil
 import traceback
 import urllib2
+import random
 
 from spice import featext
 from spice import featmat
@@ -17,8 +18,9 @@ class ProjectManager(object):
 
     TIMEOUT = 20  # sec
 
-    def __init__(self, root_dir):
+    def __init__(self, root_dir, ref_data_dir):
         self.root_dir = root_dir
+        self.ref_data_dir = ref_data_dir
         self.user_id = None
         self.project_id = None
 
@@ -366,24 +368,39 @@ class ProjectManager(object):
         ref_seqs = []
         if not(reference_taxon is None):
 
-            # 
+            # TODO 
             if(sequence_type == 'orf_seq'):
                 return 'Reference set can only be compared to protein' +\
                        'amino acid sequences, not to ORF sequences.'
 
-            # fetch reference data set
-            url = 'http://www.uniprot.org/uniref/' +\
-                  '?query=uniprot:(organism:%i+' % (reference_taxon) +\
-                  'keyword:181)+identity:0.5&format=fasta'
-            response = urllib2.urlopen(url)
-            try:
-                ref_seqs = [s for s in file_io.read_fasta(response)]
-            except Exception:
-                return 'There appears to be an error in the reference data fasta file'
+            # obtain reference proteome sequences
+            ref_f = os.path.join(self.ref_data_dir,
+                                 '%i.fsa' % (reference_taxon))
+            ref_red_f = os.path.join(self.ref_data_dir,
+                                     '%i_reduced.fsa' % (reference_taxon))
+            # first check local dir
+            if(os.path.exists(ref_red_f)):
+                ref_seqs = [s for s in file_io.read_fasta(ref_red_f)]
+            elif(os.path.exists(ref_f)):
+                ref_seqs = [s for s in file_io.read_fasta(ref_f)]
+            # otherwise fetch reference data set
+            else:
+                url = 'http://www.uniprot.org/uniref/' +\
+                      '?query=uniprot:(organism:%i+' % (reference_taxon) +\
+                      'keyword:181)+identity:0.5&format=fasta'
+                response = urllib2.urlopen(url)
+                try:
+                    ref_seqs = [s for s in file_io.read_fasta(response)]
+                except Exception:
+                    return 'There appears to be an error in the reference ' +\
+                           'data fasta file'
 
-        # check if reference data set is not too large
-        if(len(ref_seqs) > 17000):
-            return 'Sorry, this reference set is too large (max 17000 seqs)'
+                # check if reference data set is not too large
+                max_num_seqs = 15000
+                if(len(ref_seqs) > max_num_seqs):
+                    # randomly select 15000 sequences
+                    indices = random.sample(range(len(ref_seqs)), max_num_seqs)
+                    ref_seqs = [ref_seqs[i] for i in indices]
 
         # estimate reference data set size
         size = len(ref_seqs) * 285  # estimate 285 bytes per seq
@@ -393,12 +410,14 @@ class ProjectManager(object):
         while True:
             data = fasta_file.file.read(8192)
             if(size > max_size):
-                return 'Fasta file (+ reference data) exeeds the maximum allowed size (5MB)'
+                return 'Fasta file (+ reference data) exeeds the maximum ' +\
+                       'allowed size (5MB)'
             if not(data):
                 break
             size += len(data)
         if(size > max_size):
-            return 'Fasta file (+ reference data) exeeds the maximum allowed size (5MB)'
+            return 'Fasta file (+ reference data) exeeds the maximum ' +\
+                   'allowed size (5MB)'
 
         # reset to beginning of fasta file
         fasta_file.file.seek(0)
