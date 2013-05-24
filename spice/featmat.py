@@ -621,7 +621,7 @@ class FeatureMatrix(object):
 
     def save_histogram(self, feat_id, labeling_name, class_ids=None,
                        colors=None, img_format='png', root_dir='.',
-                       title=None):
+                       title=None, standardized=False):
 
         try:
             labeling = self.labeling_dict[labeling_name]
@@ -647,7 +647,10 @@ class FeatureMatrix(object):
         feat_name = self.feature_names[feat_id]
 
         # standardize data
-        fm = self.standardized()
+        if(standardized):
+            fm = self.standardized()
+        else:
+            fm = self.feature_matrix
 
         #feat_hists = []
         lab_str = labeling_name + '_' + '_'.join([str(l) for l in class_ids])
@@ -682,7 +685,8 @@ class FeatureMatrix(object):
 
     def save_scatter(self, feat_id0, feat_id1, labeling_name=None,
                      class_ids=None, colors=None, img_format='png',
-                     root_dir='.', feat0_pre=None, feat1_pre=None):
+                     root_dir='.', feat0_pre=None, feat1_pre=None, 
+                     standardized=False):
 
         if not(os.path.exists(self.SCATTER_D)):
             os.makedirs(self.SCATTER_D)
@@ -724,10 +728,13 @@ class FeatureMatrix(object):
             os.makedirs(d)
         out_f = os.path.join(d, 'scatter.%s' % (img_format))
         
-        # standardize data NOTE that fm is standardized before the objects
-        # are sliced out!!!
-        # not sure if this is the desired situation...
-        fm = self.standardized()
+        if(standardized):
+            # standardize data NOTE that fm is standardized before the objects
+            # are sliced out!!!
+            # not sure if this is the desired situation...
+            fm = self.standardized()
+        else:
+            fm = self.feature_matrix
 
         fig = pyplot.figure(figsize=(6, 6))
         ax = fig.add_subplot(1, 1, 1)
