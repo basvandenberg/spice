@@ -463,7 +463,7 @@ class ProjectManager(object):
         if(len(ref_seqs) > 0):
             l = [(s[0], 0) for s in seqs]
             l.extend([(s[0], 1) for s in ref_seqs])
-            class_names = ['dataset', 'ref_taxon%i' % (reference_taxon)]
+            class_names = ['dataset', 'taxon%i' % (reference_taxon)]
             fe.fm_protein.add_labeling('reference', dict(l), class_names)
 
         # create data directory for this project (just to be sure, check again)
