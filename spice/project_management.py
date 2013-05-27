@@ -5,8 +5,8 @@ import datetime
 import numpy
 import shutil
 import traceback
-import urllib2
-import random
+#import urllib2
+#import random
 
 from spice import featext
 from spice import featmat
@@ -385,6 +385,8 @@ class ProjectManager(object):
                 ref_seqs = [s for s in file_io.read_fasta(ref_f)]
             # otherwise fetch reference data set
             else:
+                pass
+                '''
                 url = 'http://www.uniprot.org/uniref/' +\
                       '?query=uniprot:(organism:%i+' % (reference_taxon) +\
                       'keyword:181)+identity:0.5&format=fasta'
@@ -401,6 +403,7 @@ class ProjectManager(object):
                     # randomly select 15000 sequences
                     indices = random.sample(range(len(ref_seqs)), max_num_seqs)
                     ref_seqs = [ref_seqs[i] for i in indices]
+                '''
 
         # estimate reference data set size
         size = len(ref_seqs) * 285  # estimate 285 bytes per seq
@@ -412,6 +415,7 @@ class ProjectManager(object):
             if(size > max_size):
                 return 'Fasta file (+ reference data) exeeds the maximum ' +\
                        'allowed size (5MB)'
+
             if not(data):
                 break
             size += len(data)
