@@ -105,24 +105,6 @@ class MissenseMutation(object):
                     if alph[i] in non_zero[fr]]
             return (ids, names)
     '''
-    # TODO get rid of this feature...
-    def mutation_risk(self, feature_ids=False):
-
-        alph = sequtil.aa_unambiguous_alph
-        i_alph_dict = dict([(l, i) for (i, l) in enumerate(alph)])
-
-        if not(feature_ids):
-            # HACK read log values from whole data set...
-            log_vals = numpy.loadtxt(os.path.join(os.environ['JTDS'],
-                    'from_to', '0hack.txt'))
-
-            feat_vec = numpy.ones(1)
-            fr_i = i_alph_dict[self.aa_from]
-            to_i = i_alph_dict[self.aa_to]
-            feat_vec[0] = log_vals[fr_i, to_i]
-            return feat_vec
-        else:
-            return (['mutrisk'], ['mutrisk'])
 
     def georgiev_blosum_signal_diff(self, feature_ids=False):
         '''

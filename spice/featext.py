@@ -281,52 +281,18 @@ class MutationFeatureVectorFactory(FeatureVectorFactory):
         self.feature_vector_ids.append('mutggsigdiff')
         self.feature_vector_ids.append('mutggbsigdiff')
         # sequence environment aa counts
-        self.feature_vector_ids.extend(['seqenv%i' % (i)
-                for i in seqenv_window_range])
+        self.feature_vector_ids.append('seqenv9')
         # msa-related
         self.feature_vector_ids.append('msa')
         self.feature_vector_ids.append('msaggsigdiff')
-        # structure atom counts
-        self.feature_vector_ids.extend(['atmcnti%io%i' % (i)
-                for i in atom_count_distances])
         # backbone angles
         self.feature_vector_ids.append('bbang')
         # relative solv access
         self.feature_vector_ids.append('rasa')
         self.feature_vector_ids.append('pfam')
-
         # from mutations vectors
         self.feature_vector_ids.append('tomutvec')
-        #for letter in sequtil.aa_unambiguous_alph:
-        #    self.feature_vector_ids.append('mut%stox' % (letter.lower()))
 
-        # this doesn't work... TODO think of other solution...
-        # sequence environment signal peak area
-        ggsig_ids = []
-        for env_window in xrange(3, 102, 2):
-            for sig_window in xrange(3, 22, 2):
-                for edge in numpy.arange(0.0, 1.1, 0.25):
-                    for below_threshold in [False, True]:
-                        for threshold in [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0,
-                                3.5, 4.0]:
-                            ggsig_ids.append('ggsew%03dsw%02de%03dt%02d%s' %
-                                    (env_window, sig_window,
-                                    int(edge * 100), int(threshold * 10),
-                                    'd' if below_threshold else 'u'))
-        self.feature_vector_ids.extend(ggsig_ids)
-        # sequence environment signal peak area
-        ggsig_ids = []
-        for env_window in xrange(3, 102, 2):
-            for sig_window in xrange(3, 22, 2):
-                for edge in numpy.arange(0.0, 1.1, 0.25):
-                    for below_threshold in [False, True]:
-                        for threshold in [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0,
-                                3.5, 4.0]:
-                            ggsig_ids.append('ggbsew%03dsw%02de%03dt%02d%s' %
-                                    (env_window, sig_window,
-                                    int(edge * 100), int(threshold * 10),
-                                    'd' if below_threshold else 'u'))
-        self.feature_vector_ids.extend(ggsig_ids)
 
         ######################################################################
         # feature vector info dict
@@ -335,12 +301,12 @@ class MutationFeatureVectorFactory(FeatureVectorFactory):
         self.feature_vectors = {
             'mutvec': ('mutation vector',
                 mutation.MissenseMutation.mutation_vector, {}),
-            'mutrisk': ('mutation risk',
-                mutation.MissenseMutation.mutation_risk, {}),
             'mutggsigdiff': ('mutation georgiev signal difference',
                 mutation.MissenseMutation.georgiev_signal_diff, {}),
             'mutggbsigdiff': ('mutation georgiev blosum signal difference',
                 mutation.MissenseMutation.georgiev_blosum_signal_diff, {}),
+            'seqenv9': ('sequence environment amino acid counts',
+                mutation.MissenseMutation.seq_env_aa_count, {'window': 9}),
             'msa': ('msa-based',
                 mutation.MissenseMutation.msa_based, {}),
             'msaggsigdiff': ('msa georgiev signal difference',
@@ -354,69 +320,6 @@ class MutationFeatureVectorFactory(FeatureVectorFactory):
             'tomutvec': ('to mutation vector',
                 mutation.MissenseMutation.mutation_to_vector, {})
         }
-
-        #for letter in sequtil.aa_unambiguous_alph:
-        #    self.feature_vectors['mut%stox' % (letter.lower())] = (
-        #            '%s to X mutation vector' % (letter),
-        #            mutation.MissenseMutation.mutation_to_vector,
-        #            {'fr': letter})
-
-        for window in seqenv_window_range:
-            self.feature_vectors['seqenv%i' % (window)] = (
-                'sequence environment %i' % (window),
-                mutation.MissenseMutation.seq_env_aa_count,
-                {'window': window})
-
-        for (min_dist, max_dist) in atom_count_distances:
-            self.feature_vectors['atmcnti%io%i' % (min_dist, max_dist)] = (
-                'atom count %i - %i angstrom' % (min_dist, max_dist),
-                mutation.MissenseMutation.atom_count,
-                {'min_dist': min_dist, 'max_dist': max_dist})
-
-        # do this differently...
-        for env_window in xrange(3, 102, 2):
-            for sig_window in xrange(3, 22, 2):
-                for edge in numpy.arange(0.0, 1.1, 0.25):
-                    for below_threshold in [False, True]:
-                        for threshold in [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0,
-                                3.5, 4.0]:
-                            self.feature_vectors[
-                                    'ggsew%03dsw%02de%03dt%02d%s' %
-                                    (env_window, sig_window,
-                                    int(edge * 100),
-                                    int(threshold * 10),
-                                    'd' if below_threshold else 'u')] = (
-                                    'name...',
-                                    mutation.MissenseMutation.
-                                    georgiev_signal_auc,
-                                    {'env_window': env_window,
-                                    'sig_window': sig_window,
-                                    'edge': edge,
-                                    'threshold': -1.0 * threshold if
-                                    below_threshold else threshold,
-                                    'below_threshold': below_threshold})
-        # do this differently...
-        for env_window in xrange(3, 102, 2):
-            for sig_window in xrange(3, 22, 2):
-                for edge in numpy.arange(0.0, 1.1, 0.25):
-                    for below_threshold in [False, True]:
-                        for threshold in [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0,
-                                3.5, 4.0]:
-                            self.feature_vectors[
-                                    'ggbsew%03dsw%02de%03dt%02d%s' %
-                                    (env_window, sig_window,
-                                    int(edge * 100),
-                                    int(threshold * 10),
-                                    'd' if below_threshold else 'u')] = (
-                                    'name...',
-                                    mutation.MissenseMutation.
-                                    georgiev_blosum_signal_auc,
-                                    {'env_window': env_window,
-                                    'sig_window': sig_window,
-                                    'edge': edge,
-                                    'threshold': -1.0 * threshold if
-                                    below_threshold else threshold,
-                                    'below_threshold': below_threshold})
 
         # make sure that all ids are in the ids list
         assert(set(self.feature_vector_ids) ==
