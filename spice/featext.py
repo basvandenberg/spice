@@ -76,7 +76,7 @@ class FeatureExtraction(object):
 
         # and use the mutation ids as object ids in the protein feature matrix
         mut_ids = self.protein_data_set.get_mutation_ids()
-        self.fm_missense.set_object_ids(mut_ids)
+        self.fm_missense.object_ids = mut_ids
 
     def calculate_protein_features(self, feat_vector_id):
         assert(self.fm_protein.object_ids)
@@ -258,45 +258,16 @@ class FeatureVectorFactory(object):
 
 class MutationFeatureVectorFactory(FeatureVectorFactory):
 
+    FEATVEC_IDS = [
+        'mutvec', 'mutggsigdiff', 'mutggbsigdiff',
+        'seqenv9',
+        'msa', 'msaggsigdiff',
+        'bbang', 'rasa',
+        'pfam',
+        'tomutvec'
+    ]
+
     def __init__(self):
-
-        # global settings
-        seqenv_window_range = range(1, 61)
-
-        # atom count shell settings
-        atom_count_distances = []
-        max_dist = 60
-        for inner in xrange(1, max_dist):
-            for outer in xrange(inner + 1, max_dist + 1):
-                atom_count_distances.append((inner, outer))
-
-        ######################################################################
-        # feature vector ids
-        ######################################################################
-
-        # mutation vector
-        self.feature_vector_ids = ['mutvec']
-        self.feature_vector_ids.append('mutrisk')
-        # georgiev signal difference
-        self.feature_vector_ids.append('mutggsigdiff')
-        self.feature_vector_ids.append('mutggbsigdiff')
-        # sequence environment aa counts
-        self.feature_vector_ids.append('seqenv9')
-        # msa-related
-        self.feature_vector_ids.append('msa')
-        self.feature_vector_ids.append('msaggsigdiff')
-        # backbone angles
-        self.feature_vector_ids.append('bbang')
-        # relative solv access
-        self.feature_vector_ids.append('rasa')
-        self.feature_vector_ids.append('pfam')
-        # from mutations vectors
-        self.feature_vector_ids.append('tomutvec')
-
-
-        ######################################################################
-        # feature vector info dict
-        ######################################################################
 
         self.feature_vectors = {
             'mutvec': ('mutation vector',
@@ -322,8 +293,7 @@ class MutationFeatureVectorFactory(FeatureVectorFactory):
         }
 
         # make sure that all ids are in the ids list
-        assert(set(self.feature_vector_ids) ==
-               set(self.feature_vectors.keys()))
+        assert(set(self.FEATVEC_IDS) == set(self.feature_vectors.keys()))
 
 
 class ProteinFeatureVectorFactory(FeatureVectorFactory):
@@ -504,24 +474,26 @@ if __name__ == '__main__':
             if not(label_type in label_types):
                 print '\nWrong label type: %s' % (label_type)
                 print 'Must be one of: %s\n' % (', '.join(label_types))
-                sys.exit()
+                sys.exit(1)
             try:
                 if(label_type == 'protein'):
-                    fe.fm_protein.load_labeling(label_name, label_path)
+                    fe.fm_protein.add_labeling_from_file(label_name,
+                                                         label_path)
                 elif(label_type == 'missense'):
-                    fe.fm_missense.load_labeling(label_name, label_path)
+                    fe.fm_missense.add_labeling_from_file(label_name,
+                                                          label_path)
                 else:
                     print '\nWrong label type, error should not occur...\n'
-                    sys.exit()
+                    sys.exit(1)
             except IOError, e:
-                print '\nLabels file: %s\n' % (e)
-                sys.exit()
+                print traceback.format_exc()
+                sys.exit(1)
             except ValueError, e:
-                print '\nLabels error: %s\n' % (e)
-                sys.exit()
+                print traceback.format_exc()
+                sys.exit(1)
             except Exception, e:
-                print '\nError in labels file: %s\n' % (e)
-                sys.exit()
+                print traceback.format_exc()
+                sys.exit(1)
 
         fe.save()
 
@@ -703,17 +675,14 @@ if __name__ == '__main__':
             try:
                 prot_ds.read_data_source('residue_rank', rank_dir, ids_file)
             except IOError as e:
-                print '\nData source io error: residue rank\n'
                 print traceback.format_exc()
-                sys.exit()
+                sys.exit(1)
             except ValueError as e:
-                print '\nData source value error: residue rank\n'
                 print traceback.format_exc()
-                sys.exit()
+                sys.exit(1)
             except Exception as e:
-                print '\nData source exception: residue rank\n'
                 print traceback.format_exc()
-                sys.exit()
+                sys.exit(1)
 
         fe.save()
 
@@ -736,14 +705,14 @@ if __name__ == '__main__':
                 try:
                     fe.load_mutation_data(args.missense_mutations)
                 except IOError as e:
-                    print '\nMutation data io error.\n\n%s' % (str(e))
-                    raise e
+                    print traceback.print_exc()
+                    sys.exit(1)
                 except ValueError as e:
-                    print '\nMutation value error.\n\n%s' % (str(e))
-                    raise e
+                    print traceback.print_exc()
+                    sys.exit(1)
                 except Exception as e:
-                    print '\nMutation exception.\n\n%s' % (str(e))
-                    raise e
+                    print traceback.print_exc()
+                    sys.exit(1)
         fe.save()
 
     # calculate features

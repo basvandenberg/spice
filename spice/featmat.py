@@ -203,9 +203,8 @@ class FeatureMatrix(object):
         if(labeling_name in self.labeling_dict.keys()):
             raise ValueError('A labeling with the same name already exists.')
 
-        if not(sorted(label_dict.keys()) == sorted(self.object_ids)):
-            raise ValueError('Labeling object ids do not correspond to ' +
-                             'object ids in this feature matrix.')
+        if not(set(self.object_ids).issubset(set(label_dict.keys()))):
+            raise ValueError('Not every object has a label in this labeling')
 
         # get labels in the same order as our object ids
         labels = [label_dict[oid] for oid in self.object_ids]

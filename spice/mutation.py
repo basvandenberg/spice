@@ -31,6 +31,38 @@ class MissenseMutation(object):
         # add this mutation to the protein (NOTE: two direction reference)
         self.protein.add_missense_mutation(self)
 
+    '''
+    TODO get rid of the pointer to protein so that a mutations can live on 
+    itself and we can use a parse method to create a mutation from a string
+    out of a mutation file...
+
+    def single_line_str(self):
+        return '%i\t%i\t%s\t%s\t%s\t%.1f\t%e\t%s\t%s' % (self.start_pos,
+                self.end_pos, self.hmm_acc, self.hmm_name, self.type_,
+                self.bit_score, self.e_value, self.clan, self.active_residues)
+
+    @classmethod
+    def parse(self, s):
+
+        tokens = s.split()
+
+        uni_id = int(tokens[0])
+        pos = int(tokens[1])
+        fr = tokens[2]
+        to = tokens[3]
+        label = int(tokens[4])
+        pep = tokens[5]
+        pep_i = tokens[6]
+        codons = tokens[7]
+        fr_codon = tokens[8]
+        to_codons = tokens[9].split(',')
+        pdb_id = tokens[10]
+        pdb_resnum = tokens[11]
+
+
+        return self(...)
+    '''
+
     def tuple_representation(self):
         return (self.protein.pid, self.position, self.aa_from, self.aa_to,
                 self.pdb_id, self.pdb_resnum)
