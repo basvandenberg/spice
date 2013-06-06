@@ -3,12 +3,13 @@ import numpy
 import scipy
 import prody
 
-from spice.util import sequtil
+from util import sequtil
 
 
 class MissenseMutation(object):
 
-    def __init__(self, protein, position, aa_from, aa_to, pdb_id, pdb_resnum):
+    def __init__(self, protein, position, aa_from, aa_to, label, aa_pep,
+                 aa_pep_i, codons, codon_fr, codons_to, pdb_id, pdb_resnum):
 
         # check if the mutation corresponds to the protein sequence
         assert(protein.protein_sequence[position - 1] == aa_from)
@@ -18,6 +19,14 @@ class MissenseMutation(object):
         self.position = position
         self.aa_from = aa_from
         self.aa_to = aa_to
+
+        self.label = label  # int
+        self.aa_pep = aa_pep
+        self.aa_pep_i = aa_pep_i
+        self.codons = codons
+        self.codon_fr = codon_fr
+        self.codons_to = codons_to
+
         self.pdb_id = pdb_id  # None if not available
         if(self.pdb_id):
             self.pdb_chain = pdb_id.split('_')[-1]
@@ -65,7 +74,8 @@ class MissenseMutation(object):
 
     def tuple_representation(self):
         return (self.protein.pid, self.position, self.aa_from, self.aa_to,
-                self.pdb_id, self.pdb_resnum)
+                self.label, self.aa_pep, self.aa_pep_i, self.codons,
+                self.codon_fr, self.codons_to, self.pdb_id, self.pdb_resnum)
 
     # feature calculation functions
 

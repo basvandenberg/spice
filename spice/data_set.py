@@ -2,8 +2,8 @@ import os
 
 from spice.protein import Protein
 from spice.mutation import MissenseMutation
-from spice.util import file_io
-from spice.util import sequtil
+from util import file_io
+from util import sequtil
 
 
 class ProteinDataSet(object):
@@ -88,10 +88,12 @@ class ProteinDataSet(object):
         assert(self.proteins)
         protein_dict = dict(zip(self.get_protein_ids(), self.proteins))
 
-        for (pid, pos, fr, to, pdb_id, pdb_i) in mutation_data:
+        for (pid, pos, fr, to, pep, pep_i, codons, codon_fr, codons_to,
+             pdb_id, pdb_i) in mutation_data:
             if(pid in protein_dict.keys()):
                 protein = protein_dict[pid]
-                MissenseMutation(protein, pos, fr, to, pdb_id, pdb_i)
+                MissenseMutation(protein, pos, fr, to, pep, pep_i, codons,
+                                 codon_fr, codons_to, pdb_id, pdb_i)
 
     def load(self):
         assert(self.root_dir)
