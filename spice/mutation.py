@@ -108,46 +108,6 @@ class MissenseMutation(object):
                     for i in xrange(num_scales)]
             return (ids, names)
 
-    def mutation_to_vector(self, feature_ids=False):
-
-        alph = sequtil.aa_unambiguous_alph
-
-        if not(feature_ids):
-            vector_repr = len(alph) * [0]
-            vector_repr[alph.index(self.aa_to)] = 1
-            return vector_repr
-        else:
-            names = sequtil.aa_unambiguous_name
-            return (alph, names)
-    '''
-    def mutation_to_vector(self, fr='A', feature_ids=False):
-        # NOTE: only for data sets in which all the wild-type aas (from) are
-        # the same! To make sure that we do not end up with zero only corumns
-        # in our feature matrix.
-
-        if(not(feature_ids) and not(fr == self.aa_from)):
-            raise ValueError('This feature is only for from %s mutations' %
-                    (self.aa_from))
-
-        non_zero = sequtil.non_zero_mutation_counts
-        alph = sequtil.aa_unambiguous_alph
-        num_feats = len(non_zero[fr])
-
-        if not(feature_ids):
-            vector_repr = len(alph) * [0]
-            vector_repr[alph.index(self.aa_to)] = 1
-            vector_repr = [item for index, item in enumerate(vector_repr)
-                    if (alph[index] in non_zero[fr])]
-            assert(num_feats == len(vector_repr))
-            return vector_repr
-        else:
-            ids = [a for a in alph if a in non_zero[fr]]
-            names = sequtil.aa_unambiguous_name
-            names = [n for i, n in enumerate(names)
-                    if alph[i] in non_zero[fr]]
-            return (ids, names)
-    '''
-
     def georgiev_blosum_signal_diff(self, feature_ids=False):
         '''
         '''
