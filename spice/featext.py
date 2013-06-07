@@ -263,8 +263,7 @@ class MutationFeatureVectorFactory(FeatureVectorFactory):
         'seqenv9',
         'msa', 'msaggsigdiff',
         'bbang', 'rasa',
-        'pfam',
-        'tomutvec'
+        'pfam'
     ]
 
     def __init__(self):
@@ -288,8 +287,6 @@ class MutationFeatureVectorFactory(FeatureVectorFactory):
                 mutation.MissenseMutation.solv_access, {}),
             'pfam': ('pfam annotation',
                 mutation.MissenseMutation.pfam_annotation, {}),
-            'tomutvec': ('to mutation vector',
-                mutation.MissenseMutation.mutation_to_vector, {})
         }
 
         # make sure that all ids are in the ids list
