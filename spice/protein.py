@@ -72,6 +72,11 @@ class Protein(object):
     def set_pfam_annotations(self, pfam_annotations):
         self.pfam_annotations = pfam_annotations
 
+    def set_backbone_dynamics(self, backbone_dynamics):
+        assert(type(backbone_dynamics) == list)
+        assert(len(backbone_dynamics) == len(self.protein_sequence))
+        self.backbone_dynamics = backbone_dynamics
+
     # feature calculation functions
 
     def amino_acid_composition(self, feature_ids=False):

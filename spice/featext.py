@@ -396,6 +396,9 @@ if __name__ == '__main__':
     # add path to pfam annotation data
     parser.add_argument('--pfam_data')
 
+    # add backbone dynamics data
+    parser.add_argument('--flex_data')
+
     # data sources that have a mapping from their ids to uniprot ids
     parser.add_argument('--orf_sequence_data', nargs=2)
     parser.add_argument('--structure_data', nargs=2)
@@ -562,6 +565,37 @@ if __name__ == '__main__':
 
         fe.save()
 
+    # add backbone dynamics data
+    if(args.flex_data):
+
+        ds_name = 'flex'
+        prot_ds = fe.protein_data_set
+        ds_path = args.flex_data
+
+        try:
+            ds = prot_ds.ds_dict[ds_name]
+        except KeyError:
+            print('\nNo such data source: %s\n' % (ds_name))
+            sys.exit(1)
+
+        if(ds.available()):
+            print('\nData source already available: %s\n' % (ds_name))
+            sys.exit(1)
+        else:
+            try:
+                prot_ds.read_data_source(ds_name, ds_path, None)
+            except IOError as e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except ValueError as e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except Exception as e:
+                print traceback.format_exc()
+                sys.exit(1)
+
+        fe.save()
+
     # add orf sequence data,
     if(args.orf_sequence_data):
 
@@ -590,15 +624,15 @@ if __name__ == '__main__':
             except IOError as e:
                 print '\nData source io error: %s\n\n%s' % (ds_name, e)
                 print traceback.format_exc()
-                sys.exit()
+                sys.exit(1)
             except ValueError as e:
                 print '\nData source value error: %s\n\n%s' % (ds_name, e)
                 print traceback.format_exc()
-                sys.exit()
+                sys.exit(1)
             except Exception as e:
                 print '\nData source exception: %s\n\n%s' % (ds_name, e)
                 print traceback.format_exc()
-                sys.exit()
+                sys.exit(1)
 
         fe.save()
 
