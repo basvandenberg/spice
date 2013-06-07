@@ -1,4 +1,3 @@
-import os
 import numpy
 import scipy
 import prody
@@ -41,7 +40,7 @@ class MissenseMutation(object):
         self.protein.add_missense_mutation(self)
 
     '''
-    TODO get rid of the pointer to protein so that a mutations can live on 
+    TODO get rid of the pointer to protein so that a mutations can live on
     itself and we can use a parse method to create a mutation from a string
     out of a mutation file...
 
@@ -272,10 +271,11 @@ class MissenseMutation(object):
                     feat_vec[0] = rasa
 
                 else:
-                    print
-                    print self.protein.pid
-                    print len(rasa_list)
-                    print len(residues)
+                    #print
+                    #print self.protein.pid
+                    #print len(rasa_list)
+                    #print len(residues)
+                    pass
 
             return feat_vec
 
@@ -338,12 +338,15 @@ class MissenseMutation(object):
             names = ['carbon', 'nitrogen', 'oxygen', 'sulfur']
             return (atoms, names)
 
-    def seq_env_aa_count(self, window=9, feature_ids=False):
+    def seq_env_aa_count(self, window=19, feature_ids=False):
 
         alph = sequtil.aa_unambiguous_alph
 
         if not(feature_ids):
-            subseq = self.seq_env(window)
+            if(window == 19):
+                subseq = self.aa_pep
+            else:
+                subseq = self.seq_env(window)
             return sequtil.aa_count(subseq)
         else:
             names = sequtil.aa_unambiguous_name
@@ -408,6 +411,59 @@ class MissenseMutation(object):
             ids = ['fam', 'dom', 'cla']
             names = ['pfam family', 'pfam domain', 'pfam clan']
             return (ids, names)
+
+    def from_codon_vector(self, feature_ids=False):
+        '''
+        From codon is 1, rest of codons 0.
+        '''
+
+        codons = sequtil.codons_unambiguous
+
+        if not(feature_ids):
+            vector_repr = len(codons) * [0]
+            vector_repr[codons.index(self.codon_fr)] = 1
+            return vector_repr
+
+        else:
+            ids = [c.lower() for c in codons]
+            names = ['%s (%s)' % (c, sequtil.codon_table_unambiguous[c])
+                     for c in codons]
+            return (ids, names)
+
+    def seq_env_codon_count(self, feature_ids=False):
+        '''
+        Counts codons of the stored codon region around the mutation.
+        '''
+
+        codons = sequtil.codons_unambiguous
+
+        if not(feature_ids):
+            return [self.codons.count(c) for c in codons]
+        else:
+            ids = [c.lower() for c in codons]
+            names = ['%s (%s)' % (c, sequtil.codon_table_unambiguous[c])
+                     for c in codons]
+            return (ids, names)
+
+    def residue_flexibility(self, feature_ids=False):
+
+        if not(feature_ids):
+
+            # residue flexibility
+            seq_i = self.position - 1
+            resflex = self.protein.backbone_dynamics[seq_i]
+
+            # average region flexibility
+            stt_i = max(0, seq_i - 9)
+            end_i = min(len(self.protein.protein_sequence), seq_i + 10)
+            avgflex = numpy.mean(self.protein.backbone_dynamics[stt_i: end_i])
+
+            return [resflex, avgflex]
+
+        else:
+            ids = ['resflex', 'avgflex']
+            names = ['Resdue flexibility', 'Average flexibility window 19']
+            return(ids, names)
 
     # feature calculation help functions
 

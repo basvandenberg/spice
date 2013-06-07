@@ -23,6 +23,7 @@ class Protein(object):
         self.msa_coverage = None
 
         self.pfam_annotations = None
+        self.backbone_dynamics = None
 
     def add_missense_mutation(self, mutation):
         self.missense_mutations.append(mutation)

@@ -260,10 +260,10 @@ class MutationFeatureVectorFactory(FeatureVectorFactory):
 
     FEATVEC_IDS = [
         'mutvec', 'mutggsigdiff', 'mutggbsigdiff',
-        'seqenv9',
+        'seqenv19',
         'msa', 'msaggsigdiff',
         'bbang', 'rasa',
-        'pfam'
+        'pfam', 'flex', 'codonvec', 'codonenv19'
     ]
 
     def __init__(self):
@@ -275,8 +275,8 @@ class MutationFeatureVectorFactory(FeatureVectorFactory):
                 mutation.MissenseMutation.georgiev_signal_diff, {}),
             'mutggbsigdiff': ('mutation georgiev blosum signal difference',
                 mutation.MissenseMutation.georgiev_blosum_signal_diff, {}),
-            'seqenv9': ('sequence environment amino acid counts',
-                mutation.MissenseMutation.seq_env_aa_count, {'window': 9}),
+            'seqenv19': ('sequence environment amino acid counts',
+                mutation.MissenseMutation.seq_env_aa_count, {'window': 19}),
             'msa': ('msa-based',
                 mutation.MissenseMutation.msa_based, {}),
             'msaggsigdiff': ('msa georgiev signal difference',
@@ -287,6 +287,12 @@ class MutationFeatureVectorFactory(FeatureVectorFactory):
                 mutation.MissenseMutation.solv_access, {}),
             'pfam': ('pfam annotation',
                 mutation.MissenseMutation.pfam_annotation, {}),
+            'flex': ('backbone_dynamics',
+                mutation.MissenseMutation.residue_flexibility, {}),
+            'codonvec': ('from codon vector',
+                mutation.MissenseMutation.from_codon_vector, {}),
+            'codonenv19': ('sequence environment codon counts',
+                mutation.MissenseMutation.seq_env_codon_count, {})
         }
 
         # make sure that all ids are in the ids list
@@ -760,7 +766,7 @@ if __name__ == '__main__':
             except Exception as e:
                 print('\nFeature calculation error: %s\n' % (e))
                 print traceback.print_exc()
-                sys.exit()
+                sys.exit(1)
 
         fe.save()
 
