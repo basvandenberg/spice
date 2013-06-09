@@ -642,12 +642,11 @@ def sa_aa_composition(protein, sa):
     '''
     return state_subseq_composition(protein, sa, aa_unambiguous_alph, sa_alph)
 
-'''
+
 def aa_cluster_count(protein):
     counts = dict(zip(aa_unambiguous_alph, aa_count(protein)))
     return numpy.array([sum([comp[l] for l in aa_subset_dict[subset]])
             for subset in aa_subsets])
-'''
 
 
 def aa_cluster_composition(protein):
