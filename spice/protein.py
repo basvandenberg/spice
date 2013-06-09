@@ -137,15 +137,13 @@ class Protein(object):
         if not(feature_ids):
             return sequtil.aa_cluster_count(self.five_prime_seq(seq_length))
         else:
-            return (list(sequtil.aa_unambiguous_alph),
-                    sequtil.aa_subsets)
+            return (sequtil.aa_subsets, sequtil.aa_subsets)
 
     def three_prime_cluster_count(self, seq_length=75, feature_ids=False):
         if not(feature_ids):
             return sequtil.aa_cluster_count(self.three_prime_seq(seq_length))
         else:
-            return (list(sequtil.aa_unambiguous_alph),
-                    sequtil.aa_subsets)
+            return (sequtil.aa_subsets, sequtil.aa_subsets)
 
     def codon_composition(self, feature_ids=False):
         if not(feature_ids):
