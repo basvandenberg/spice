@@ -56,7 +56,7 @@ class Protein(object):
             # I currently allow for at most 5 residue differences...
             assert(len(r) == len(self.protein_sequence))
         else:
-            # TODO check this!
+            # TODO default values!!! check this!
             cov = [0.0] * len(self.protein_sequence)
             v1 = [[]] * len(self.protein_sequence)  # not sure about this...
             rank = [0.0] * len(self.protein_sequence)

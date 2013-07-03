@@ -908,22 +908,22 @@ if __name__ == '__main__':
                                 data, target, args.standardize, args.timeout,
                                 par)
 
-                    # finally check parameter range
-                    if(len(param[par]) == 0):
-                        print('Time out occured.\n')
-                        sys.exit()
-                    elif(len(param[par]) == 1):
-                        tmp_param = {par: param[par][0]}
-                        cl.set_params(**tmp_param)
-                        del param[par]
-                    else:
-                        pass
+                        # check parameter range
+                        if(len(param[par]) == 0):
+                            print('Time out occured.\n')
+                            sys.exit()
+                        elif(len(param[par]) == 1):
+                            tmp_param = {par: param[par][0]}
+                            cl.set_params(**tmp_param)
+                            del param[par]
+                        else:
+                            pass
 
             if(len(param) == 0):
                 param = None
 
             print cl.get_params()
-            if(param):
+            if(param and args.timeout):
                 print param
                 # estimate time
                 time_estimate = run_time * args.n_fold_cv
