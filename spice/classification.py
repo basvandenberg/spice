@@ -54,7 +54,8 @@ metric_rand_max_score = {
 
 # default classifier parameters
 svm_default_param = {'class_weight': 'auto'}
-libsvm_default_param = {'class_weight': 'auto', 'probability': True}
+libsvm_default_param = {'class_weight': 'auto', 'probability': True,
+                        'cache_size': 500.0}
 rn_default_param = {'outlier_label': 0}
 kn_default_param = {}
 
