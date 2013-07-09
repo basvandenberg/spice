@@ -366,6 +366,23 @@ class MissenseMutation(object):
                     'to residue in msa variability']
             return (ids, names)
 
+    def msa(self, feature_ids=False):
+        if not(feature_ids):
+            fwt = self.protein.msa_fraction(self.position, self.aa_from, False)
+            fmut = self.protein.msa_fraction(self.position, self.aa_to, False)
+            ent = self.protein.msa_entropy21(self.position, False)
+            fwtg = self.protein.msa_fraction(self.position, self.aa_from, True)
+            fmutg = self.protein.msa_fraction(self.position, self.aa_to, True)
+            entg = self.protein.msa_entropy21(self.position, True)
+            return [fwt, fmut, ent, fwtg, fmutg, entg]
+        else:
+            ids = ['fwt', 'fmut', 'ent', 'fwtg', 'fmutg', 'entg']
+            names = ['msa wt frequency', 'msa mutant frequency', 'msa entropy', 
+                     'msa wt frequency with gaps', 
+                     'msa mutant frequency with gaps',
+                     'msa entropy with gaps']
+            return (ids, names)
+
     def msa_scale_diff(self, feature_ids=False):
 
         num_scales = 19
