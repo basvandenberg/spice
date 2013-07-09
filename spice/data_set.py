@@ -307,8 +307,9 @@ class DataSourceFactory(object):
     def __init__(self):
 
         self.data_source_ids = ['orf_seq', 'prot_seq', 'ss_seq', 'sa_seq',
-                                'prot_struct', 'residue_rasa', 'residue_rank',
-                                'pfam', 'flex']
+                                #'prot_struct', 'residue_rasa', 'residue_rank',
+                                'prot_struct', 'residue_rasa',
+                                'msa', 'pfam', 'flex']
 
         self.data_sources = {
             'prot_seq': ('Protein sequence',
@@ -354,13 +355,20 @@ class DataSourceFactory(object):
                                 for item in x])
                     ], os.path.join('structure_data', 'rasa'),
                     'uni_rasa.map'),
-            'residue_rank': ('protein residue ranking',
-                    file_io.read_residue_rank_dir,
-                    file_io.write_residue_rank_dir,
-                    Protein.set_msa_data,
+            #'residue_rank': ('protein residue ranking',
+            #        file_io.read_residue_rank_dir,
+            #        file_io.write_residue_rank_dir,
+            #        Protein.set_msa_data,
+            #        [
+            #        ], os.path.join('msa_data', 'residue_rank'),
+            #        'uni_rank.map'),
+            'msa': ('Multiple sequence alignment with homologous proteins',
+                    file_io.read_msa_dir,
+                    file_io.write_msa_dir,
+                    Protein.set_msa,
                     [
-                    ], os.path.join('msa_data', 'residue_rank'),
-                    'uni_rank.map'),
+                    ], os.path.join('msa_data', 'msa'),
+                    'uni_msa.map'),
             'pfam': ('protein family data',
                     file_io.read_pfam, file_io.write_pfam,
                     Protein.set_pfam_annotations,
