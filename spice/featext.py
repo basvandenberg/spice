@@ -277,8 +277,10 @@ class MutationFeatureVectorFactory(FeatureVectorFactory):
                 mutation.MissenseMutation.georgiev_blosum_signal_diff, {}),
             'seqenv19': ('sequence environment amino acid counts',
                 mutation.MissenseMutation.seq_env_aa_count, {'window': 19}),
+            #'msa': ('msa-based',
+            #    mutation.MissenseMutation.msa_based, {}),
             'msa': ('msa-based',
-                mutation.MissenseMutation.msa_based, {}),
+                mutation.MissenseMutation.msa, {}),
             'msaggsigdiff': ('msa georgiev signal difference',
                 mutation.MissenseMutation.msa_scale_diff, {}),
             'bbang': ('backbone angles',
@@ -406,7 +408,8 @@ if __name__ == '__main__':
     parser.add_argument('--orf_sequence_data', nargs=2)
     parser.add_argument('--structure_data', nargs=2)
     parser.add_argument('--rasa_data', nargs=2)
-    parser.add_argument('--residue_rank_data', nargs=2)
+    #parser.add_argument('--residue_rank_data', nargs=2)
+    parser.add_argument('--msa_data', nargs=2)
 
     # features to be calculated
     parser.add_argument('--missense_features', nargs='+', default=None)
@@ -698,6 +701,7 @@ if __name__ == '__main__':
         fe.save()
 
     # add residue rank data
+    '''
     if(args.residue_rank_data):
 
         (ids_file, rank_dir) = args.residue_rank_data
@@ -711,6 +715,33 @@ if __name__ == '__main__':
         else:
             try:
                 prot_ds.read_data_source('residue_rank', rank_dir, ids_file)
+            except IOError as e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except ValueError as e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except Exception as e:
+                print traceback.format_exc()
+                sys.exit(1)
+
+        fe.save()
+    '''
+
+    # add MSA data
+    if(args.msa_data):
+
+        (ids_file, msa_dir) = args.msa_data
+
+        prot_ds = fe.protein_data_set
+        ds = prot_ds.ds_dict['msa']
+
+        if(ds.available()):
+            print('\nProtein msa data already available.\n')
+            sys.exit()
+        else:
+            try:
+                prot_ds.read_data_source('msa', msa_dir, ids_file)
             except IOError as e:
                 print traceback.format_exc()
                 sys.exit(1)
