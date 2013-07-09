@@ -1,3 +1,4 @@
+import math
 from util import sequtil
 
 
@@ -17,10 +18,14 @@ class Protein(object):
 
         self.rasa = None
 
+        # TODO depricate
         # rank score per residue
         self.msa_residue_rank = None
         self.msa_variability = None
         self.msa_coverage = None
+
+        # updated own hhblits MSA, list of aligned sequences, first is this seq
+        self.msa = None
 
         self.pfam_annotations = None
         self.backbone_dynamics = None
@@ -45,6 +50,7 @@ class Protein(object):
     def set_sa_sequence(self, seq):
         serf.sa_sequence = seq
 
+    # TODO depricate
     def set_msa_data(self, msa_data):
 
         # 'unzip' lists
@@ -65,6 +71,27 @@ class Protein(object):
         self.msa_coverage = cov
         self.msa_variability = v1
         self.msa_residue_rank = rank
+
+    def set_msa(self, msa):
+        '''
+        msa is list with (equal length) aligned sequences. The first sequence
+        is the sequence of the protein (without gaps).
+        '''
+
+        if(msa is None):
+            # if not available, use own sequence as only sequence
+            msa = [self.protein_sequence]
+
+        else:
+            # checks
+            if not(msa[0] == self.protein_sequence):
+                raise ValueError('First sequence in MSA does not correspond to ' +
+                                 'this protein sequence')
+            if not(all([len(msa[0]) == len(m) for m in msa])):
+                raise ValueError('Not all sequences in MSA have the same length')
+
+        # store data
+        self.msa = msa
 
     def set_rasa(self, rasa):
         assert(rasa is None or type(rasa) == list)
@@ -261,6 +288,73 @@ class Protein(object):
                         return True
         return False
 
+    def msa_column(self, position, with_gaps=True):
+        '''
+        Returns the aligned amino acids of the give positions, without the 
+        gaps (-).
+        '''
+        index = position - 1
+
+        if(with_gaps):
+            return [s[index] for s in self.msa]
+        else:
+            return [s[index] for s in self.msa if not s[index] == '-']
+
+    def msa_fraction(self, position, letter, with_gaps):
+        '''
+        TODO: what to do if no aligned seqs, or only few...
+        !!! with or without gaps...
+        '''
+        # obtain all letters on this position in the MSA
+        col = self.msa_column(position, with_gaps=with_gaps)
+
+        if(len(col) <= 1):
+            assert(len(col) == 1)
+            return 0.5
+        else:
+            # return the fraction of letter
+            return float(col.count(letter)) / len(col)
+
+    def msa_conservation_index(self, position):
+        '''
+        SNPs&GO conservation index, I don't understand the formula...
+        '''
+        pass
+
+    def msa_entropy21(self, position, with_gaps):
+
+        # amino acids + gap
+        aas = sequtil.aa_unambiguous_alph + '-'
+
+        # obtain MSA column letters
+        col = self.msa_column(position, with_gaps=with_gaps)
+
+        # is not always the case...
+        #assert(all([c in aas for c in col]))
+
+        if(len(col) <= 1):
+
+            assert(len(col) == 1)
+
+            # default entropy in case of no aligned sequences
+            entropy = 0.5
+
+            # TODO num seqs < some threshold? Do some other default thing?
+        else:
+
+            n = len(col)
+            k = len(aas)  # should be 21, 20 amino acids + 1 gap
+
+            # fraction per letter
+            na_list = [col.count(l) for l in set(col)]
+            pa_list = [float(na) / n for na in na_list]
+            na_log_sum = sum([pa * math.log(pa, 2) for pa in pa_list])
+
+            # calculate entropy and return that
+            entropy = (-1.0 * na_log_sum) / math.log(min(n, k), 2)
+
+        return entropy
+
     # check attribute availability functions (simple getters)
 
     def get_protein_sequence(self):
@@ -274,6 +368,9 @@ class Protein(object):
 
     def get_sa_sequence(self):
         return self.sa_sequence
+
+    def get_msa(self):
+        return msa
 
     def get_structure(self):
         return self.protein_structure
