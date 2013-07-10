@@ -40,6 +40,8 @@ class MissenseMutation(object):
         self.protein.add_missense_mutation(self)
 
     '''
+    TODO use proper getter setter methods...
+
     TODO get rid of the pointer to protein so that a mutations can live on
     itself and we can use a parse method to create a mutation from a string
     out of a mutation file...
@@ -104,7 +106,7 @@ class MissenseMutation(object):
         else:
             ids = ['%i' % (i) for i in xrange(num_scales)]
             names = ['Georgiev %i signal difference' % (i)
-                    for i in xrange(num_scales)]
+                     for i in xrange(num_scales)]
             return (ids, names)
 
     def georgiev_blosum_signal_diff(self, feature_ids=False):
@@ -121,11 +123,12 @@ class MissenseMutation(object):
         else:
             ids = ['%i' % (i) for i in xrange(num_scales)]
             names = ['Georgiev Blosum62 %i signal difference' % (i)
-                    for i in xrange(num_scales)]
+                     for i in xrange(num_scales)]
             return (ids, names)
 
     def georgiev_signal_auc(self, env_window=21, sig_window=9, edge=1.0,
-            threshold=1.5, below_threshold=False, feature_ids=False):
+                            threshold=1.5, below_threshold=False,
+                            feature_ids=False):
 
         num_scales = 19
 
@@ -134,20 +137,22 @@ class MissenseMutation(object):
 
             for index in xrange(num_scales):
                 scale = sequtil.georgiev_scales[index]
-                auc = self.environment_signal_peak_area(env_window, scale,
-                        sig_window, edge, threshold, below_threshold)
+                auc = self.environment_signal_peak_area(
+                    env_window, scale, sig_window, edge, threshold,
+                    below_threshold)
                 # anscombe transform (~poissos --> ~normal)
                 feat_vec[index] = 2 * numpy.sqrt(auc + (3.0 / 8.0))
             return feat_vec
         else:
             ids = ['%i' % (i) for i in xrange(num_scales)]
             names = ['Georgiev %i signal ew%i sw%i e%.2f th%.2f' %
-                    (i, env_window, sig_window, edge, threshold)
-                    for i in xrange(num_scales)]
+                     (i, env_window, sig_window, edge, threshold)
+                     for i in xrange(num_scales)]
             return (ids, names)
 
     def georgiev_blosum_signal_auc(self, env_window=21, sig_window=9, edge=1.0,
-            threshold=1.5, below_threshold=False, feature_ids=False):
+                                   threshold=1.5, below_threshold=False,
+                                   feature_ids=False):
 
         num_scales = 10
 
@@ -156,16 +161,17 @@ class MissenseMutation(object):
 
             for index in xrange(num_scales):
                 scale = sequtil.georgiev_blosum_scales[index]
-                auc = self.environment_signal_peak_area(env_window, scale,
-                        sig_window, edge, threshold, below_threshold)
+                auc = self.environment_signal_peak_area(
+                    env_window, scale, sig_window, edge, threshold,
+                    below_threshold)
                 # anscombe transform (~poissos --> ~normal)
                 feat_vec[index] = 2 * numpy.sqrt(auc + (3.0 / 8.0))
             return feat_vec
         else:
             ids = ['%i' % (i) for i in xrange(num_scales)]
             names = ['Georgiev blosum %i signal ew%i sw%i e%.2f th%.2f' %
-                    (i, env_window, sig_window, edge, threshold)
-                    for i in xrange(num_scales)]
+                     (i, env_window, sig_window, edge, threshold)
+                     for i in xrange(num_scales)]
             return (ids, names)
 
     def backbone_angles(self, feature_ids=False):
@@ -189,7 +195,7 @@ class MissenseMutation(object):
                 try_index = 0
                 while(r is None):
                     r = hv.getResidue(self.pdb_chain, self.pdb_resnum,
-                            icode=try_letters[try_index])
+                                      icode=try_letters[try_index])
                     try_index += 1
 
                 # measure angles, value error is raised if neighbor residue
@@ -261,7 +267,7 @@ class MissenseMutation(object):
                     try_index = 0
                     while(r is None):
                         r = hv.getResidue(self.pdb_chain, self.pdb_resnum,
-                                icode=try_letters[try_index])
+                                          icode=try_letters[try_index])
                         try_index += 1
 
                     # get the pdb index of the mutated residue
@@ -307,7 +313,7 @@ class MissenseMutation(object):
 
                 # select atoms within min_dist
                 sel_min = p.select('exwithini of resnum %i' %
-                        (min_dist, self.pdb_resnum))
+                                   (min_dist, self.pdb_resnum))
 
                 # count atoms
                 if(sel_min):
@@ -320,7 +326,7 @@ class MissenseMutation(object):
 
                 # select atoms within max_dist
                 sel_max = p.select('exwithini of resnum %i' %
-                        (max_dist, self.pdb_resnum))
+                                   (max_dist, self.pdb_resnum))
 
                 if(sel_max):
                     for item in sel_max.getElements():
@@ -363,7 +369,7 @@ class MissenseMutation(object):
         else:
             ids = ['cov', 'var', 'ran', 'toinvar']
             names = ['msa coverage', 'msa variability', 'msa rank',
-                    'to residue in msa variability']
+                     'to residue in msa variability']
             return (ids, names)
 
     def msa(self, feature_ids=False):
@@ -377,8 +383,8 @@ class MissenseMutation(object):
             return [fwt, fmut, ent, fwtg, fmutg, entg]
         else:
             ids = ['fwt', 'fmut', 'ent', 'fwtg', 'fmutg', 'entg']
-            names = ['msa wt frequency', 'msa mutant frequency', 'msa entropy', 
-                     'msa wt frequency with gaps', 
+            names = ['msa wt frequency', 'msa mutant frequency', 'msa entropy',
+                     'msa wt frequency with gaps',
                      'msa mutant frequency with gaps',
                      'msa entropy with gaps']
             return (ids, names)
@@ -397,7 +403,7 @@ class MissenseMutation(object):
         else:
             ids = ['%i' % (i) for i in xrange(num_scales)]
             names = ['Georgiev %i signal dist. to msa variability' % (i)
-                    for i in xrange(num_scales)]
+                     for i in xrange(num_scales)]
             return (ids, names)
 
     def pfam_annotation(self, feature_ids=False):
@@ -546,16 +552,9 @@ class MissenseMutation(object):
         acid to any of the amino acids on the same position in the multiple
         sequence alignment (i.e. the msa variability of this position).
         '''
-        aa_alph = set(sequtil.aa_unambiguous_alph)
-        variability = set(self.protein.msa_variability[self.position - 1])
-        var = sorted(aa_alph & variability)
-        if(len(var) > 0):
-            distances = [(scale[self.aa_to] - scale[v]) for v in var]
-            return min(distances)
-        else:
-            # return default distance if no msa data is available
-            # TODO check this
-            return 0.0
+        var = self.protein.msa_variability(self.position)
+        distances = [(scale[self.aa_to] - scale[v]) for v in var]
+        return min(distances)
 
     def environment_signal(self, env_window, scale, sig_window, edge):
 
@@ -570,7 +569,7 @@ class MissenseMutation(object):
         return sequtil.seq_signal(subseq, scale, sig_window, edge)
 
     def environment_signal_peak_area(self, env_window, scale, sig_window,
-            edge, threshold, below_threshold=False):
+                                     edge, threshold, below_threshold=False):
 
         # obtain the signal
         signal = self.environment_signal(env_window, scale, sig_window, edge)
