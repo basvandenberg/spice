@@ -21,7 +21,7 @@ class Protein(object):
         # TODO depricate
         # rank score per residue
         self.msa_residue_rank = None
-        self.msa_variability = None
+        #self.msa_variability = None
         self.msa_coverage = None
 
         # updated own hhblits MSA, list of aligned sequences, first is this seq
@@ -48,7 +48,7 @@ class Protein(object):
         self.ss_sequence = seq
 
     def set_sa_sequence(self, seq):
-        serf.sa_sequence = seq
+        self.sa_sequence = seq
 
     # TODO depricate
     def set_msa_data(self, msa_data):
@@ -85,10 +85,11 @@ class Protein(object):
         else:
             # checks
             if not(msa[0] == self.protein_sequence):
-                raise ValueError('First sequence in MSA does not correspond to ' +
-                                 'this protein sequence')
+                raise ValueError('First sequence in MSA does not correspond ' +
+                                 'to this protein sequence')
             if not(all([len(msa[0]) == len(m) for m in msa])):
-                raise ValueError('Not all sequences in MSA have the same length')
+                raise ValueError('Not all sequences in MSA have the same ' +
+                                 'length')
 
         # store data
         self.msa = msa
@@ -125,27 +126,27 @@ class Protein(object):
             return sequtil.sa_composition(self.sa_sequence)
         else:
             return (list(sequtil.sa_alph), sequtil.sa_name)
- 
+
     def ss_aa_composition(self, feature_ids=False):
         if not(feature_ids):
             return sequtil.ss_aa_composition(self.protein_sequence,
                                              self.ss_sequence)
         else:
             ids = ['%s%s' % (s, a) for s in sequtil.ss_alph
-                                   for a in sequtil.aa_unambiguous_alph]
+                   for a in sequtil.aa_unambiguous_alph]
             names = ['%s-%s' % (s, a) for s in sequtil.ss_name
-                                      for a in sequtil.aa_unambiguous_name]
+                     for a in sequtil.aa_unambiguous_name]
             return (ids, names)
-       
+
     def sa_aa_composition(self, feature_ids=False):
         if not(feature_ids):
             return sequtil.sa_aa_composition(self.protein_sequence,
                                              self.sa_sequence)
         else:
             ids = ['%s%s' % (s, a) for s in sequtil.sa_alph
-                                   for a in sequtil.aa_unambiguous_alph]
+                   for a in sequtil.aa_unambiguous_alph]
             names = ['%s-%s' % (s, a) for s in sequtil.sa_name
-                                      for a in sequtil.aa_unambiguous_name]
+                     for a in sequtil.aa_unambiguous_name]
             return (ids, names)
 
     def five_prime_amino_acid_count(self, seq_length=75, feature_ids=False):
@@ -186,7 +187,7 @@ class Protein(object):
         if not(feature_ids):
             return sequtil.codon_composition(self.orf_sequence)
         else:
-            names = ['%s (%s)' % (c, sequtil.translate(c)) 
+            names = ['%s (%s)' % (c, sequtil.translate(c))
                      for c in sequtil.codons_unambiguous]
             return (sequtil.codons_unambiguous, names)
 
@@ -194,7 +195,7 @@ class Protein(object):
         if not(feature_ids):
             return sequtil.codon_usage(self.orf_sequence)
         else:
-            names = ['%s (%s)' % (c, sequtil.translate(c)) 
+            names = ['%s (%s)' % (c, sequtil.translate(c))
                      for c in sequtil.codons_unambiguous]
             return (sequtil.codons_unambiguous, names)
 
@@ -204,24 +205,24 @@ class Protein(object):
 
             scales = sequtil.georgiev_scales
             result = []
-            
+
             for scale in scales:
                 result.append(sequtil.avg_seq_signal(
                               self.protein_sequence, scale, window, edge))
 
             return result
         else:
-            return (['%02d' % (i) for i in range(19)], 
-                    ['Georgiev %i' % (i) for i in  range(19)])
+            return (['%02d' % (i) for i in range(19)],
+                    ['Georgiev %i' % (i) for i in range(19)])
 
     def signal_peaks_area(self, window=9, edge=0, threshold=1.0,
                           feature_ids=False):
-        
+
         if not(feature_ids):
 
             scales = sequtil.georgiev_scales
             result = []
-            
+
             for scale in scales:
                 top, bot = sequtil.auc_seq_signal(self.protein_sequence, scale,
                                                   window, edge, threshold)
@@ -230,9 +231,9 @@ class Protein(object):
 
             return result
         else:
-            return (['%02d%s' % (i, s) for s in ['t', 'b'] for i in range(19)], 
+            return (['%02d%s' % (i, s) for s in ['t', 'b'] for i in range(19)],
                     ['Georgiev %i %s' % (i, s) for s in ['top', 'bottom']
-                    for i in  range(19)])
+                    for i in range(19)])
 
     def length(self, feature_ids=False):
         if not(feature_ids):
@@ -290,7 +291,7 @@ class Protein(object):
 
     def msa_column(self, position, with_gaps=True):
         '''
-        Returns the aligned amino acids of the give positions, without the 
+        Returns the aligned amino acids of the give positions, without the
         gaps (-).
         '''
         index = position - 1
@@ -299,6 +300,20 @@ class Protein(object):
             return [s[index] for s in self.msa]
         else:
             return [s[index] for s in self.msa if not s[index] == '-']
+
+    def msa_variability(self, position, with_gaps=True):
+        '''
+        Returns the set of (unambiguous) amino acid letters found on the given
+        position in the multiple sequence alignment. All other letters (exept
+        the gap character '-') are disregarded.
+
+        with_gaps: If set to True, a gap is also part of the column variability
+        '''
+
+        # amino acids + gap
+        aas = sequtil.aa_unambiguous_alph + '-'
+        column_letters_set = set(self.msa_column(position, with_gaps=True))
+        return [l for l in column_letters_set if l in aas]
 
     def msa_fraction(self, position, letter, with_gaps):
         '''
@@ -370,7 +385,7 @@ class Protein(object):
         return self.sa_sequence
 
     def get_msa(self):
-        return msa
+        return self.msa
 
     def get_structure(self):
         return self.protein_structure
@@ -389,7 +404,7 @@ class Pfam(object):
     '''
 
     def __init__(self, start_pos, end_pos, hmm_acc, hmm_name, type_,
-            bit_score, e_value, clan, active_residues):
+                 bit_score, e_value, clan, active_residues):
         self.start_pos = start_pos
         self.end_pos = end_pos
         self.hmm_acc = hmm_acc
@@ -401,9 +416,10 @@ class Pfam(object):
         self.active_residues = active_residues
 
     def single_line_str(self):
-        return '%i\t%i\t%s\t%s\t%s\t%.1f\t%e\t%s\t%s' % (self.start_pos,
-                self.end_pos, self.hmm_acc, self.hmm_name, self.type_,
-                self.bit_score, self.e_value, self.clan, self.active_residues)
+        return '%i\t%i\t%s\t%s\t%s\t%.1f\t%e\t%s\t%s' % (
+            self.start_pos, self.end_pos, self.hmm_acc, self.hmm_name,
+            self.type_, self.bit_score, self.e_value, self.clan,
+            self.active_residues)
 
     @classmethod
     def parse(self, s):
@@ -419,4 +435,4 @@ class Pfam(object):
         active_residues = eval(' '.join(tokens[8:]))
 
         return self(start_pos, end_pos, hmm_acc, hmm_name, type_, bit_score,
-                e_value, clan, active_residues)
+                    e_value, clan, active_residues)
