@@ -969,11 +969,18 @@ if __name__ == '__main__':
                                 pass
                         '''
 
-            # set parameter dict to None if there are no parameters for this cl
-            if(len(param) == 0):
-                param = None
-            else:
-                cl.set_params(**param)
+                # set parameter
+                if(len(param[par]) == 0):
+                    print 'No value for parameter: %s' % (par)
+                    sys.exit(1)
+                elif(len(param[par]) == 1):
+                    # set parameter, no grid search required
+                    tmp_param = {par: param[par]}
+                    cl.set_params(**tmp_param)
+                    del param[par]
+                else:
+                    # otherwise keep in param dict, used to run grid search
+                    pass
 
             ''' remove time estimate for now
             print cl.get_params()
@@ -1036,7 +1043,7 @@ if __name__ == '__main__':
                     (cv_scores, cv_params, cv_confusion, cv_all_scores,
                         cv_roc_curves, cv_feat_is, predictions) =\
                         ffs(data, target, cl, args.n_fold_cv, scoring,
-                            param, cv=cv, log_f=gs_log_f, cpu=args.cpu,
+                            param=param, cv=cv, log_f=gs_log_f, cpu=args.cpu,
                             standardize=args.standardize)
 
                 # run CV experiment with backward feature selection
@@ -1045,7 +1052,7 @@ if __name__ == '__main__':
                     (cv_scores, cv_params, cv_confusion, cv_all_scores,
                         cv_roc_curves, cv_feat_is, predictions) =\
                         bfs(data, target, cl, args.n_fold_cv, scoring,
-                            param, cv=cv, log_f=gs_log_f, cpu=args.cpu,
+                            param=param, cv=cv, log_f=gs_log_f, cpu=args.cpu,
                             standardize=args.standardize)
 
                 else:
