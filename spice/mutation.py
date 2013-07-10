@@ -552,7 +552,7 @@ class MissenseMutation(object):
         acid to any of the amino acids on the same position in the multiple
         sequence alignment (i.e. the msa variability of this position).
         '''
-        var = self.protein.msa_variability(self.position)
+        var = self.protein.msa_variability(self.position, with_gaps=False)
         distances = [(scale[self.aa_to] - scale[v]) for v in var]
         return min(distances)
 

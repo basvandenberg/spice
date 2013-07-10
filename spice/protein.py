@@ -301,7 +301,7 @@ class Protein(object):
         else:
             return [s[index] for s in self.msa if not s[index] == '-']
 
-    def msa_variability(self, position, with_gaps=True):
+    def msa_variability(self, position, with_gaps=False):
         '''
         Returns the set of (unambiguous) amino acid letters found on the given
         position in the multiple sequence alignment. All other letters (exept
@@ -312,7 +312,7 @@ class Protein(object):
 
         # amino acids + gap
         aas = sequtil.aa_unambiguous_alph + '-'
-        column_letters_set = set(self.msa_column(position, with_gaps=True))
+        column_letters_set = set(self.msa_column(position, with_gaps))
         return [l for l in column_letters_set if l in aas]
 
     def msa_fraction(self, position, letter, with_gaps):
