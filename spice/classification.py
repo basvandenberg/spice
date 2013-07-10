@@ -969,18 +969,18 @@ if __name__ == '__main__':
                                 pass
                         '''
 
-                # set parameter
-                if(len(param[par]) == 0):
-                    print 'No value for parameter: %s' % (par)
-                    sys.exit(1)
-                elif(len(param[par]) == 1):
-                    # set parameter, no grid search required
-                    tmp_param = {par: param[par]}
-                    cl.set_params(**tmp_param)
-                    del param[par]
-                else:
-                    # otherwise keep in param dict, used to run grid search
-                    pass
+                    # set parameter
+                    if(len(param[par]) == 0):  # only in case of timeout???
+                        print 'No value for parameter: %s' % (par)
+                        sys.exit(1)
+                    elif(len(param[par]) == 1):
+                        # set parameter, no grid search required
+                        tmp_param = {par: param[par]}
+                        cl.set_params(**tmp_param)
+                        del param[par]
+                    else:
+                        # otherwise keep in param dict, used to run grid search
+                        pass
 
             ''' remove time estimate for now
             print cl.get_params()
