@@ -374,19 +374,13 @@ class MissenseMutation(object):
 
     def msa(self, feature_ids=False):
         if not(feature_ids):
-            fwt = self.protein.msa_fraction(self.position, self.aa_from, False)
-            fmut = self.protein.msa_fraction(self.position, self.aa_to, False)
-            ent = self.protein.msa_entropy21(self.position, False)
             fwtg = self.protein.msa_fraction(self.position, self.aa_from, True)
-            fmutg = self.protein.msa_fraction(self.position, self.aa_to, True)
-            entg = self.protein.msa_entropy21(self.position, True)
-            return [fwt, fmut, ent, fwtg, fmutg, entg]
+            fmut = self.protein.msa_fraction(self.position, self.aa_to, False)
+            #ent = self.protein.msa_entropy21(self.position, False)
+            return [fwtg, fmut]
         else:
-            ids = ['fwt', 'fmut', 'ent', 'fwtg', 'fmutg', 'entg']
-            names = ['msa wt frequency', 'msa mutant frequency', 'msa entropy',
-                     'msa wt frequency with gaps',
-                     'msa mutant frequency with gaps',
-                     'msa entropy with gaps']
+            ids = ['fwtg', 'fmut']
+            names = ['msa wt frequency with gaps', 'msa mutant frequency']
             return (ids, names)
 
     def msa_scale_diff(self, feature_ids=False):
@@ -415,6 +409,7 @@ class MissenseMutation(object):
             #pf_rep = self.pfam_repeat()
             pf_cla = self.pfam_clan()
             #pf_act = self.pfam_active_residue()
+            pf_cla_i = self.pfam_clan_index()
 
             num_features = 3
             feat_vec = numpy.zeros(num_features)
@@ -424,6 +419,7 @@ class MissenseMutation(object):
             #feat_vec[2] = 0 if pf_rep is None else 1
             feat_vec[2] = 0 if pf_cla is None else 1
             #feat_vec[4] = 1 if pf_act else 0
+            feat_vec[3] = -1 if pf_cla_i in None else pf_cla_i
 
             return feat_vec
 
@@ -431,8 +427,9 @@ class MissenseMutation(object):
             #ids = ['fam', 'dom', 'rep', 'cla', 'act']
             #names = ['pfam family', 'pfam domain', 'pfam repeat', 'pfam clan',
             #        'pfam active residue']
-            ids = ['fam', 'dom', 'cla']
-            names = ['pfam family', 'pfam domain', 'pfam clan']
+            ids = ['fam', 'dom', 'cla', 'cli']
+            names = ['pfam family', 'pfam domain', 'pfam clan',
+                     'pfam clan index']
             return (ids, names)
 
     def from_codon_vector(self, feature_ids=False):
@@ -477,15 +474,16 @@ class MissenseMutation(object):
             resflex = self.protein.backbone_dynamics[seq_i]
 
             # average region flexibility
-            stt_i = max(0, seq_i - 9)
-            end_i = min(len(self.protein.protein_sequence), seq_i + 10)
-            avgflex = numpy.mean(self.protein.backbone_dynamics[stt_i: end_i])
+            #stt_i = max(0, seq_i - 9)
+            #end_i = min(len(self.protein.protein_sequence), seq_i + 10)
+            #avgflex = numpy.mean(self.protein.backbone_dynamics[stt_i: end_i])
 
-            return [resflex, avgflex]
+            #return [resflex, avgflex]
+            return [resflex]
 
         else:
-            ids = ['resflex', 'avgflex']
-            names = ['Resdue flexibility', 'Average flexibility window 19']
+            ids = ['resflex']
+            names = ['Resdue flexibility']
             return(ids, names)
 
     # feature calculation help functions
@@ -600,6 +598,9 @@ class MissenseMutation(object):
 
     def pfam_clan(self):
         return self.protein.pfam_clan(self.position)
+
+    def pfam_clan_index(self):
+        return self.protein.pfam_clan_index(self.position)
 
     def pfam_active_residue(self):
         return self.protein.pfam_active_residue(self.position)
