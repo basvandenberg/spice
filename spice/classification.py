@@ -804,7 +804,7 @@ if __name__ == '__main__':
 
     # determine what performance score function to use
     if(args.evaluation_score not in all_score_names):
-        print('\nIncorrect evaluation score: %s' (args.evaluation_score))
+        print('\nIncorrect evaluation score: %s' % (args.evaluation_score))
         print('\nOptions: %s\n' % (', '.join(all_score_names)))
         sys.exit()
     scoring = args.evaluation_score
