@@ -407,7 +407,7 @@ class FeatureMatrix(object):
     def get_dataset(self, feat_ids=None, labeling_name=None, class_ids=None,
                     standardized=True):
 
-        if not(labeling_name):
+        if (labeling_name is None):
             labeling_name = 'one_class'
         labeling = self.labeling_dict[labeling_name]
 
@@ -425,6 +425,7 @@ class FeatureMatrix(object):
                 fm = self.standardized_slice(feat_is, object_is)
             else:
                 fm = self.slice(feat_is, object_is)
+
             target = [labeling.labels[i] for i in object_is]
             target_names = [labeling.class_names[i] for i in class_is]
             sample_names = [self.object_ids[i] for i in object_is]
@@ -432,7 +433,9 @@ class FeatureMatrix(object):
 
             # map target to use 0,1,2,... as labels
             target_map = dict(zip(class_is, range(len(class_is))))
-            target = numpy.array([target_map[t] for t in target])
+            
+            # targets are floats because liblinear classification wants this...
+            target = numpy.array([float(target_map[t]) for t in target])
         else:
             if standardized:
                 fm = self.standardized()
