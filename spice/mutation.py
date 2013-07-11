@@ -423,7 +423,7 @@ class MissenseMutation(object):
             #feat_vec[2] = 0 if pf_rep is None else 1
             feat_vec[2] = 0 if pf_cla is None else 1
             #feat_vec[4] = 1 if pf_act else 0
-            feat_vec[3] = -1 if pf_cla_i in None else pf_cla_i
+            feat_vec[3] = -1 if pf_cla_i is None else pf_cla_i
 
             return feat_vec
 
