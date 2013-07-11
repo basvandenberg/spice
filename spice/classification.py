@@ -985,8 +985,6 @@ if __name__ == '__main__':
                         # otherwise keep in param dict, used to run grid search
                         pass
 
-            print cl.get_params()
-
             ''' remove time estimate for now
             print cl.get_params()
             if(param and args.timeout):
