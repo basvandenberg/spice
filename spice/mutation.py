@@ -376,11 +376,15 @@ class MissenseMutation(object):
         if not(feature_ids):
             fwtg = self.protein.msa_fraction(self.position, self.aa_from, True)
             fmut = self.protein.msa_fraction(self.position, self.aa_to, False)
+            nalis = self.protein.msa_num_ali_seq(self.position)
+            nalil = self.protein.msa_num_ali_let(self.position)
             #ent = self.protein.msa_entropy21(self.position, False)
-            return [fwtg, fmut]
+            return [fwtg, fmut, nalis, nalil]
         else:
-            ids = ['fwtg', 'fmut']
-            names = ['msa wt frequency with gaps', 'msa mutant frequency']
+            ids = ['fwtg', 'fmut', 'nalis', 'nalil']
+            names = ['msa wt frequency with gaps', 'msa mutant frequency',
+                     'number of aligned sequences',
+                     'number of aligned amino acids']
             return (ids, names)
 
     def msa_scale_diff(self, feature_ids=False):

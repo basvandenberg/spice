@@ -311,6 +311,12 @@ class Protein(object):
         else:
             return [s[index] for s in self.msa if not s[index] == '-']
 
+    def msa_num_ali_seq(self, position):
+        return len(self.msa_column(position, with_gaps=True))
+
+    def msa_num_ali_let(self, position):
+        return len(self.msa_column(position, with_gaps=False))
+
     def msa_variability(self, position, with_gaps=False):
         '''
         Returns the set of (unambiguous) amino acid letters found on the given
