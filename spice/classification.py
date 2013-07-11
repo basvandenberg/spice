@@ -846,7 +846,7 @@ if __name__ == '__main__':
         sys.exit()
 
     # check if evaluation score is possible for given number of classes
-    elif(len(args.classes) > 2 and args.evaluation_score == 'roc_auc'):
+    elif(num_classes > 2 and args.evaluation_score == 'roc_auc'):
         print('\nroc_auc only implemented for two class problems.\n')
         sys.exit()
 
