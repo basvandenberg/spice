@@ -441,7 +441,7 @@ class FeatureMatrix(object):
                 fm = self.standardized()
             else:
                 fm = self.feature_matrix
-            target = numpy.array(labeling.labels)
+            target = numpy.array([float(l) for l in labeling.labels])
             target_names = labeling.class_names
             sample_names = self.object_ids
             feature_names = self.feature_ids
