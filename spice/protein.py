@@ -492,7 +492,10 @@ class Pfam(object):
         self.bit_score = bit_score
         self.e_value = e_value
         self.clan = clan
-        self.clan_index = self.CLAN_TO_INDEX[self.clan]
+        if(self.clan in self.CLAN_TO_INDEX.keys()):
+            self.clan_index = self.CLAN_TO_INDEX[self.clan]
+        else:
+            self.clan_index = -1
         self.active_residues = active_residues
 
     def single_line_str(self):
