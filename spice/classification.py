@@ -814,12 +814,15 @@ if __name__ == '__main__':
     ###########################################################################
 
     # store user define parameters
-    user_params = {
-        'C': args.c_parameter,
-        'gamma': args.gamma,
-        'n_neighbors': args.neighbors,
-        'radius': args.radius
-    }
+    user_params = {}
+    if(args.c_parameter):
+        user_params['C'] = [float(p) for p in args.c_parameter]
+    if(args.gamma):
+        user_params['gamma'] = [float(p) for p in args.gamma]
+    if(args.neighbors):
+        user_params['n_neighbors'] = [int(p) for p in args.neighbors]
+    if(args.radius):
+        user_params['radius'] = [float(p) for p in args.radius]
 
     ###########################################################################
     # STEP 4: load the feature matrix
@@ -975,12 +978,14 @@ if __name__ == '__main__':
                         sys.exit(1)
                     elif(len(param[par]) == 1):
                         # set parameter, no grid search required
-                        tmp_param = {par: param[par]}
+                        tmp_param = {par: param[par][0]}
                         cl.set_params(**tmp_param)
                         del param[par]
                     else:
                         # otherwise keep in param dict, used to run grid search
                         pass
+
+            print cl.get_params()
 
             ''' remove time estimate for now
             print cl.get_params()
