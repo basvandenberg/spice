@@ -929,6 +929,9 @@ if __name__ == '__main__':
             data = ds.data
             target = ds.target
 
+            # transform to doubles, because of liblinear who wants this...
+            target = [float(i) for i in target]
+
             ###################################################################
             # Determine the classifier parameter(s/ ranges)
             ###################################################################
