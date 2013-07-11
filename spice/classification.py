@@ -946,7 +946,7 @@ if __name__ == '__main__':
                 if(classifier_str in classifiers_per_param[par]):
 
                     # use user defined one, if provided
-                    if not(user_params[par] is None):
+                    if(par in user_params.keys()):
                         param[par] = user_params[par]
 
                     # use default range otherwise
