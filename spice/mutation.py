@@ -415,7 +415,7 @@ class MissenseMutation(object):
             #pf_act = self.pfam_active_residue()
             pf_cla_i = self.pfam_clan_index()
 
-            num_features = 3
+            num_features = 4
             feat_vec = numpy.zeros(num_features)
 
             feat_vec[0] = 0 if pf_fam is None else 1
