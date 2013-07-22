@@ -407,6 +407,9 @@ if __name__ == '__main__':
     # add backbone dynamics data
     parser.add_argument('--flex_data')
 
+    # add protein interaction counts data
+    parser.add_argument('--interaction_data')
+
     # data sources that have a mapping from their ids to uniprot ids
     parser.add_argument('--orf_sequence_data', nargs=2)
     parser.add_argument('--structure_data', nargs=2)
@@ -580,6 +583,37 @@ if __name__ == '__main__':
         ds_name = 'flex'
         prot_ds = fe.protein_data_set
         ds_path = args.flex_data
+
+        try:
+            ds = prot_ds.ds_dict[ds_name]
+        except KeyError:
+            print('\nNo such data source: %s\n' % (ds_name))
+            sys.exit(1)
+
+        if(ds.available()):
+            print('\nData source already available: %s\n' % (ds_name))
+            sys.exit(1)
+        else:
+            try:
+                prot_ds.read_data_source(ds_name, ds_path, None)
+            except IOError as e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except ValueError as e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except Exception as e:
+                print traceback.format_exc()
+                sys.exit(1)
+
+        fe.save()
+
+    # add protein interaction data
+    if(args.interaction_data):
+
+        ds_name = 'interaction'
+        prot_ds = fe.protein_data_set
+        ds_path = args.interaction_data
 
         try:
             ds = prot_ds.ds_dict[ds_name]
