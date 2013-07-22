@@ -446,7 +446,7 @@ class MissenseMutation(object):
             feat_vec[0] = self.protein.ppi_count
             feat_vec[1] = self.protein.metabolic_count
             feat_vec[2] = self.protein.genetic_count
-            feat_vec[3] = self.protein.phosporilation_count
+            feat_vec[3] = self.protein.phosphorylation_count
             feat_vec[4] = self.protein.regulatory
             feat_vec[5] = self.protein.signaling
 
@@ -456,7 +456,7 @@ class MissenseMutation(object):
 
             ids = ['ppi', 'met', 'gen', 'pho', 'reg', 'sig']
             names = ['protein-protein interaction', 'metabolic', 'genetic',
-                     'phosphorilation', 'regulatory', 'signaling']
+                     'phosphorylation', 'regulatory', 'signaling']
 
             return (ids, names)
 
