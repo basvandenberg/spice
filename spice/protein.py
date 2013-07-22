@@ -114,12 +114,12 @@ class Protein(object):
         self.backbone_dynamics = backbone_dynamics
 
     def set_interaction_counts(self, interaction_counts):
-        self.ppi_count(interaction_counts[0])
-        self.metabolic_count(interaction_counts[1])
-        self.genetic_count(interaction_counts[2])
-        self.phosphorylation_count(interaction_counts[3])
-        self.regulatory_count(interaction_counts[4])
-        self.signaling_count(interaction_counts[5])
+        self.ppi_count = interaction_counts[0]
+        self.metabolic_count = interaction_counts[1]
+        self.genetic_count = interaction_counts[2]
+        self.phosphorylation_count = interaction_counts[3]
+        self.regulatory_count = interaction_counts[4]
+        self.signaling_count = interaction_counts[5]
 
     # feature calculation functions
 
