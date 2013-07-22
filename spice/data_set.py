@@ -309,7 +309,7 @@ class DataSourceFactory(object):
         self.data_source_ids = ['orf_seq', 'prot_seq', 'ss_seq', 'sa_seq',
                                 #'prot_struct', 'residue_rasa', 'residue_rank',
                                 'prot_struct', 'residue_rasa',
-                                'msa', 'pfam', 'flex']
+                                'msa', 'pfam', 'flex', 'interact']
 
         self.data_sources = {
             'prot_seq': ('Protein sequence',
@@ -376,7 +376,12 @@ class DataSourceFactory(object):
             'flex': ('backbone dynamics data',
                     file_io.read_flex, file_io.write_flex,
                     Protein.set_backbone_dynamics,
-                    [], 'flex.txt', None)
+                    [], 'flex.txt', None),
+            'interact': ('interaction counts data',
+                    file_io.read_interaction_counts,
+                    file_io.write_interaction_counts,
+                    Protein.set_interaction_counts,
+                    [], 'interact.txt', None)
         }
 
         # make sure that all ids are in the ids list

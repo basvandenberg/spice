@@ -1,7 +1,6 @@
 import math
 from util import sequtil
 
-
 class Protein(object):
 
     def __init__(self, pid):
@@ -29,6 +28,14 @@ class Protein(object):
 
         self.pfam_annotations = None
         self.backbone_dynamics = None
+
+        # protein interaction counts (maybe combine in tuple, index as consts)
+        self.ppi_count = None
+        self.metabolic_count = None
+        self.genetic_count = None
+        self.phosphorylation_count = None
+        self.regulatory_count = None
+        self.signaling_count = None
 
     def add_missense_mutation(self, mutation):
         self.missense_mutations.append(mutation)
@@ -105,6 +112,14 @@ class Protein(object):
         assert(type(backbone_dynamics) == list)
         assert(len(backbone_dynamics) == len(self.protein_sequence))
         self.backbone_dynamics = backbone_dynamics
+
+    def set_interaction_counts(self, interaction_counts):
+        self.ppi_count(interaction_counts[0])
+        self.metabolic_count(interaction_counts[1])
+        self.genetic_count(interaction_counts[2])
+        self.phosphorylation_count(interaction_counts[3])
+        self.regulatory_count(interaction_counts[4])
+        self.signaling_count(interaction_counts[5])
 
     # feature calculation functions
 
