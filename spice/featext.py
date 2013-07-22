@@ -263,7 +263,7 @@ class MutationFeatureVectorFactory(FeatureVectorFactory):
         'seqenv19',
         'msa', 'msaggsigdiff',
         'bbang', 'rasa',
-        'pfam', 'flex', 'interact',
+        'pfam', 'flex', 'interaction',
         'codonvec', 'codonenv19'
     ]
 
@@ -292,7 +292,7 @@ class MutationFeatureVectorFactory(FeatureVectorFactory):
                 mutation.MissenseMutation.pfam_annotation, {}),
             'flex': ('backbone_dynamics',
                 mutation.MissenseMutation.residue_flexibility, {}),
-            'interact': ('protein interaction counts',
+            'interaction': ('protein interaction counts',
                 mutation.MissenseMutation.interaction_counts, {}),
             'codonvec': ('from codon vector',
                 mutation.MissenseMutation.from_codon_vector, {}),
