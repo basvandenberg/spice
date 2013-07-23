@@ -3,7 +3,7 @@ import numpy
 import scipy
 import prody
 
-from spice.util import sequtil
+from util import sequtil
 
 
 class MissenseMutation(object):

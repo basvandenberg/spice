@@ -2,8 +2,8 @@ import os
 
 from spice.protein import Protein
 from spice.mutation import MissenseMutation
-from spice.util import file_io
-from spice.util import sequtil
+from util import file_io
+from util import sequtil
 
 
 class ProteinDataSet(object):
