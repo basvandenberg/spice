@@ -478,40 +478,7 @@ if __name__ == '__main__':
                 sys.exit(1)
 
         fe.save()
-
-    # set labels
-    if(args.labels):
-
-        label_types = ['protein', 'missense']
-
-        for (label_type, label_name, label_path) in args.labels:
-
-            if not(label_type in label_types):
-                print '\nWrong label type: %s' % (label_type)
-                print 'Must be one of: %s\n' % (', '.join(label_types))
-                sys.exit(1)
-            try:
-                if(label_type == 'protein'):
-                    fe.fm_protein.add_labeling_from_file(label_name,
-                                                         label_path)
-                elif(label_type == 'missense'):
-                    fe.fm_missense.add_labeling_from_file(label_name,
-                                                          label_path)
-                else:
-                    print '\nWrong label type, error should not occur...\n'
-                    sys.exit(1)
-            except IOError, e:
-                print traceback.format_exc()
-                sys.exit(1)
-            except ValueError, e:
-                print traceback.format_exc()
-                sys.exit(1)
-            except Exception, e:
-                print traceback.format_exc()
-                sys.exit(1)
-
-        fe.save()
-
+    
     # add protein sequence data (obtain from fasta file using uniprot ids)
     if(args.protein_sequence_data):
 
@@ -542,6 +509,71 @@ if __name__ == '__main__':
                 print '\nData source exception: %s\n\n%s' % (ds_name, e)
                 print sys.exc_info()[0]
                 sys.exit()
+
+        fe.save()
+
+    # add missense mutation data
+    if(args.missense_mutations):
+
+        # check if protein sequences are available
+        if not(fe.protein_data_set.ds_dict['prot_seq'].available()):
+            print('\nMutation data can only be added if protein sequences' +
+                    ' are available.\n')
+            sys.exit()
+
+        else:
+
+            # check if mutations are not allready present
+            if(fe.protein_data_set.get_mutations()):
+                print('\nMutation data already available.\n')
+                sys.exit()
+            else:
+                try:
+                    fe.load_mutation_data(args.missense_mutations)
+                except IOError as e:
+                    print traceback.print_exc()
+                    sys.exit(1)
+                except ValueError as e:
+                    print traceback.print_exc()
+                    sys.exit(1)
+                except Exception as e:
+                    print traceback.print_exc()
+                    sys.exit(1)
+        fe.save()
+
+
+    # set labels
+    if(args.labels):
+
+        label_types = ['protein', 'missense']
+
+        for (label_type, label_name, label_path) in args.labels:
+
+            if not(label_type in label_types):
+                print '\nWrong label type: %s' % (label_type)
+                print 'Must be one of: %s\n' % (', '.join(label_types))
+                sys.exit(1)
+            try:
+                if(label_type == 'protein'):
+                    fe.fm_protein.add_labeling_from_file(label_name,
+                                                         label_path)
+                elif(label_type == 'missense'):
+                    print label_name
+                    print label_path
+                    fe.fm_missense.add_labeling_from_file(label_name,
+                                                          label_path)
+                else:
+                    print '\nWrong label type, error should not occur...\n'
+                    sys.exit(1)
+            except IOError, e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except ValueError, e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except Exception, e:
+                print traceback.format_exc()
+                sys.exit(1)
 
         fe.save()
 
@@ -789,35 +821,6 @@ if __name__ == '__main__':
                 print traceback.format_exc()
                 sys.exit(1)
 
-        fe.save()
-
-    # add missense mutation data
-    if(args.missense_mutations):
-
-        # check if protein sequences are available
-        if not(fe.protein_data_set.ds_dict['prot_seq'].available()):
-            print('\nMutation data can only be added if protein sequences' +
-                    ' are available.\n')
-            sys.exit()
-
-        else:
-
-            # check if mutations are not allready present
-            if(fe.protein_data_set.get_mutations()):
-                print('\nMutation data already available.\n')
-                sys.exit()
-            else:
-                try:
-                    fe.load_mutation_data(args.missense_mutations)
-                except IOError as e:
-                    print traceback.print_exc()
-                    sys.exit(1)
-                except ValueError as e:
-                    print traceback.print_exc()
-                    sys.exit(1)
-                except Exception as e:
-                    print traceback.print_exc()
-                    sys.exit(1)
         fe.save()
 
     # calculate features
