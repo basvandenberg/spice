@@ -74,9 +74,14 @@ class FeatureExtraction(object):
         # add mutation data to protein data set
         self.protein_data_set.load_mutation_data(mutation_f)
 
-        # and use the mutation ids as object ids in the protein feature matrix
+        # use the mutation ids as object ids in the mutation feature matrix
         mut_ids = self.protein_data_set.get_mutation_ids()
         self.fm_missense.object_ids = mut_ids
+        
+        # and create mutation feature vector object
+        self.fv_dict_missense = MutationFeatureVectorFactory().\
+            get_feature_vectors(self.protein_data_set.get_mutations())
+
 
     def calculate_protein_features(self, feat_vector_id):
         assert(self.fm_protein.object_ids)
