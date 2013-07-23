@@ -447,8 +447,8 @@ class MissenseMutation(object):
             feat_vec[1] = self.protein.metabolic_count
             feat_vec[2] = self.protein.genetic_count
             feat_vec[3] = self.protein.phosphorylation_count
-            feat_vec[4] = self.protein.regulatory
-            feat_vec[5] = self.protein.signaling
+            feat_vec[4] = self.protein.regulatory_count
+            feat_vec[5] = self.protein.signaling_count
 
             return feat_vec
 
