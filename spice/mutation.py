@@ -1,4 +1,3 @@
-import os
 import numpy
 import scipy
 import prody
@@ -8,7 +7,8 @@ from util import sequtil
 
 class MissenseMutation(object):
 
-    def __init__(self, protein, position, aa_from, aa_to, pdb_id, pdb_resnum):
+    def __init__(self, protein, position, aa_from, aa_to, label, aa_pep,
+                 aa_pep_i, codons, codon_fr, codons_to, pdb_id, pdb_resnum):
 
         # check if the mutation corresponds to the protein sequence
         assert(protein.protein_sequence[position - 1] == aa_from)
@@ -18,6 +18,14 @@ class MissenseMutation(object):
         self.position = position
         self.aa_from = aa_from
         self.aa_to = aa_to
+
+        self.label = label  # int
+        self.aa_pep = aa_pep
+        self.aa_pep_i = aa_pep_i
+        self.codons = codons
+        self.codon_fr = codon_fr
+        self.codons_to = codons_to
+
         self.pdb_id = pdb_id  # None if not available
         if(self.pdb_id):
             self.pdb_chain = pdb_id.split('_')[-1]
@@ -31,9 +39,44 @@ class MissenseMutation(object):
         # add this mutation to the protein (NOTE: two direction reference)
         self.protein.add_missense_mutation(self)
 
+    '''
+    TODO use proper getter setter methods...
+
+    TODO get rid of the pointer to protein so that a mutations can live on
+    itself and we can use a parse method to create a mutation from a string
+    out of a mutation file...
+
+    def single_line_str(self):
+        return '%i\t%i\t%s\t%s\t%s\t%.1f\t%e\t%s\t%s' % (self.start_pos,
+                self.end_pos, self.hmm_acc, self.hmm_name, self.type_,
+                self.bit_score, self.e_value, self.clan, self.active_residues)
+
+    @classmethod
+    def parse(self, s):
+
+        tokens = s.split()
+
+        uni_id = int(tokens[0])
+        pos = int(tokens[1])
+        fr = tokens[2]
+        to = tokens[3]
+        label = int(tokens[4])
+        pep = tokens[5]
+        pep_i = tokens[6]
+        codons = tokens[7]
+        fr_codon = tokens[8]
+        to_codons = tokens[9].split(',')
+        pdb_id = tokens[10]
+        pdb_resnum = tokens[11]
+
+
+        return self(...)
+    '''
+
     def tuple_representation(self):
         return (self.protein.pid, self.position, self.aa_from, self.aa_to,
-                self.pdb_id, self.pdb_resnum)
+                self.label, self.aa_pep, self.aa_pep_i, self.codons,
+                self.codon_fr, self.codons_to, self.pdb_id, self.pdb_resnum)
 
     # feature calculation functions
 
@@ -63,66 +106,8 @@ class MissenseMutation(object):
         else:
             ids = ['%i' % (i) for i in xrange(num_scales)]
             names = ['Georgiev %i signal difference' % (i)
-                    for i in xrange(num_scales)]
+                     for i in xrange(num_scales)]
             return (ids, names)
-
-    def mutation_to_vector(self, feature_ids=False):
-
-        alph = sequtil.aa_unambiguous_alph
-
-        if not(feature_ids):
-            vector_repr = len(alph) * [0]
-            vector_repr[alph.index(self.aa_to)] = 1
-            return vector_repr
-        else:
-            names = sequtil.aa_unambiguous_name
-            return (alph, names)
-    '''
-    def mutation_to_vector(self, fr='A', feature_ids=False):
-        # NOTE: only for data sets in which all the wild-type aas (from) are
-        # the same! To make sure that we do not end up with zero only corumns
-        # in our feature matrix.
-
-        if(not(feature_ids) and not(fr == self.aa_from)):
-            raise ValueError('This feature is only for from %s mutations' %
-                    (self.aa_from))
-
-        non_zero = sequtil.non_zero_mutation_counts
-        alph = sequtil.aa_unambiguous_alph
-        num_feats = len(non_zero[fr])
-
-        if not(feature_ids):
-            vector_repr = len(alph) * [0]
-            vector_repr[alph.index(self.aa_to)] = 1
-            vector_repr = [item for index, item in enumerate(vector_repr)
-                    if (alph[index] in non_zero[fr])]
-            assert(num_feats == len(vector_repr))
-            return vector_repr
-        else:
-            ids = [a for a in alph if a in non_zero[fr]]
-            names = sequtil.aa_unambiguous_name
-            names = [n for i, n in enumerate(names)
-                    if alph[i] in non_zero[fr]]
-            return (ids, names)
-    '''
-    # TODO get rid of this feature...
-    def mutation_risk(self, feature_ids=False):
-
-        alph = sequtil.aa_unambiguous_alph
-        i_alph_dict = dict([(l, i) for (i, l) in enumerate(alph)])
-
-        if not(feature_ids):
-            # HACK read log values from whole data set...
-            log_vals = numpy.loadtxt(os.path.join(os.environ['JTDS'],
-                    'from_to', '0hack.txt'))
-
-            feat_vec = numpy.ones(1)
-            fr_i = i_alph_dict[self.aa_from]
-            to_i = i_alph_dict[self.aa_to]
-            feat_vec[0] = log_vals[fr_i, to_i]
-            return feat_vec
-        else:
-            return (['mutrisk'], ['mutrisk'])
 
     def georgiev_blosum_signal_diff(self, feature_ids=False):
         '''
@@ -138,11 +123,12 @@ class MissenseMutation(object):
         else:
             ids = ['%i' % (i) for i in xrange(num_scales)]
             names = ['Georgiev Blosum62 %i signal difference' % (i)
-                    for i in xrange(num_scales)]
+                     for i in xrange(num_scales)]
             return (ids, names)
 
     def georgiev_signal_auc(self, env_window=21, sig_window=9, edge=1.0,
-            threshold=1.5, below_threshold=False, feature_ids=False):
+                            threshold=1.5, below_threshold=False,
+                            feature_ids=False):
 
         num_scales = 19
 
@@ -151,20 +137,22 @@ class MissenseMutation(object):
 
             for index in xrange(num_scales):
                 scale = sequtil.georgiev_scales[index]
-                auc = self.environment_signal_peak_area(env_window, scale,
-                        sig_window, edge, threshold, below_threshold)
+                auc = self.environment_signal_peak_area(
+                    env_window, scale, sig_window, edge, threshold,
+                    below_threshold)
                 # anscombe transform (~poissos --> ~normal)
                 feat_vec[index] = 2 * numpy.sqrt(auc + (3.0 / 8.0))
             return feat_vec
         else:
             ids = ['%i' % (i) for i in xrange(num_scales)]
             names = ['Georgiev %i signal ew%i sw%i e%.2f th%.2f' %
-                    (i, env_window, sig_window, edge, threshold)
-                    for i in xrange(num_scales)]
+                     (i, env_window, sig_window, edge, threshold)
+                     for i in xrange(num_scales)]
             return (ids, names)
 
     def georgiev_blosum_signal_auc(self, env_window=21, sig_window=9, edge=1.0,
-            threshold=1.5, below_threshold=False, feature_ids=False):
+                                   threshold=1.5, below_threshold=False,
+                                   feature_ids=False):
 
         num_scales = 10
 
@@ -173,16 +161,17 @@ class MissenseMutation(object):
 
             for index in xrange(num_scales):
                 scale = sequtil.georgiev_blosum_scales[index]
-                auc = self.environment_signal_peak_area(env_window, scale,
-                        sig_window, edge, threshold, below_threshold)
+                auc = self.environment_signal_peak_area(
+                    env_window, scale, sig_window, edge, threshold,
+                    below_threshold)
                 # anscombe transform (~poissos --> ~normal)
                 feat_vec[index] = 2 * numpy.sqrt(auc + (3.0 / 8.0))
             return feat_vec
         else:
             ids = ['%i' % (i) for i in xrange(num_scales)]
             names = ['Georgiev blosum %i signal ew%i sw%i e%.2f th%.2f' %
-                    (i, env_window, sig_window, edge, threshold)
-                    for i in xrange(num_scales)]
+                     (i, env_window, sig_window, edge, threshold)
+                     for i in xrange(num_scales)]
             return (ids, names)
 
     def backbone_angles(self, feature_ids=False):
@@ -206,7 +195,7 @@ class MissenseMutation(object):
                 try_index = 0
                 while(r is None):
                     r = hv.getResidue(self.pdb_chain, self.pdb_resnum,
-                            icode=try_letters[try_index])
+                                      icode=try_letters[try_index])
                     try_index += 1
 
                 # measure angles, value error is raised if neighbor residue
@@ -278,7 +267,7 @@ class MissenseMutation(object):
                     try_index = 0
                     while(r is None):
                         r = hv.getResidue(self.pdb_chain, self.pdb_resnum,
-                                icode=try_letters[try_index])
+                                          icode=try_letters[try_index])
                         try_index += 1
 
                     # get the pdb index of the mutated residue
@@ -288,10 +277,11 @@ class MissenseMutation(object):
                     feat_vec[0] = rasa
 
                 else:
-                    print
-                    print self.protein.pid
-                    print len(rasa_list)
-                    print len(residues)
+                    #print
+                    #print self.protein.pid
+                    #print len(rasa_list)
+                    #print len(residues)
+                    pass
 
             return feat_vec
 
@@ -323,7 +313,7 @@ class MissenseMutation(object):
 
                 # select atoms within min_dist
                 sel_min = p.select('exwithini of resnum %i' %
-                        (min_dist, self.pdb_resnum))
+                                   (min_dist, self.pdb_resnum))
 
                 # count atoms
                 if(sel_min):
@@ -336,7 +326,7 @@ class MissenseMutation(object):
 
                 # select atoms within max_dist
                 sel_max = p.select('exwithini of resnum %i' %
-                        (max_dist, self.pdb_resnum))
+                                   (max_dist, self.pdb_resnum))
 
                 if(sel_max):
                     for item in sel_max.getElements():
@@ -354,12 +344,15 @@ class MissenseMutation(object):
             names = ['carbon', 'nitrogen', 'oxygen', 'sulfur']
             return (atoms, names)
 
-    def seq_env_aa_count(self, window=9, feature_ids=False):
+    def seq_env_aa_count(self, window=19, feature_ids=False):
 
         alph = sequtil.aa_unambiguous_alph
 
         if not(feature_ids):
-            subseq = self.seq_env(window)
+            if(window == 19):
+                subseq = self.aa_pep
+            else:
+                subseq = self.seq_env(window)
             return sequtil.aa_count(subseq)
         else:
             names = sequtil.aa_unambiguous_name
@@ -376,7 +369,22 @@ class MissenseMutation(object):
         else:
             ids = ['cov', 'var', 'ran', 'toinvar']
             names = ['msa coverage', 'msa variability', 'msa rank',
-                    'to residue in msa variability']
+                     'to residue in msa variability']
+            return (ids, names)
+
+    def msa(self, feature_ids=False):
+        if not(feature_ids):
+            fwtg = self.protein.msa_fraction(self.position, self.aa_from, True)
+            fmut = self.protein.msa_fraction(self.position, self.aa_to, False)
+            nalis = self.protein.msa_num_ali_seq(self.position)
+            nalil = self.protein.msa_num_ali_let(self.position)
+            #ent = self.protein.msa_entropy21(self.position, False)
+            return [fwtg, fmut, nalis, nalil]
+        else:
+            ids = ['fwtg', 'fmut', 'nalis', 'nalil']
+            names = ['msa wt frequency with gaps', 'msa mutant frequency',
+                     'number of aligned sequences',
+                     'number of aligned amino acids']
             return (ids, names)
 
     def msa_scale_diff(self, feature_ids=False):
@@ -393,7 +401,7 @@ class MissenseMutation(object):
         else:
             ids = ['%i' % (i) for i in xrange(num_scales)]
             names = ['Georgiev %i signal dist. to msa variability' % (i)
-                    for i in xrange(num_scales)]
+                     for i in xrange(num_scales)]
             return (ids, names)
 
     def pfam_annotation(self, feature_ids=False):
@@ -405,6 +413,7 @@ class MissenseMutation(object):
             #pf_rep = self.pfam_repeat()
             pf_cla = self.pfam_clan()
             #pf_act = self.pfam_active_residue()
+            #pf_cla_i = self.pfam_clan_index()
 
             num_features = 3
             feat_vec = numpy.zeros(num_features)
@@ -414,6 +423,7 @@ class MissenseMutation(object):
             #feat_vec[2] = 0 if pf_rep is None else 1
             feat_vec[2] = 0 if pf_cla is None else 1
             #feat_vec[4] = 1 if pf_act else 0
+            #feat_vec[3] = -1 if pf_cla_i is None else pf_cla_i
 
             return feat_vec
 
@@ -424,6 +434,84 @@ class MissenseMutation(object):
             ids = ['fam', 'dom', 'cla']
             names = ['pfam family', 'pfam domain', 'pfam clan']
             return (ids, names)
+
+    def interaction_counts(self, feature_ids=False):
+
+        if not(feature_ids):
+
+            num_features = 6
+            feat_vec = numpy.zeros(num_features)
+
+            feat_vec[0] = self.protein.ppi_count
+            feat_vec[1] = self.protein.metabolic_count
+            feat_vec[2] = self.protein.genetic_count
+            feat_vec[3] = self.protein.phosphorylation_count
+            feat_vec[4] = self.protein.regulatory_count
+            feat_vec[5] = self.protein.signaling_count
+
+            return feat_vec
+
+        else:
+
+            ids = ['ppi', 'met', 'gen', 'pho', 'reg', 'sig']
+            names = ['protein-protein interaction', 'metabolic', 'genetic',
+                     'phosphorylation', 'regulatory', 'signaling']
+
+            return (ids, names)
+
+    def from_codon_vector(self, feature_ids=False):
+        '''
+        From codon is 1, rest of codons 0.
+        '''
+
+        codons = sequtil.codons_unambiguous
+
+        if not(feature_ids):
+            vector_repr = len(codons) * [0]
+            vector_repr[codons.index(self.codon_fr)] = 1
+            return vector_repr
+
+        else:
+            ids = [c.lower() for c in codons]
+            names = ['%s (%s)' % (c, sequtil.codon_table_unambiguous[c])
+                     for c in codons]
+            return (ids, names)
+
+    def seq_env_codon_count(self, feature_ids=False):
+        '''
+        Counts codons of the stored codon region around the mutation.
+        '''
+
+        codons = sequtil.codons_unambiguous
+
+        if not(feature_ids):
+            return [self.codons.count(c) for c in codons]
+        else:
+            ids = [c.lower() for c in codons]
+            names = ['%s (%s)' % (c, sequtil.codon_table_unambiguous[c])
+                     for c in codons]
+            return (ids, names)
+
+    def residue_flexibility(self, feature_ids=False):
+
+        if not(feature_ids):
+
+            # residue flexibility
+            seq_i = self.position - 1
+            resflex = self.protein.backbone_dynamics[seq_i]
+
+            # average region flexibility
+            #stt_i = max(0, seq_i - 9)
+            #end_i = min(len(self.protein.protein_sequence), seq_i + 10)
+            #avgflex = numpy.mean(self.protein.backbone_dynamics[stt_i: end_i])
+
+            #return [resflex, avgflex]
+            return [resflex]
+
+        else:
+            ids = ['resflex']
+            names = ['Resdue flexibility']
+            return(ids, names)
 
     # feature calculation help functions
 
@@ -489,16 +577,9 @@ class MissenseMutation(object):
         acid to any of the amino acids on the same position in the multiple
         sequence alignment (i.e. the msa variability of this position).
         '''
-        aa_alph = set(sequtil.aa_unambiguous_alph)
-        variability = set(self.protein.msa_variability[self.position - 1])
-        var = sorted(aa_alph & variability)
-        if(len(var) > 0):
-            distances = [(scale[self.aa_to] - scale[v]) for v in var]
-            return min(distances)
-        else:
-            # return default distance if no msa data is available
-            # TODO check this
-            return 0.0
+        var = self.protein.msa_variability(self.position, with_gaps=False)
+        distances = [(scale[self.aa_to] - scale[v]) for v in var]
+        return min(distances)
 
     def environment_signal(self, env_window, scale, sig_window, edge):
 
@@ -513,7 +594,7 @@ class MissenseMutation(object):
         return sequtil.seq_signal(subseq, scale, sig_window, edge)
 
     def environment_signal_peak_area(self, env_window, scale, sig_window,
-            edge, threshold, below_threshold=False):
+                                     edge, threshold, below_threshold=False):
 
         # obtain the signal
         signal = self.environment_signal(env_window, scale, sig_window, edge)
@@ -544,6 +625,9 @@ class MissenseMutation(object):
 
     def pfam_clan(self):
         return self.protein.pfam_clan(self.position)
+
+    def pfam_clan_index(self):
+        return self.protein.pfam_clan_index(self.position)
 
     def pfam_active_residue(self):
         return self.protein.pfam_active_residue(self.position)

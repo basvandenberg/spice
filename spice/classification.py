@@ -34,7 +34,7 @@ from util import file_io
 
 # classification performance measures
 all_score_names = ['roc_auc', 'f1', 'precision', 'average_precision',
-        'recall', 'accuracy']
+                   'recall', 'accuracy']
 all_score_funcs = dict(zip(all_score_names, [
     metrics.auc_score,
     metrics.f1_score,
@@ -43,7 +43,7 @@ all_score_funcs = dict(zip(all_score_names, [
     metrics.recall_score,
     metrics.accuracy_score]))
 all_score_input = {'pred': ['f1', 'precision', 'recall', 'accuracy'],
-        'proba': ['roc_auc', 'average_precision']}
+                   'proba': ['roc_auc', 'average_precision']}
 
 # minimal and maximal score per score measure
 # TODO extend, only used in ffs now
@@ -54,7 +54,8 @@ metric_rand_max_score = {
 
 # default classifier parameters
 svm_default_param = {'class_weight': 'auto'}
-libsvm_default_param = {'class_weight': 'auto', 'probability': True}
+libsvm_default_param = {'class_weight': 'auto', 'probability': True,
+                        'cache_size': 500.0}
 rn_default_param = {'outlier_label': 0}
 kn_default_param = {}
 
@@ -85,20 +86,17 @@ timed_param = ['C', 'radius', 'n_neighbors']
 
 def cv_scores_no_scaling(data, target, classifier, n, scoring, cv=None):
 
-    # split data in train and test sets
+    # if no cv sets provided, split data in train and test sets
     if(cv is None):
         cv = cross_validation.StratifiedKFold(target, n)
 
-    # obtain cross-validation scores
-    cv_scores = cross_validation.cross_val_score(classifier, data, target,
-            cv=cv, scoring=scoring)
-
-    # return average cv score
-    return cv_scores
+    # return cross-validation scores
+    return cross_validation.cross_val_score(classifier, data, target, cv=cv,
+                                            scoring=scoring)
 
 
 def grid_search(data, target, classifier, n, scoring, param, cv=None, cpu=1,
-        log_f=None):
+                log_f=None):
     '''
     This method does a CV grid search to find the best classifier parameters
     for the given data. The method returns the average CV-performance of the
@@ -116,20 +114,19 @@ def grid_search(data, target, classifier, n, scoring, param, cv=None, cpu=1,
     log_f:      (open) file to log data to
     '''
 
-    # split data in train and test sets
+    # if no cv sets provided, split data in train and test sets
     if(cv is None):
         cv = cross_validation.StratifiedKFold(target, n)
 
     # run grid search
-    clf = GridSearchCV(classifier, param, scoring=scoring, cv=cv,
-            n_jobs=cpu)
+    clf = GridSearchCV(classifier, param, scoring=scoring, cv=cv, n_jobs=cpu)
     clf.fit(data, target)
 
     # log results if requested
     if(log_f):
         for params, mean_score, scores in clf.cv_scores_:
             log_f.write('%0.3f;%0.3f;[%s];%r\n' % (mean_score, scores.std(),
-                    ', '.join(['%.3f' % (s) for s in scores]), params))
+                        ', '.join(['%.3f' % (s) for s in scores]), params))
         log_f.write('\n')
 
     # return best parameters, and score
@@ -138,10 +135,10 @@ def grid_search(data, target, classifier, n, scoring, param, cv=None, cpu=1,
 #
 # Methods for unscaled data
 #
-    
+
 
 def cv_score(data, target, classifier, n, scoring, param=None, cv=None, cpu=1,
-        log_f=None, standardize=True):
+             log_f=None, standardize=True):
     '''
     A grid search is done if parameters (param) are provided. Otherwise the
     parameters in the provided classifier are used.
@@ -191,7 +188,7 @@ def cv_score(data, target, classifier, n, scoring, param=None, cv=None, cpu=1,
 
             # optimize parameters on train set (s is train score)
             (s, p) = grid_search(trn_data, trn_target, classifier, n,
-                    scoring, param, cpu=cpu, log_f=log_f)
+                                 scoring, param, cpu=cpu, log_f=log_f)
 
             # update parameters with the optimized ones
             classifier_param.update(p)
@@ -202,7 +199,7 @@ def cv_score(data, target, classifier, n, scoring, param=None, cv=None, cpu=1,
 
         # test the classifier on the test set
         (score, all_scores, confusion, roc_curve, probas) = test_classifier(
-                tst_data, tst_target, best_cl, scoring)
+            tst_data, tst_target, best_cl, scoring)
 
         print 'fold %i: %.3f' % (fold_i, score)
         sys.stdout.flush()
@@ -316,18 +313,18 @@ def ffs(data, target, classifier, n, scoring, param=None, cv=None,
                             log_f.write('%s' % (str(feat_is)))
                             if(feat_names):
                                 log_f.write('[%s]' % (', '.join([feat_names[i]
-                                        for i in feat_is])))
+                                            for i in feat_is])))
                             log_f.write('\n')
 
                         # run parameter grid search
-                        (best_s, best_p) = grid_search(trn_data_part,
-                                trn_target, classifier, n, scoring,
-                                param, log_f=log_f, cpu=cpu)
+                        (best_s, best_p) = grid_search(
+                            trn_data_part, trn_target, classifier, n, scoring,
+                            param, log_f=log_f, cpu=cpu)
                     else:
                         # obtain cv score (grid search not neccasary)
                         best_p = classifier.get_params()
-                        best_s = numpy.mean(cv_scores_no_scaling(trn_data_part,
-                                trn_target, classifier, n, scoring))
+                        best_s = numpy.mean(cv_scores_no_scaling(
+                            trn_data_part, trn_target, classifier, n, scoring))
 
                     # store the result
                     results.append((best_s, best_p, feat_is))
@@ -345,8 +342,8 @@ def ffs(data, target, classifier, n, scoring, param=None, cv=None,
         #else:
         #    (trn_score, bestp, feat_is) = select[-2]
         # TODO: plot scores for the selection iterations...
-        (trn_score, bestp, feat_is) = sorted(select,
-                key=operator.itemgetter(0))[-1]
+        (trn_score, bestp, feat_is) = sorted(
+            select, key=operator.itemgetter(0))[-1]
 
         # obtain original classifier parameters and update optimized ones
         classifier_param = classifier.get_params()
@@ -362,7 +359,7 @@ def ffs(data, target, classifier, n, scoring, param=None, cv=None,
 
         # test the classifier on the test set
         (score, all_scores, confusion, roc_curve, probas) = test_classifier(
-                tst_data, tst_target, best_cl, scoring)
+            tst_data, tst_target, best_cl, scoring)
 
         # store test scores for this cv loop
         cv_scores.append(score)
@@ -462,7 +459,7 @@ def bfs(data, target, classifier, n, scoring, param=None, cv=None,
                     remove_is.append(feat_i)
 
                     feat_is = [fi for fi in xrange(data.shape[1])
-                            if not fi in remove_is]
+                               if not fi in remove_is]
 
                     # slice selected features from data
                     trn_data_part = trn_data[:, feat_is]
@@ -474,18 +471,18 @@ def bfs(data, target, classifier, n, scoring, param=None, cv=None,
                             log_f.write('%s' % (str(feat_is)))
                             if(feat_names):
                                 log_f.write('[%s]' % (', '.join([feat_names[i]
-                                        for i in feat_is])))
+                                            for i in feat_is])))
                             log_f.write('\n')
 
                         # run parameter grid search
-                        (best_s, best_p) = grid_search(trn_data_part,
-                                trn_target, classifier, n, scoring,
-                                param, log_f=log_f, cpu=cpu)
+                        (best_s, best_p) = grid_search(
+                            trn_data_part, trn_target, classifier, n, scoring,
+                            param, log_f=log_f, cpu=cpu)
                     else:
                         # obtain cv score (grid search not neccasary)
                         best_p = classifier.get_params()
-                        best_s = numpy.mean(cv_scores_no_scaling(trn_data_part,
-                                trn_target, classifier, n, scoring))
+                        best_s = numpy.mean(cv_scores_no_scaling(
+                            trn_data_part, trn_target, classifier, n, scoring))
 
                     # store the result
                     results.append((best_s, best_p, remove_is))
@@ -503,8 +500,8 @@ def bfs(data, target, classifier, n, scoring, param=None, cv=None,
         #else:
         #    (trn_score, bestp, feat_is) = select[-2]
         # TODO: plot scores for the selection iterations...
-        (trn_score, bestp, remove_is) = sorted(select,
-                key=operator.itemgetter(0))[-1]
+        (trn_score, bestp, remove_is) = sorted(
+            select, key=operator.itemgetter(0))[-1]
 
         feat_is = [fi for fi in xrange(data.shape[1]) if not fi in remove_is]
 
@@ -522,7 +519,7 @@ def bfs(data, target, classifier, n, scoring, param=None, cv=None,
 
         # test the classifier on the test set
         (score, all_scores, confusion, roc_curve, probas) = test_classifier(
-                tst_data, tst_target, best_cl, scoring)
+            tst_data, tst_target, best_cl, scoring)
 
         # store test scores for this cv loop
         cv_scores.append(score)
@@ -631,7 +628,7 @@ def parse_feature_file(feature_f):
 
 
 def get_timed_parameter_range(classifier, data, target, standardize,
-        time_limit, param_name, param_range=None):
+                              time_limit, param_name, param_range=None):
 
     if (param_range is None):
         param_range = default_param_range[param_name]
@@ -761,16 +758,16 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--feature_selection', required=True)
     parser.add_argument('-e', '--evaluation_score', required=True)
 
+    # root output directory
+    parser.add_argument('-o', '--output_dir', required=True)
+
     parser.add_argument('--standardize', action='store_true', default=False)
     parser.add_argument('--classes', nargs='+', default=None)
     parser.add_argument('--features', nargs='+', default=None)
     parser.add_argument('--feature_file')
     parser.add_argument('--cross_validation_file')
 
-    parser.add_argument('--lda_weights', action='store_true', default=False)
-
-    # root output directory
-    parser.add_argument('-o', '--output_dir', required=True)
+    #parser.add_argument('--lda_weights', action='store_true', default=False)
 
     # parameter optimization?
     parser.add_argument('--timeout', type=int)  # seconds
@@ -785,6 +782,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    ###########################################################################
+    # STEP 1: read feature file and cross-validation file
+    ###########################################################################
+
     # read feature file, if provided
     if(args.feature_file):
         feature_experiments = parse_feature_file(args.feature_file)
@@ -797,24 +798,44 @@ if __name__ == '__main__':
     else:
         cv = None
 
+    ###########################################################################
+    # STEP 2: obtain performance score to use
+    ###########################################################################
+
     # determine what performance score function to use
     if(args.evaluation_score not in all_score_names):
-        print('\nIncorrect evaluation score: %s' (args.evalutation_score))
+        print('\nIncorrect evaluation score: %s' % (args.evaluation_score))
         print('\nOptions: %s\n' % (', '.join(all_score_names)))
         sys.exit()
     scoring = args.evaluation_score
 
+    ###########################################################################
+    # STEP 3: obtain user provided classification parameters
+    ###########################################################################
+
     # store user define parameters
-    user_params = {'C': args.c_parameter, 'gamma': args.gamma,
-            'n_neighbors': args.neighbors, 'radius': args.radius}
+    user_params = {}
+    if(args.c_parameter):
+        user_params['C'] = [float(p) for p in args.c_parameter]
+    if(args.gamma):
+        user_params['gamma'] = [float(p) for p in args.gamma]
+    if(args.neighbors):
+        user_params['n_neighbors'] = [int(p) for p in args.neighbors]
+    if(args.radius):
+        user_params['radius'] = [float(p) for p in args.radius]
+
+    ###########################################################################
+    # STEP 4: load the feature matrix
+    ###########################################################################
 
     # load feature matrix
     print '\nLoading feature matrix...'
     fm = featmat.FeatureMatrix.load_from_dir(args.feature_matrix_dir)
     print 'Done.\n'
 
-    # track runtime
-    overall_start_time = int(time.time())
+    ###########################################################################
+    # STEP 5: check number of classes and compatibility with performance score
+    ###########################################################################
 
     # determine how many classes there are
     if(args.classes):
@@ -826,15 +847,21 @@ if __name__ == '__main__':
     if(num_classes < 2):
         print('\nProvide two or more classes.\n')
         sys.exit()
+
     # check if evaluation score is possible for given number of classes
-    elif(len(args.classes) > 2 and args.evaluation_score == 'roc_auc'):
+    elif(num_classes > 2 and args.evaluation_score == 'roc_auc'):
         print('\nroc_auc only implemented for two class problems.\n')
         sys.exit()
+
+    ###########################################################################
+    # STEP 6: create output directory
+    ###########################################################################
 
     # create result dir
     if not(os.path.exists(args.output_dir)):
         os.mkdir(args.output_dir)
 
+    '''
     if(args.lda_weights):
 
         # for each feature set experiment
@@ -842,9 +869,9 @@ if __name__ == '__main__':
 
             # obtain scikit-learn dataset (NOTE not standardized)
             ds = fm.get_sklearn_dataset(feat_ids=feature_list,
-                    labeling_name=args.labeling,
-                    class_ids=args.classes,
-                    standardized=False)
+                                        labeling_name=args.labeling,
+                                        class_ids=args.classes,
+                                        standardized=False)
 
             # obtain data and target from it
             data = ds.data
@@ -856,6 +883,14 @@ if __name__ == '__main__':
             file_io.write_tuple_list(out_f, zip(feature_list, weights[:, 0]))
 
         sys.exit()
+    '''
+
+    # track runtime
+    overall_start_time = int(time.time())
+
+    ###########################################################################
+    # LOOP outer: iterate over desired classifiers
+    ###########################################################################
 
     # for each provided classifier
     for classifier_str in args.classifier:
@@ -865,6 +900,10 @@ if __name__ == '__main__':
         if not(os.path.exists(cl_d)):
             os.mkdir(cl_d)
 
+        #######################################################################
+        # LOOP inner: iterate over desired feature sets
+        #######################################################################
+
         # for each feature set experiment
         for exp_name, feature_list in feature_experiments:
 
@@ -873,57 +912,82 @@ if __name__ == '__main__':
             if not(os.path.exists(exp_d)):
                 os.mkdir(exp_d)
 
+            ###################################################################
+            # Fetch classifier object and scikit-learn data set
+            ###################################################################
+
             # obtain classifier with default parameters set
             cl = get_classifier(classifier_str)
 
-            # obtain scikit-learn dataset (NOTE not standardized)
+            # obtain scikit-learn dataset
+            # NOTE: feature matrix is not standardized)
+            # NOTE: if feature_list is None, all features are used
+            # NOTE: if args.classes is None, all classes are used
             ds = fm.get_sklearn_dataset(feat_ids=feature_list,
-                    labeling_name=args.labeling,
-                    class_ids=args.classes,
-                    standardized=False)
+                                        labeling_name=args.labeling,
+                                        class_ids=args.classes,
+                                        standardized=False)
 
             # obtain data and target from it
             data = ds.data
             target = ds.target
 
+            ###################################################################
+            # Determine the classifier parameter(s/ ranges)
+            ###################################################################
+
+            # parameters dictionary
             param = {}
 
-            # set parameter ranges
+            # iterate over all possible classifier parameters
             for par in classifier_params:
 
-                # check if the classifier uses this parameter
+                # check if the current classifier uses this parameter
                 if(classifier_str in classifiers_per_param[par]):
 
                     # use user defined one, if provided
-                    if(user_params[par]):
+                    if(par in user_params.keys()):
                         param[par] = user_params[par]
 
                     # use default range otherwise
                     else:
                         param[par] = default_param_range[par]
 
-                    # adjust range if timeout is provided
-                    if(args.timeout and par in timed_param):
-                        param[par], run_time = get_timed_parameter_range(cl,
-                                data, target, args.standardize, args.timeout,
-                                par)
+                        ''' remove timeout for the moment
+                        # adjust range if timeout is provided
+                        if(args.timeout and par in timed_param):
+                            param[par], run_time = get_timed_parameter_range(
+                                cl, data, target, args.standardize,
+                                args.timeout, par)
 
-                    # finally check parameter range
-                    if(len(param[par]) == 0):
-                        print('Time out occured.\n')
-                        sys.exit()
+                            # check parameter range
+                            if(len(param[par]) == 0):
+                                print('Time out occured.\n')
+                                sys.exit()
+                            elif(len(param[par]) == 1):
+                                tmp_param = {par: param[par][0]}
+                                cl.set_params(**tmp_param)
+                                del param[par]
+                            else:
+                                pass
+                        '''
+
+                    # set parameter
+                    if(len(param[par]) == 0):  # only in case of timeout???
+                        print 'No value for parameter: %s' % (par)
+                        sys.exit(1)
                     elif(len(param[par]) == 1):
+                        # set parameter, no grid search required
                         tmp_param = {par: param[par][0]}
                         cl.set_params(**tmp_param)
                         del param[par]
                     else:
+                        # otherwise keep in param dict, used to run grid search
                         pass
 
-            if(len(param) == 0):
-                param = None
-
+            ''' remove time estimate for now
             print cl.get_params()
-            if(param):
+            if(param and args.timeout):
                 print param
                 # estimate time
                 time_estimate = run_time * args.n_fold_cv
@@ -931,8 +995,12 @@ if __name__ == '__main__':
                     if 'gamma' in param:
                         time_estimate *= len(param['gamma'])
                 print('Estimated run time (sec): %i' % (time_estimate))
+            '''
 
+            ###################################################################
             # define output files
+            ###################################################################
+
             settings_f = os.path.join(exp_d, 'settings.txt')
             result_f = os.path.join(exp_d, 'result.txt')
             cm_f = os.path.join(exp_d, 'confusion_matrix.txt')
@@ -942,58 +1010,70 @@ if __name__ == '__main__':
             roc_fig_f = os.path.join(exp_d, 'roc.png')
             predictions_f = os.path.join(exp_d, 'predictions.txt')
 
+            ###################################################################
+            # RUN EXPERIMENT
+            # - cv_score (feature selection 'none')
+            # - ffs
+            # - bfs
+            ###################################################################
+
+            print args.feature_selection
+
+            # catch warnings from lda and qda as exepctions
+            warnings.filterwarnings(action='error',
+                                    category=RuntimeWarning)
+
+            gs_log_f = open(gs_f, 'w')
+            gs_log_f.write('mean,std,cv_scores,parameters\n\n')
+
             cv_roc_curves = None
 
-            with open(gs_f, 'w') as fout:
-                fout.write('mean,std,cv_scores,parameters\n\n')
+            try:
 
-                print args.feature_selection
+                # run CV experiment without feature selection
+                if(args.feature_selection == 'none'):
+                    print 'start cv score...'
+                    (cv_scores, cv_params, cv_confusion, cv_all_scores,
+                        cv_roc_curves, predictions) = cv_score(
+                            data, target, cl, args.n_fold_cv, scoring,
+                            param=param, cv=cv, log_f=gs_log_f, cpu=args.cpu,
+                            standardize=args.standardize)
+                    cv_feat_is = None
 
-                # catch warnings from lda and qda as exepctions
-                warnings.filterwarnings(action='error',
-                        category=RuntimeWarning)
+                # run CV experiment with forward feature selection
+                elif(args.feature_selection == 'ffs'):
+                    print 'start ffs...'
+                    (cv_scores, cv_params, cv_confusion, cv_all_scores,
+                        cv_roc_curves, cv_feat_is, predictions) =\
+                        ffs(data, target, cl, args.n_fold_cv, scoring,
+                            param=param, cv=cv, log_f=gs_log_f, cpu=args.cpu,
+                            standardize=args.standardize)
 
-                try:
-                    # run CV experiment without feature selection
-                    if(args.feature_selection == 'none'):
-                        print 'start cv score...'
-                        (cv_scores, cv_params, cv_confusion, cv_all_scores,
-                                cv_roc_curves, predictions) = cv_score(
-                                data, target, cl, args.n_fold_cv, scoring,
-                                param=param, cv=cv, log_f=fout, cpu=args.cpu,
-                                standardize=args.standardize)
-                        cv_feat_is = None
+                # run CV experiment with backward feature selection
+                elif(args.feature_selection == 'bfs'):
+                    print 'start bfs...'
+                    (cv_scores, cv_params, cv_confusion, cv_all_scores,
+                        cv_roc_curves, cv_feat_is, predictions) =\
+                        bfs(data, target, cl, args.n_fold_cv, scoring,
+                            param=param, cv=cv, log_f=gs_log_f, cpu=args.cpu,
+                            standardize=args.standardize)
 
-                    # run CV experiment with forward feature selection
-                    elif(args.feature_selection == 'ffs'):
-                        print 'start ffs...'
-                        (cv_scores, cv_params, cv_confusion, cv_all_scores,
-                                cv_roc_curves, cv_feat_is, predictions) =\
-                                ffs(data, target, cl, args.n_fold_cv, scoring,
-                                param, cv=cv, log_f=fout, cpu=args.cpu,
-                                standardize=args.standardize)
+                else:
+                    cv_scores = 'Feature selection method does not exist.'
 
-                    # run CV experiment with backward feature selection
-                    elif(args.feature_selection == 'bfs'):
-                        print 'start bfs...'
-                        (cv_scores, cv_params, cv_confusion, cv_all_scores,
-                                cv_roc_curves, cv_feat_is, predictions) =\
-                                bfs(data, target, cl, args.n_fold_cv, scoring,
-                                param, cv=cv, log_f=fout, cpu=args.cpu,
-                                standardize=args.standardize)
+            except(RuntimeWarning) as e:
+                #cv_scores = 'RuntimeWarning occured: %s' % rw
+                print traceback.format_exc()
+                raise e
+                sys.exit()
+            except Exception as e:
+                print traceback.format_exc()
+                raise e
+                sys.exit()
 
-                    else:
-                        cv_scores = 'Feature selection method does not exist.'
-
-                except(RuntimeWarning) as e:
-                    #cv_scores = 'RuntimeWarning occured: %s' % rw
-                    print traceback.format_exc()
-                    raise e
-                    sys.exit()
-                except Exception as e:
-                    print traceback.format_exc()
-                    raise e
-                    sys.exit()
+            ###################################################################
+            # Write experiment results
+            ###################################################################
 
             # write results to output files
             if(type(cv_scores) == str):
@@ -1036,9 +1116,9 @@ if __name__ == '__main__':
 
                 # sort predictions by object index
                 sorted_predictions = sorted(predictions,
-                        key=operator.itemgetter(0))
+                                            key=operator.itemgetter(0))
                 preds = zip(fm.object_ids, [p[1] for p in sorted_predictions],
-                        [p[2] for p in sorted_predictions])
+                            [p[2] for p in sorted_predictions])
                 file_io.write_tuple_list(predictions_f, preds)
 
                 # write feature selection
@@ -1048,7 +1128,7 @@ if __name__ == '__main__':
                         fout.write('cv_loop,selected features\n')
                         for index, fs in enumerate(cv_feat_is):
                             fout.write('%i,%s\n' % (index,
-                                    '\t'.join([feature_list[fi]
-                                    for fi in fs])))
+                                       '\t'.join([feature_list[fi]
+                                       for fi in fs])))
 
     print('\nRUNTIME: %i' % (int(time.time() - overall_start_time)))

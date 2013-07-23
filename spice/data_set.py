@@ -88,10 +88,12 @@ class ProteinDataSet(object):
         assert(self.proteins)
         protein_dict = dict(zip(self.get_protein_ids(), self.proteins))
 
-        for (pid, pos, fr, to, pdb_id, pdb_i) in mutation_data:
+        for (pid, pos, fr, to, label, pep, pep_i, codons, codon_fr, codons_to,
+             pdb_id, pdb_i) in mutation_data:
             if(pid in protein_dict.keys()):
                 protein = protein_dict[pid]
-                MissenseMutation(protein, pos, fr, to, pdb_id, pdb_i)
+                MissenseMutation(protein, pos, fr, to, label, pep, pep_i,
+                                 codons, codon_fr, codons_to, pdb_id, pdb_i)
 
     def load(self):
         assert(self.root_dir)
@@ -305,8 +307,9 @@ class DataSourceFactory(object):
     def __init__(self):
 
         self.data_source_ids = ['orf_seq', 'prot_seq', 'ss_seq', 'sa_seq',
-                                'prot_struct', 'residue_rasa', 'residue_rank',
-                                'pfam']
+                                #'prot_struct', 'residue_rasa', 'residue_rank',
+                                'prot_struct', 'residue_rasa',
+                                'msa', 'pfam', 'flex', 'interaction']
 
         self.data_sources = {
             'prot_seq': ('Protein sequence',
@@ -352,17 +355,33 @@ class DataSourceFactory(object):
                                 for item in x])
                     ], os.path.join('structure_data', 'rasa'),
                     'uni_rasa.map'),
-            'residue_rank': ('protein residue ranking',
-                    file_io.read_residue_rank_dir,
-                    file_io.write_residue_rank_dir,
-                    Protein.set_msa_data,
+            #'residue_rank': ('protein residue ranking',
+            #        file_io.read_residue_rank_dir,
+            #        file_io.write_residue_rank_dir,
+            #        Protein.set_msa_data,
+            #        [
+            #        ], os.path.join('msa_data', 'residue_rank'),
+            #        'uni_rank.map'),
+            'msa': ('Multiple sequence alignment with homologous proteins',
+                    file_io.read_msa_dir,
+                    file_io.write_msa_dir,
+                    Protein.set_msa,
                     [
-                    ], os.path.join('msa_data', 'residue_rank'),
-                    'uni_rank.map'),
+                    ], os.path.join('msa_data', 'msa'),
+                    'uni_msa.map'),
             'pfam': ('protein family data',
                     file_io.read_pfam, file_io.write_pfam,
                     Protein.set_pfam_annotations,
-                    [], 'pfam.txt', None)
+                    [], 'pfam.txt', None),
+            'flex': ('backbone dynamics data',
+                    file_io.read_flex, file_io.write_flex,
+                    Protein.set_backbone_dynamics,
+                    [], 'flex.txt', None),
+            'interaction': ('interaction counts data',
+                    file_io.read_interaction_counts,
+                    file_io.write_interaction_counts,
+                    Protein.set_interaction_counts,
+                    [], 'interaction.txt', None)
         }
 
         # make sure that all ids are in the ids list
