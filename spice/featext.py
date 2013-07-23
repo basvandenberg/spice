@@ -558,8 +558,6 @@ if __name__ == '__main__':
                     fe.fm_protein.add_labeling_from_file(label_name,
                                                          label_path)
                 elif(label_type == 'missense'):
-                    print label_name
-                    print label_path
                     fe.fm_missense.add_labeling_from_file(label_name,
                                                           label_path)
                 else:
