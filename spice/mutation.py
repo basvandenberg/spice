@@ -413,9 +413,9 @@ class MissenseMutation(object):
             #pf_rep = self.pfam_repeat()
             pf_cla = self.pfam_clan()
             #pf_act = self.pfam_active_residue()
-            pf_cla_i = self.pfam_clan_index()
+            #pf_cla_i = self.pfam_clan_index()
 
-            num_features = 4
+            num_features = 3
             feat_vec = numpy.zeros(num_features)
 
             feat_vec[0] = 0 if pf_fam is None else 1
@@ -423,7 +423,7 @@ class MissenseMutation(object):
             #feat_vec[2] = 0 if pf_rep is None else 1
             feat_vec[2] = 0 if pf_cla is None else 1
             #feat_vec[4] = 1 if pf_act else 0
-            feat_vec[3] = -1 if pf_cla_i is None else pf_cla_i
+            #feat_vec[3] = -1 if pf_cla_i is None else pf_cla_i
 
             return feat_vec
 
@@ -431,9 +431,8 @@ class MissenseMutation(object):
             #ids = ['fam', 'dom', 'rep', 'cla', 'act']
             #names = ['pfam family', 'pfam domain', 'pfam repeat', 'pfam clan',
             #        'pfam active residue']
-            ids = ['fam', 'dom', 'cla', 'cli']
-            names = ['pfam family', 'pfam domain', 'pfam clan',
-                     'pfam clan index']
+            ids = ['fam', 'dom', 'cla']
+            names = ['pfam family', 'pfam domain', 'pfam clan']
             return (ids, names)
 
     def interaction_counts(self, feature_ids=False):
