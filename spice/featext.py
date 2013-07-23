@@ -451,7 +451,7 @@ if __name__ == '__main__':
     if not(os.path.exists(args.root)):
         print '\nDirectory %s does not exist' % (args.root)
         print 'Use --init if you want to create a new project.\n'
-        sys.exit()
+        sys.exit(0)
     else:
         try:
             print('\nLoading data...')
@@ -472,12 +472,12 @@ if __name__ == '__main__':
                 fe.load_protein_ids(args.uniprot_ids)
             except IOError as e:
                 print '\nNo such file: %s\n' % (e)
-                sys.exit()
+                sys.exit(1)
             except Exception, e:
                 print '\nError in object ids file: %s\n' % (e)
-                sys.exit()
+                sys.exit(1)
 
-        #fe.save()
+        fe.save()
 
     # set labels
     if(args.labels):
@@ -510,7 +510,7 @@ if __name__ == '__main__':
                 print traceback.format_exc()
                 sys.exit(1)
 
-        #fe.save()
+        fe.save()
 
     # add protein sequence data (obtain from fasta file using uniprot ids)
     if(args.protein_sequence_data):
@@ -543,7 +543,7 @@ if __name__ == '__main__':
                 print sys.exc_info()[0]
                 sys.exit()
 
-        #fe.save()
+        fe.save()
 
     # add pfam annotation data
     if(args.pfam_data):
@@ -575,7 +575,7 @@ if __name__ == '__main__':
                 print sys.exc_info()[0]
                 sys.exit()
 
-        #fe.save()
+        fe.save()
 
     # add backbone dynamics data
     if(args.flex_data):
@@ -606,7 +606,7 @@ if __name__ == '__main__':
                 print traceback.format_exc()
                 sys.exit(1)
 
-        #fe.save()
+        fe.save()
 
     # add protein interaction data
     if(args.interaction_data):
@@ -637,7 +637,7 @@ if __name__ == '__main__':
                 print traceback.format_exc()
                 sys.exit(1)
 
-        #fe.save()
+        fe.save()
 
     # add orf sequence data,
     if(args.orf_sequence_data):
@@ -677,7 +677,7 @@ if __name__ == '__main__':
                 print traceback.format_exc()
                 sys.exit(1)
 
-        #fe.save()
+        fe.save()
 
     # add structure data
     if(args.structure_data):
@@ -706,7 +706,7 @@ if __name__ == '__main__':
                 print traceback.format_exc()
                 sys.exit()
 
-        #fe.save()
+        fe.save()
 
     # add solvent accessibilty data
     if(args.rasa_data):
@@ -735,7 +735,7 @@ if __name__ == '__main__':
                 print traceback.format_exc()
                 sys.exit()
 
-        #fe.save()
+        fe.save()
 
     # add residue rank data
     '''
@@ -789,7 +789,7 @@ if __name__ == '__main__':
                 print traceback.format_exc()
                 sys.exit(1)
 
-        #fe.save()
+        fe.save()
 
     # add missense mutation data
     if(args.missense_mutations):
@@ -818,7 +818,7 @@ if __name__ == '__main__':
                 except Exception as e:
                     print traceback.print_exc()
                     sys.exit(1)
-        #fe.save()
+        fe.save()
 
     # calculate features
     if(args.missense_features):
@@ -836,7 +836,7 @@ if __name__ == '__main__':
                 print traceback.print_exc()
                 sys.exit(1)
 
-        #fe.save()
+        fe.save()
 
     if(args.protein_features):
 
@@ -853,7 +853,7 @@ if __name__ == '__main__':
                 print traceback.print_exc()
                 raise e
 
-        #fe.save()
+        fe.save()
 
     # add custom features
     if(args.custom_missense_features):
@@ -866,6 +866,4 @@ if __name__ == '__main__':
 
     if(args.delete_feature_matrices):
         fe.delete_feature_matrices()
-        #fe.save()
-
-    fe.save()
+        fe.save()
