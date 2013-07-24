@@ -106,7 +106,8 @@ class Protein(object):
         self.rasa = rasa
 
     def set_pfam_annotations(self, pfam_annotations):
-        self.pfam_annotations = pfam_annotations
+        self.pfam_annotations = [Pfam(a[0], a[1], a[2], a[3], a[4], a[5], a[6],
+                                 a[7], a[8]) for a in pfam_annotations]
 
     def set_backbone_dynamics(self, backbone_dynamics):
         assert(type(backbone_dynamics) == list)
@@ -123,12 +124,22 @@ class Protein(object):
 
     # feature calculation functions
 
-    def amino_acid_composition(self, feature_ids=False):
+    def amino_acid_composition(self, num_segments, feature_ids=False):
         if not(feature_ids):
-            return sequtil.aa_composition(self.protein_sequence)
+            return sequtil.aa_composition(self.protein_sequence, num_segments)
         else:
-            return (list(sequtil.aa_unambiguous_alph),
-                    sequtil.aa_unambiguous_name)
+
+            feat_ids = []
+            feat_names = []
+
+            for si in xrange(1, num_segments + 1):
+                for aa in sequtil.aa_unambiguous_alph:
+                    feat_ids.append('%s%i' % (aa, si))
+                    feat_names.append(
+                        'Amino acid composition %i segments' % (num_segments) +
+                        '(segment %i, amino acid %s)' % (si, aa))
+
+            return (feat_ids, feat_names)
 
     def ss_composition(self, feature_ids=False):
         if not(feature_ids):
@@ -216,7 +227,7 @@ class Protein(object):
 
         if not(feature_ids):
 
-            scales = sequtil.georgiev_scales
+            scales = sequtil.get_georgiev_scales()
             result = []
 
             for scale in scales:
@@ -233,7 +244,7 @@ class Protein(object):
 
         if not(feature_ids):
 
-            scales = sequtil.georgiev_scales
+            scales = sequtil.get_georgiev_scales()
             result = []
 
             for scale in scales:
@@ -247,6 +258,49 @@ class Protein(object):
             return (['%02d%s' % (i, s) for s in ['t', 'b'] for i in range(19)],
                     ['Georgiev %i %s' % (i, s) for s in ['top', 'bottom']
                     for i in range(19)])
+
+    def autocorrelation_mb(self, scales, lags, feature_ids=False):
+
+        # 'parse' the scale parameter
+        if(type(scales) == list and all([type[i] == int for i in scales])):
+            scales = [sequtil.get_scale(i) for i in scales]
+        elif(scales == 'gg'):
+            # retrieve set of georgiev scales
+            scales = sequtil.get_georgiev_scales()
+        else:
+            raise ValueError('Incorrect scale provided: %s\n'
+                             % (str(scales)))
+
+        # check lags parameter
+        if not(type(lags) == list and all([type[i] == int for i in lags])):
+            raise ValueError('Incorrect lags provided: %s\n'
+                             % (str(lags)))
+
+        # calculatie features
+        if not(feature_ids):
+
+            #num_feat = len(scales) * len(lags)
+            result = []
+
+            for s in scales:
+                for l in lags:
+                    result.append(sequtil.autocorrelation_mb(s, l))
+
+            return result
+        # or return feature ids and names
+        else:
+
+            feat_ids = []
+            feat_names = []
+            for s in scales:
+                for l in lags:
+                    feat_ids.append('acmb:%03d:%02d' % (s, l))
+                    feat_names.append(
+                        'Autocorrelation Moreau-Broto (scale:%03d lag:%02d' %
+                        (s, l))
+
+            return (feat_ids, feat_names)
+        
 
     def length(self, feature_ids=False):
         if not(feature_ids):

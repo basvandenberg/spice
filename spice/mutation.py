@@ -100,29 +100,12 @@ class MissenseMutation(object):
         if not(feature_ids):
             feat_vec = numpy.zeros(num_scales)
             for index in xrange(num_scales):
-                scale = sequtil.georgiev_scales[index]
+                scale = sequtil.get_georgiev_scales()[index]
                 feat_vec[index] = self.mutation_signal_distance(scale)
             return feat_vec
         else:
             ids = ['%i' % (i) for i in xrange(num_scales)]
             names = ['Georgiev %i signal difference' % (i)
-                     for i in xrange(num_scales)]
-            return (ids, names)
-
-    def georgiev_blosum_signal_diff(self, feature_ids=False):
-        '''
-        '''
-        num_scales = 10
-
-        if not(feature_ids):
-            feat_vec = numpy.zeros(num_scales)
-            for index in xrange(num_scales):
-                scale = sequtil.georgiev_blosum_scales[index]
-                feat_vec[index] = self.mutation_signal_distance(scale)
-            return feat_vec
-        else:
-            ids = ['%i' % (i) for i in xrange(num_scales)]
-            names = ['Georgiev Blosum62 %i signal difference' % (i)
                      for i in xrange(num_scales)]
             return (ids, names)
 
@@ -136,7 +119,7 @@ class MissenseMutation(object):
             feat_vec = numpy.zeros(num_scales)
 
             for index in xrange(num_scales):
-                scale = sequtil.georgiev_scales[index]
+                scale = sequtil.get_georgiev_scales()[index]
                 auc = self.environment_signal_peak_area(
                     env_window, scale, sig_window, edge, threshold,
                     below_threshold)
@@ -146,30 +129,6 @@ class MissenseMutation(object):
         else:
             ids = ['%i' % (i) for i in xrange(num_scales)]
             names = ['Georgiev %i signal ew%i sw%i e%.2f th%.2f' %
-                     (i, env_window, sig_window, edge, threshold)
-                     for i in xrange(num_scales)]
-            return (ids, names)
-
-    def georgiev_blosum_signal_auc(self, env_window=21, sig_window=9, edge=1.0,
-                                   threshold=1.5, below_threshold=False,
-                                   feature_ids=False):
-
-        num_scales = 10
-
-        if not(feature_ids):
-            feat_vec = numpy.zeros(num_scales)
-
-            for index in xrange(num_scales):
-                scale = sequtil.georgiev_blosum_scales[index]
-                auc = self.environment_signal_peak_area(
-                    env_window, scale, sig_window, edge, threshold,
-                    below_threshold)
-                # anscombe transform (~poissos --> ~normal)
-                feat_vec[index] = 2 * numpy.sqrt(auc + (3.0 / 8.0))
-            return feat_vec
-        else:
-            ids = ['%i' % (i) for i in xrange(num_scales)]
-            names = ['Georgiev blosum %i signal ew%i sw%i e%.2f th%.2f' %
                      (i, env_window, sig_window, edge, threshold)
                      for i in xrange(num_scales)]
             return (ids, names)
@@ -394,7 +353,7 @@ class MissenseMutation(object):
         if not(feature_ids):
             feat_vec = numpy.zeros(num_scales)
             for index in xrange(num_scales):
-                scale = sequtil.georgiev_scales[index]
+                scale = sequtil.get_georgiev_scales()[index]
                 feat_vec[index] = self.min_signal_dist_to_msa(scale)
             return feat_vec
 

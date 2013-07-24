@@ -20,7 +20,6 @@ from spice import protein
 from spice import mutation
 from util import file_io
 
-
 class FeatureExtraction(object):
 
     def __init__(self):
@@ -36,8 +35,8 @@ class FeatureExtraction(object):
         self.protein_data_set = data_set.ProteinDataSet()
 
         # initialize feature vectors
-        self.fv_dict_protein = None
-        self.fv_dict_missense = None
+        #self.fv_dict_protein = None
+        #self.fv_dict_missense = None
 
     def set_root_dir(self, root_dir):
         '''
@@ -79,14 +78,56 @@ class FeatureExtraction(object):
         self.fm_missense.object_ids = mut_ids
         
         # and create mutation feature vector object
-        self.fv_dict_missense = MutationFeatureVectorFactory().\
-            get_feature_vectors(self.protein_data_set.get_mutations())
+        #self.fv_dict_missense = MutationFeatureVectorFactory().\
+        #    get_feature_vectors(self.protein_data_set.get_mutations())
 
+    def calculate_protein_features(self, feature_id):
+        '''
+        Calculates protein features defined by the feature id. Feature values
+        are appended to the protein feature matrix.
 
-    def calculate_protein_features(self, feat_vector_id):
+        The feature_id parameter is of the form:
+
+        featcatid_params
+
+        In this featcatid is the feature category id, e.g. aac for amino acid
+        composition, and params is a colon separated list of parameters for
+        this type of feature. In case of the amino acid composition, the number
+        of protein segments should be defined a parameter, e.g. aac_10 means
+        the amino acid composition of 10 equal sized protein segments.
+        '''
+
         assert(self.fm_protein.object_ids)
-        (fm, fids, fnames) = self.fv_dict_protein[feat_vector_id].calc_feats()
-        self.fm_protein.add_features(fids, fm, feature_names=fnames)
+
+        # split feature id and paramaters string
+        featcat_id, params_str = feature_id.split('_')
+
+        # obtain feature category object for given feature category id
+        featcat = PROTEIN_FEATURE_CATEGORIES[featcat_id]
+
+        # parse the parameter string to a list of parameters
+        param_list = params_str.split(':')
+        assert(len(param_list) == len(featcat.param_types))
+        args = []
+        for p, pt in zip(param_list, featcat.param_types):
+            args.append(pt(p))
+
+        # fetch feature ids and names
+        (ids, names) = featcat.feature_func(protein.Protein(''),
+                                            feature_ids=True, *args)
+
+        # append feature id to feature category id
+        feat_ids = ['%s_%s' % (feature_id, i) for i in ids]
+        print feat_ids
+
+        # initialize empty feature matrix
+        fm = numpy.empty((len(self.fm_protein.object_ids), len(feat_ids)))
+
+        # fill the matrix
+        for index, o in enumerate(self.protein_data_set.get_proteins()):
+            fm[index, :] = featcat.feature_func(o, *args)
+
+        self.fm_protein.add_features(feat_ids, fm, feature_names=names)
 
     # TODO split in calculate and add function? or add remove from featmat
     def calculate_missense_features(self, feat_vector_id):
@@ -128,6 +169,7 @@ class FeatureExtraction(object):
         # load protein data set
         self.protein_data_set.load()
 
+        '''
         # create protein feature vectors object
         if(self.protein_data_set.get_proteins()):
             self.fv_dict_protein = ProteinFeatureVectorFactory().\
@@ -137,6 +179,7 @@ class FeatureExtraction(object):
         if(self.protein_data_set.get_mutations()):
             self.fv_dict_missense = MutationFeatureVectorFactory().\
                     get_feature_vectors(self.protein_data_set.get_mutations())
+        '''
 
     def save(self):
 
@@ -191,6 +234,55 @@ class FeatureExtraction(object):
         pyplot.show()
 
 
+class FeatureCategory():
+
+    def __init__(self, fcid, name, feature_func, param_types, required_data):
+
+        self._fcid = fcid
+        self._name = name
+        self._feature_func = feature_func
+        self._param_types = param_types
+        self._required_data = required_data
+
+    @property
+    def fcid(self):
+        return self._fcid
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def feature_func(self):
+        return self._feature_func
+
+    @property
+    def param_types(self):
+        return self._param_types
+
+    @property
+    def required_data(self):
+        return self._required_data
+
+PROTEIN_FEATURE_CATEGORY_IDS = ['aac']
+
+# - name 
+# - feature calculation function
+# - parameter types
+# - required data sources
+PROTEIN_FEATURE_CATEGORIES = {
+
+    'aac': FeatureCategory(
+        'aac',
+        'amino_acid_composition',
+        protein.Protein.amino_acid_composition,
+        [int],
+        [(protein.Protein.get_protein_sequence, True)])
+
+}
+assert(sorted(PROTEIN_FEATURE_CATEGORY_IDS) == 
+       sorted(PROTEIN_FEATURE_CATEGORIES.keys()))
+
 class FeatureVector():
 
     def __init__(self, uid, object_list, name, feature_func, kwargs,
@@ -210,8 +302,8 @@ class FeatureVector():
         (ids, names) = self.feature_func(self.object_list[0],
                 feature_ids=True, **kwargs)
 
-        self.short_ids = ids
-        self.short_names = names
+        #self.short_ids = ids
+        #self.short_names = names
 
         self.feat_ids = ['%s_%s' % (self.uid, i) for i in ids]
         #self.feat_names = ['%s %s' % (self.name, n) for n in names]
@@ -264,7 +356,7 @@ class FeatureVectorFactory(object):
 class MutationFeatureVectorFactory(FeatureVectorFactory):
 
     FEATVEC_IDS = [
-        'mutvec', 'mutggsigdiff', 'mutggbsigdiff',
+        'mutvec', 'mutggsigdiff',
         'seqenv19',
         'msa', 'msaggsigdiff',
         'bbang', 'rasa',
@@ -279,12 +371,8 @@ class MutationFeatureVectorFactory(FeatureVectorFactory):
                 mutation.MissenseMutation.mutation_vector, {}),
             'mutggsigdiff': ('mutation georgiev signal difference',
                 mutation.MissenseMutation.georgiev_signal_diff, {}),
-            'mutggbsigdiff': ('mutation georgiev blosum signal difference',
-                mutation.MissenseMutation.georgiev_blosum_signal_diff, {}),
             'seqenv19': ('sequence environment amino acid counts',
                 mutation.MissenseMutation.seq_env_aa_count, {'window': 19}),
-            #'msa': ('msa-based',
-            #    mutation.MissenseMutation.msa_based, {}),
             'msa': ('msa-based',
                 mutation.MissenseMutation.msa, {}),
             'msaggsigdiff': ('msa georgiev signal difference',
