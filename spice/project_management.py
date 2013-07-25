@@ -131,10 +131,8 @@ class ProjectManager(object):
     def get_job_id(self):
         return self.timestamp_str()
 
+    '''
     def fetch_job_files(self, app):
-        '''
-        Returns list of tuples (jobid, jobfile, status)
-        '''
 
         status_dirs = {
             'done': self.job_done_dir,
@@ -156,17 +154,19 @@ class ProjectManager(object):
                     app_files.append((os.path.basename(f), f, status))
 
         return sorted(app_files, key=operator.itemgetter(0), reverse=True)
+    '''
 
     def get_feat_calc_status(self):
         '''
-        Beetje lange parse functie geworden... wat gekopieer ook hier en daar.
+        This function returns a dictionary that maps a status to a list of jobs
+        that have this status. The list of jobs is sorted by initiation time.
         '''
         cat_status = {}
 
         if not(self.project_id is None):
 
             status_dirs = {
-                'done': self.job_done_dir,
+                #'done': self.job_done_dir,
                 'running': self.job_running_dir,
                 'error': self.job_error_dir,
                 'waiting': self.job_waiting_dir
@@ -174,26 +174,48 @@ class ProjectManager(object):
 
             for status in status_dirs.keys():
 
-                dir = status_dirs[status]
-                files = [f for f in glob.glob(os.path.join(dir, '*'))]
+                # initialize empty list
+                jobs_list = []
 
-                for f in files:
-                    with open(f, 'r') as fin:
-                        cmd = fin.readline()
-                        tokens = cmd.split()
-                        app_path = tokens[0]
-                        app = os.path.splitext(os.path.basename(app_path))[0]
-                        if(app == 'featext'):
-                            try:
-                                seqfeat_i = tokens.index('--protein_features')
-                                index = seqfeat_i + 1
-                                while(index < len(tokens) and
-                                        not tokens[index][0] == '-'):
-                                    cat_status[tokens[index]] = status
-                                    index += 1
-                            except ValueError:
-                                pass
+                for f in glob.glob(os.path.join(status_dirs[status], '*')):
+                    jobs_list.extend(self.parse_featext_job_file(f))
+
+                # sort by initiation date
+                sortl = sorted(jobs_list, key=operator.itemgetter(1),
+                               reverse=True)
+
+                # transform datetime objects to strings
+                format_str = '%d-%m-%Y / %H:%M:%S'
+                tstr = [(c, datetime.datetime.strftime(t, format_str))
+                        for c, t in sortl]
+
+                cat_status[status] = tstr
+        
         return cat_status
+
+    def parse_featext_job_file(self, f):
+        with open(f, 'r') as fin:
+
+            datestr, timestr, _ = os.path.basename(f).split('_')
+            t = datetime.datetime.strptime(datestr + timestr, '%Y%m%d%H%M%S')
+
+            tokens = fin.readline().split()
+            app = os.path.splitext(os.path.basename(tokens[0]))[0]
+
+            result = []
+
+            if(app == 'featext'):
+                try:
+                    seqfeat_i = tokens.index('--protein_features')
+                    index = seqfeat_i + 1
+                    while(index < len(tokens) and
+                            not tokens[index][0] == '-'):
+                        result.append((tokens[index], t))
+                        index += 1
+                except ValueError:
+                    pass
+
+            return result
 
     def parse_job_file(self, f):
         with open(f, 'r') as fin:
