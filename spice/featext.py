@@ -20,7 +20,66 @@ from spice import protein
 from spice import mutation
 from util import file_io
 
+
+class FeatureCategory():
+
+    def __init__(self, fc_id, fc_name, feature_func, param_names, param_types, 
+                 required_data):
+
+        self._fc_id = fc_id
+        self._fc_name = fc_name
+        self._feature_func = feature_func
+        self._param_names = param_names
+        self._param_types = param_types
+        self._required_data = required_data
+
+    @property
+    def fc_id(self):
+        return self._fc_id
+
+    @property
+    def fc_name(self):
+        return self._fc_name
+
+    @property
+    def feature_func(self):
+        return self._feature_func
+
+    @property
+    def param_names(self):
+        return self._param_names
+
+    @property
+    def param_types(self):
+        return self._param_types
+
+    @property
+    def required_data(self):
+        return self._required_data
+
+
 class FeatureExtraction(object):
+
+    PROTEIN_FEATURE_CATEGORY_IDS = ['aac']
+
+    # - name 
+    # - feature calculation function
+    # - parameter names
+    # - parameter types
+    # - required data sources
+    PROTEIN_FEATURE_CATEGORIES = {
+
+        'aac': FeatureCategory(
+            'aac',
+            'amino acid composition',
+            protein.Protein.amino_acid_composition,
+            ['number of segments'],
+            [int],
+            [(protein.Protein.get_protein_sequence, True)])
+
+    }
+    assert(sorted(PROTEIN_FEATURE_CATEGORY_IDS) == 
+           sorted(PROTEIN_FEATURE_CATEGORIES.keys()))
 
     def __init__(self):
 
@@ -118,7 +177,6 @@ class FeatureExtraction(object):
 
         # append feature id to feature category id
         feat_ids = ['%s_%s' % (feature_id, i) for i in ids]
-        print feat_ids
 
         # initialize empty feature matrix
         fm = numpy.empty((len(self.fm_protein.object_ids), len(feat_ids)))
@@ -130,30 +188,69 @@ class FeatureExtraction(object):
         self.fm_protein.add_features(feat_ids, fm, feature_names=names)
 
     # TODO split in calculate and add function? or add remove from featmat
+    # TODO turn into same method as the one above...
     def calculate_missense_features(self, feat_vector_id):
         assert(self.fm_protein.object_ids)
         (fm, fids, fnames) = self.fv_dict_missense[feat_vector_id].calc_feats()
         self.fm_missense.add_features(fids, fm, feature_names=fnames)
 
-    def available_protein_feature_vectors(self):
-        available = []
-        if(self.fm_protein.feature_ids):
-            feat_ids_set = set(self.fm_protein.feature_ids)
-            for featvec in self.fv_dict_protein.values():
-                if(set(featvec.feat_ids) <= feat_ids_set):
-                    available.append(featvec)
-        return available
+    def categorized_protein_feature_ids(self):
+        '''
+        This function returns all feature ids sorted by feature category and
+        category parameter settings. The returned dictionary containes a
+        mapping from feature category id to a dictionary. This dictionary
+        contains a mapping from parameter settings for this category to the
+        list with corresponding feature ids.
 
-    def protein_feat_id_to_name_dict(self):
-        result = {}
-        for featvec in self.fv_dict_protein.values():
-            featvec_dict = featvec.feat_name_dict()
-            for key in featvec_dict.keys():
-                result[key] = (featvec.name, featvec_dict[key])
-        return result
+        { 
+            'aac': 
+            {
+                '2' : ['aac_2_A1', 'aac_2_R1', ..., 'aac_2_V2'], 
+                '5' : ['aac_5_A1', 'aac_5_R1', ..., 'aac_5_V5'],
+                ...
+            }, 
+            ...
+        }
 
-    def get_protein_feature_vector_ids(self):
-        return ProteinFeatureVectorFactory.FEATVEC_IDS
+        '''
+
+        cat_feat_dict = {}
+
+        for feat_id in self.fm_protein.feature_ids:
+
+            # TODO what if there are no parameters...?
+
+            tokens = feat_id.split('_')
+
+            if not(tokens[0] == self.fm_protein.CUSTOM_FEAT_PRE):
+
+                cat, params_str, feat = tokens
+
+                # not so easy to read, but works... building dict with dicts
+                cat_feat_dict.setdefault(cat, {})\
+                             .setdefault(params_str, []).append(feat_id)
+
+        return cat_feat_dict
+
+    #def available_protein_feature_vectors(self):
+    #    available = []
+    #    if(self.fm_protein.feature_ids):
+    #        feat_ids_set = set(self.fm_protein.feature_ids)
+    #        for featvec in self.fv_dict_protein.values():
+    #            if(set(featvec.feat_ids) <= feat_ids_set):
+    #                available.append(featvec)
+    #    return available
+
+    #def protein_feat_id_to_name_dict(self):
+    #    result = {}
+    #    for featvec in self.fv_dict_protein.values():
+    #        featvec_dict = featvec.feat_name_dict()
+    #        for key in featvec_dict.keys():
+    #            result[key] = (featvec.name, featvec_dict[key])
+    #    return result
+
+    #def get_protein_feature_vector_ids(self):
+    #    return ProteinFeatureVectorFactory.FEATVEC_IDS
 
     def load(self):
 
@@ -233,55 +330,6 @@ class FeatureExtraction(object):
         #pyplot.plot(data1, color="#ff5555")
         pyplot.show()
 
-
-class FeatureCategory():
-
-    def __init__(self, fcid, name, feature_func, param_types, required_data):
-
-        self._fcid = fcid
-        self._name = name
-        self._feature_func = feature_func
-        self._param_types = param_types
-        self._required_data = required_data
-
-    @property
-    def fcid(self):
-        return self._fcid
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def feature_func(self):
-        return self._feature_func
-
-    @property
-    def param_types(self):
-        return self._param_types
-
-    @property
-    def required_data(self):
-        return self._required_data
-
-PROTEIN_FEATURE_CATEGORY_IDS = ['aac']
-
-# - name 
-# - feature calculation function
-# - parameter types
-# - required data sources
-PROTEIN_FEATURE_CATEGORIES = {
-
-    'aac': FeatureCategory(
-        'aac',
-        'amino_acid_composition',
-        protein.Protein.amino_acid_composition,
-        [int],
-        [(protein.Protein.get_protein_sequence, True)])
-
-}
-assert(sorted(PROTEIN_FEATURE_CATEGORY_IDS) == 
-       sorted(PROTEIN_FEATURE_CATEGORIES.keys()))
 
 class FeatureVector():
 
