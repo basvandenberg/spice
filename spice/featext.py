@@ -78,8 +78,8 @@ class FeatureExtraction(object):
             [(protein.Protein.get_protein_sequence, True)])
 
     }
-    assert(sorted(PROTEIN_FEATURE_CATEGORY_IDS) == 
-           sorted(PROTEIN_FEATURE_CATEGORIES.keys()))
+    assert(sorted(self.PROTEIN_FEATURE_CATEGORY_IDS) == 
+           sorted(self.PROTEIN_FEATURE_CATEGORIES.keys()))
 
     def __init__(self):
 
@@ -162,7 +162,7 @@ class FeatureExtraction(object):
         featcat_id, params_str = feature_id.split('_')
 
         # obtain feature category object for given feature category id
-        featcat = PROTEIN_FEATURE_CATEGORIES[featcat_id]
+        featcat = self.PROTEIN_FEATURE_CATEGORIES[featcat_id]
 
         # parse the parameter string to a list of parameters
         param_list = params_str.split(':')
