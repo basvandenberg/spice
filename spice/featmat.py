@@ -560,7 +560,7 @@ class FeatureMatrix(object):
 
     def _save_feature_matrix(self, f):
         if not(self.feature_matrix is None):
-            numpy.savetxt(f, self.feature_matrix)
+            numpy.savetxt(f, self.feature_matrix, fmt='%.4e')
         elif(os.path.exists(f)):
             os.remove(f)
 
