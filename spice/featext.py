@@ -160,12 +160,12 @@ class FeatureExtraction(object):
         #self.fv_dict_missense = MutationFeatureVectorFactory().\
         #    get_feature_vectors(self.protein_data_set.get_mutations())
 
-    def calculate_protein_features(self, feature_id):
+    def calculate_protein_features(self, featcat_id):
         '''
-        Calculates protein features defined by the feature id. Feature values
-        are appended to the protein feature matrix.
+        Calculates protein features defined by the feature category id. Feature
+        values are appended to the protein feature matrix.
 
-        The feature_id parameter is of the form:
+        The featcat_id parameter is of the form:
 
         featcatid_params
 
@@ -179,10 +179,10 @@ class FeatureExtraction(object):
         assert(self.fm_protein.object_ids)
 
         # split feature id and paramaters string
-        featcat_id, params_str = feature_id.split('_')
+        fc_id, params_str = featcat_id.split('_')
 
         # obtain feature category object for given feature category id
-        featcat = self.PROTEIN_FEATURE_CATEGORIES[featcat_id]
+        featcat = self.PROTEIN_FEATURE_CATEGORIES[fc_id]
 
         # parse the parameter string to a list of parameters
         param_list = params_str.split(':')
@@ -196,7 +196,7 @@ class FeatureExtraction(object):
                                             feature_ids=True, *args)
 
         # append feature id to feature category id
-        feat_ids = ['%s_%s' % (feature_id, i) for i in ids]
+        feat_ids = ['%s_%s' % (featcat_id, i) for i in ids]
 
         # initialize empty feature matrix
         fm = numpy.empty((len(self.fm_protein.object_ids), len(feat_ids)))
@@ -213,6 +213,14 @@ class FeatureExtraction(object):
         assert(self.fm_protein.object_ids)
         (fm, fids, fnames) = self.fv_dict_missense[feat_vector_id].calc_feats()
         self.fm_missense.add_features(fids, fm, feature_names=fnames)
+
+    def available_protein_featcat_ids(self):
+        '''
+        This function returns the set of allready calculated protein feature
+        categories, a set with category ids is returned.
+        '''
+        return set(['_'.join(f.split('_')[:2]) 
+                    for f in self.fm_protein.feature_ids])
 
     def categorized_protein_feature_ids(self):
         '''
