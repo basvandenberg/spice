@@ -78,8 +78,8 @@ class FeatureExtraction(object):
             [(protein.Protein.get_protein_sequence, True)])
 
     }
-    assert(sorted(self.PROTEIN_FEATURE_CATEGORY_IDS) == 
-           sorted(self.PROTEIN_FEATURE_CATEGORIES.keys()))
+    assert(sorted(PROTEIN_FEATURE_CATEGORY_IDS) == 
+           sorted(PROTEIN_FEATURE_CATEGORIES.keys()))
 
     def __init__(self):
 
