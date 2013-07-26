@@ -124,7 +124,9 @@ class Protein(object):
         self.regulatory_count = interaction_counts[4]
         self.signaling_count = interaction_counts[5]
 
+    ###########################################################################
     # feature calculation functions
+    ###########################################################################
 
     def amino_acid_composition(self, num_segments, feature_ids=False):
 
@@ -155,6 +157,127 @@ class Protein(object):
             feat_names = ["%i' amino acid count %s" % (prime, aa)
                           for aa in aa_alph]
             return (feat_ids, feat_names)
+
+    def _parse_scales(self, scales):
+
+        if(type(scales) == str):
+            try:
+                scales = int(scales)
+            except ValueError:
+                pass
+
+        # 'parse' the scale parameter
+        if(scales == 'gg'):
+            # retrieve set of georgiev scales
+            scale_list = sequtil.get_georgiev_scales()
+            scale_ids = ['gg%i' % (i) for i in xrange(1, len(scale_list) + 1)]
+            scale_names = ['Georgiev scale %i' % (i)
+                           for i in xrange(1, len(scale_list) + 1)]
+        elif(type(scales) == int):
+            scale_list = [sequtil.get_aaindex_scale(scales)]
+            scale_ids = ['aai%i' % (scales)]
+            scale_names = ['amino acid index %i' % (scales)]
+        elif(type(scales) == list and all([type[i] == int for i in scales])):
+            scale_list = [sequtil.get_aaindex_scale(i) for i in scales]
+            scale_ids = ['aai%i' % (i) for i in scales]
+            scale_names = ['amino acid index %i' % (i) for i in scales]
+        else:
+            raise ValueError('Incorrect scale provided: %s\n' % (str(scales)))
+
+        return (scale_list, scale_ids, scale_names)
+
+    def average_signal(self, scales, window, edge, feature_ids=False):
+        '''
+        scales: 'gg',1 ,2 ,3, ..., '1', '2', ...
+        window: 5, 7, ...,
+        edge: 0...100
+        '''
+
+        # fetch scales for provided scales param
+        scales, scale_ids, scale_names = self._parse_scales(scales)
+
+        if not(feature_ids):
+
+            result = []
+
+            for scale in scales:
+                result.append(sequtil.avg_seq_signal(
+                              self.protein_sequence, scale, window, edge))
+
+            return result
+
+        else:
+            return (scale_ids, scale_names)
+
+    def signal_peaks_area(self, scales, window, edge, threshold,
+                          feature_ids=False):
+
+        # fetch scales for provided scales param
+        scales, scale_ids, scale_names = self._parse_scales(scales)
+
+        if not(feature_ids):
+
+            result = []
+
+            for scale in scales:
+                top, bot = sequtil.auc_seq_signal(self.protein_sequence, scale,
+                                                  window, edge, threshold)
+                result.append(top)
+                result.append(bot)
+
+            return result
+        else:
+
+            feat_ids = []
+            feat_names = []
+
+            for sid, sname in zip(scale_ids, scale_names):
+                feat_ids.append('%stop' % (sid))
+                feat_ids.append('%sbot' % (sid))
+                feat_names.append('%stop' % (sname))
+                feat_names.append('%sbot' % (sname))
+
+            return (feat_ids, feat_names)
+
+    def autocorrelation_mb(self, scales, lags, feature_ids=False):
+
+        scales, scale_ids, scale_names = self._parse_scales(scales)
+
+        # check lags parameter
+        if not(type(lags) == list and all([type[i] == int for i in lags])):
+            raise ValueError('Incorrect lags provided: %s\n'
+                             % (str(lags)))
+
+        # calculatie features
+        if not(feature_ids):
+
+            #num_feat = len(scales) * len(lags)
+            result = []
+
+            for s in scales:
+                for l in lags:
+                    result.append(sequtil.autocorrelation_mb(s, l))
+
+            return result
+        # or return feature ids and names
+        else:
+
+            feat_ids = []
+            feat_names = []
+            for s in scales:
+                for l in lags:
+                    feat_ids.append('acmb:%03d:%02d' % (s, l))
+                    feat_names.append(
+                        'Autocorrelation Moreau-Broto (scale:%03d lag:%02d' %
+                        (s, l))
+
+            return (feat_ids, feat_names)
+
+    def length(self, feature_ids=False):
+        if not(feature_ids):
+            return [len(self.protein_sequence)]
+        else:
+            return (['len'], ['Protein length'])
 
     def ss_composition(self, feature_ids=False):
         if not(feature_ids):
@@ -210,7 +333,7 @@ class Protein(object):
             return sequtil.aa_cluster_composition(self.protein_sequence)
         else:
             return (sequtil.aa_subsets, sequtil.aa_subsets)
-
+    '''
     def five_prime_cluster_count(self, seq_length=75, feature_ids=False):
         if not(feature_ids):
             return sequtil.aa_cluster_count(self.five_prime_seq(seq_length))
@@ -222,7 +345,7 @@ class Protein(object):
             return sequtil.aa_cluster_count(self.three_prime_seq(seq_length))
         else:
             return (sequtil.aa_subsets, sequtil.aa_subsets)
-
+    '''
     def codon_composition(self, feature_ids=False):
         if not(feature_ids):
             return sequtil.codon_composition(self.orf_sequence)
@@ -238,90 +361,6 @@ class Protein(object):
             names = ['%s (%s)' % (c, sequtil.translate(c))
                      for c in sequtil.codons_unambiguous]
             return (sequtil.codons_unambiguous, names)
-
-    def average_signal(self, window=9, edge=0, feature_ids=False):
-
-        if not(feature_ids):
-
-            scales = sequtil.get_georgiev_scales()
-            result = []
-
-            for scale in scales:
-                result.append(sequtil.avg_seq_signal(
-                              self.protein_sequence, scale, window, edge))
-
-            return result
-        else:
-            return (['%02d' % (i) for i in range(19)],
-                    ['Georgiev %i' % (i) for i in range(19)])
-
-    def signal_peaks_area(self, window=9, edge=0, threshold=1.0,
-                          feature_ids=False):
-
-        if not(feature_ids):
-
-            scales = sequtil.get_georgiev_scales()
-            result = []
-
-            for scale in scales:
-                top, bot = sequtil.auc_seq_signal(self.protein_sequence, scale,
-                                                  window, edge, threshold)
-                result.append(top)
-                result.append(bot)
-
-            return result
-        else:
-            return (['%02d%s' % (i, s) for s in ['t', 'b'] for i in range(19)],
-                    ['Georgiev %i %s' % (i, s) for s in ['top', 'bottom']
-                    for i in range(19)])
-
-    def autocorrelation_mb(self, scales, lags, feature_ids=False):
-
-        # 'parse' the scale parameter
-        if(type(scales) == list and all([type[i] == int for i in scales])):
-            scales = [sequtil.get_scale(i) for i in scales]
-        elif(scales == 'gg'):
-            # retrieve set of georgiev scales
-            scales = sequtil.get_georgiev_scales()
-        else:
-            raise ValueError('Incorrect scale provided: %s\n'
-                             % (str(scales)))
-
-        # check lags parameter
-        if not(type(lags) == list and all([type[i] == int for i in lags])):
-            raise ValueError('Incorrect lags provided: %s\n'
-                             % (str(lags)))
-
-        # calculatie features
-        if not(feature_ids):
-
-            #num_feat = len(scales) * len(lags)
-            result = []
-
-            for s in scales:
-                for l in lags:
-                    result.append(sequtil.autocorrelation_mb(s, l))
-
-            return result
-        # or return feature ids and names
-        else:
-
-            feat_ids = []
-            feat_names = []
-            for s in scales:
-                for l in lags:
-                    feat_ids.append('acmb:%03d:%02d' % (s, l))
-                    feat_names.append(
-                        'Autocorrelation Moreau-Broto (scale:%03d lag:%02d' %
-                        (s, l))
-
-            return (feat_ids, feat_names)
-
-    def length(self, feature_ids=False):
-        if not(feature_ids):
-            return [len(self.protein_sequence)]
-        else:
-            return (['len'], ['Protein length'])
 
     # feature calculation help functions
 

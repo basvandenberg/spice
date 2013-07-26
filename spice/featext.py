@@ -80,7 +80,8 @@ class FeatureCategory():
 
 class FeatureExtraction(object):
 
-    PROTEIN_FEATURE_CATEGORY_IDS = ['aac', 'paac']
+    PROTEIN_FEATURE_CATEGORY_IDS = ['aac', 'paac', 'sigavg', 'sigpeak', 'acmb',
+                                    'len']
 
     # - name
     # - feature calculation function
@@ -103,6 +104,38 @@ class FeatureExtraction(object):
             protein.Protein.prime_amino_acid_count,
             ['prime side', 'length'],
             [int, int],
+            [(protein.Protein.get_protein_sequence, True)]),
+            
+        'sigavg': FeatureCategory(
+            'sigavg',
+            'average signal value',
+            protein.Protein.average_signal,
+            ['scale', 'window', 'edge'],
+            [str, int, float],
+            [(protein.Protein.get_protein_sequence, True)]),
+        
+        'sigpeak': FeatureCategory(
+            'sigpeak',
+            'signal value peaks area',
+            protein.Protein.signal_peaks_area,
+            ['scale', 'window', 'edge', 'threshold'],
+            [str, int, float, float],
+            [(protein.Protein.get_protein_sequence, True)]),
+            
+        'acmb': FeatureCategory(
+            'acmb',
+            'autocorrelation Moreau-Broton',
+            protein.Protein.autocorrelation_mb,
+            ['scale', 'lag'],
+            [str, int],
+            [(protein.Protein.get_protein_sequence, True)]),
+
+        'len': FeatureCategory(
+            'len',
+            'protein length',
+            protein.Protein.length,
+            [],
+            [],
             [(protein.Protein.get_protein_sequence, True)])
     }
 
@@ -538,17 +571,6 @@ class ProteinFeatureVectorFactory(FeatureVectorFactory):
                 protein.Protein.three_prime_cluster_count,
                 {'seq_length': 75},
                 [(protein.Protein.get_protein_sequence, True)]),
-            'sigavg': ('average signal value',
-                protein.Protein.average_signal,
-                {'window': 5, 'edge': 0.5},
-                [(protein.Protein.get_protein_sequence, True)]),
-            'sigpeak': ('signal value peaks area',
-                protein.Protein.signal_peaks_area,
-                {'window': 5, 'edge': 0.5, 'threshold': 1.0},
-                [(protein.Protein.get_protein_sequence, True)]),
-            'len': ('protein length',
-                protein.Protein.length, {},
-                [(protein.Protein.get_protein_sequence, True)])
         }
 
         # make sure that all ids are in the ids list
