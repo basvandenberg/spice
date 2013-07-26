@@ -63,7 +63,7 @@ class FeatureCategory():
         '''
         This function turns a parameter id into a list of its parameter values.
         '''
-        param_tokens = param_id.split(':')
+        param_tokens = param_id.split('-')
         assert(len(param_tokens) == len(self.param_types))
         return [t(p) for t, p in zip(self.param_types, param_tokens)]
 
@@ -71,7 +71,7 @@ class FeatureCategory():
         '''
         This function rurns a parameter id into a readable parameters string.
         '''
-        param_tokens = param_id.split(':')
+        param_tokens = param_id.split('-')
         assert(len(param_tokens) == len(self.param_names))
         param_strings = ['%s: %s' % (p, v) for p, v in
                          zip(self.param_names, param_tokens)]
@@ -80,7 +80,7 @@ class FeatureCategory():
 
 class FeatureExtraction(object):
 
-    PROTEIN_FEATURE_CATEGORY_IDS = ['aac']
+    PROTEIN_FEATURE_CATEGORY_IDS = ['aac', 'paac']
 
     # - name
     # - feature calculation function
@@ -95,9 +95,17 @@ class FeatureExtraction(object):
             protein.Protein.amino_acid_composition,
             ['number of segments'],
             [int],
-            [(protein.Protein.get_protein_sequence, True)])
+            [(protein.Protein.get_protein_sequence, True)]),
 
+        'paac': FeatureCategory(
+            'paac',
+            'prime side amino acid count',
+            protein.Protein.prime_amino_acid_count,
+            ['prime side', 'length'],
+            [int, int],
+            [(protein.Protein.get_protein_sequence, True)])
     }
+
     assert(sorted(PROTEIN_FEATURE_CATEGORY_IDS) ==
            sorted(PROTEIN_FEATURE_CATEGORIES.keys()))
 
@@ -185,7 +193,7 @@ class FeatureExtraction(object):
         featcat = self.PROTEIN_FEATURE_CATEGORIES[fc_id]
 
         # parse the parameter string to a list of parameters
-        param_list = params_str.split(':')
+        param_list = params_str.split('-')
         assert(len(param_list) == len(featcat.param_types))
         args = []
         for p, pt in zip(param_list, featcat.param_types):
@@ -219,7 +227,7 @@ class FeatureExtraction(object):
         This function returns the set of allready calculated protein feature
         categories, a set with category ids is returned.
         '''
-        return set(['_'.join(f.split('_')[:2]) 
+        return set(['_'.join(f.split('_')[:2])
                     for f in self.fm_protein.feature_ids])
 
     def categorized_protein_feature_ids(self):

@@ -1,6 +1,7 @@
 import math
 from util import sequtil
 
+
 class Protein(object):
 
     def __init__(self, pid):
@@ -41,6 +42,7 @@ class Protein(object):
         self.missense_mutations.append(mutation)
 
     # set attributes, sequence data
+    # TODO turn this into proper setters...
 
     def set_orf_sequence(self, seq):
         self.orf_sequence = seq
@@ -125,7 +127,9 @@ class Protein(object):
     # feature calculation functions
 
     def amino_acid_composition(self, num_segments, feature_ids=False):
+
         if not(feature_ids):
+
             return sequtil.aa_composition(self.protein_sequence, num_segments)
         else:
 
@@ -138,6 +142,18 @@ class Protein(object):
                     feat_names.append(
                         'amino acid %s, segment %i' % (aa, si))
 
+            return (feat_ids, feat_names)
+
+    def prime_amino_acid_count(self, prime, length, feature_ids=False):
+
+        if not(feature_ids):
+
+            return sequtil.aa_count(self.prime_seq(prime, length))
+        else:
+            aa_alph = sequtil.aa_unambiguous_alph
+            feat_ids = ['%ip%s' % (prime, aa) for aa in aa_alph]
+            feat_names = ["%i' amino acid count %s" % (prime, aa)
+                          for aa in aa_alph]
             return (feat_ids, feat_names)
 
     def ss_composition(self, feature_ids=False):
@@ -174,6 +190,7 @@ class Protein(object):
                      for a in sequtil.aa_unambiguous_name]
             return (ids, names)
 
+    '''
     def five_prime_amino_acid_count(self, seq_length=75, feature_ids=False):
         if not(feature_ids):
             return sequtil.aa_count(self.five_prime_seq(seq_length))
@@ -187,7 +204,7 @@ class Protein(object):
         else:
             return (list(sequtil.aa_unambiguous_alph),
                     sequtil.aa_unambiguous_name)
-
+    '''
     def cluster_composition(self, feature_ids=False):
         if not(feature_ids):
             return sequtil.aa_cluster_composition(self.protein_sequence)
@@ -299,7 +316,6 @@ class Protein(object):
                         (s, l))
 
             return (feat_ids, feat_names)
-        
 
     def length(self, feature_ids=False):
         if not(feature_ids):
@@ -309,11 +325,35 @@ class Protein(object):
 
     # feature calculation help functions
 
-    def five_prime_seq(self, seq_length):
-        return self.protein_sequence[:seq_length]
+    def prime_seq(self, prime, length):
+        '''
+        This function returns the 3- or 5- prime side of the protein amino acid
+        sequence. The parameter prime must be either 3 or 5 and indicates if
+        the 3-prime side or the 5-prime side should be returned. The length
+        indicates how long the returned prime sequence will be. If length is
+        greater than or equal to the full protein sequence length, than the
+        full protein sequence will be returned.
 
-    def three_prime_seq(self, seq_length):
-        return self.protein_sequence[-seq_length:]
+        >>> p = Protein('test')
+        >>> p.set_protein_sequence('AAAAACCCCC')
+        >>> p.prime_seq(5, 2)
+        'AA'
+        >>> p.prime_seq(3, 9)
+        'AAAACCCCC'
+        >>> p.prime_seq(3, 10)
+        'AAAAACCCCC'
+        >>> p.prime_seq(3, 11)
+        'AAAAACCCCC'
+        '''
+        if not(prime in [3, 5]):
+            raise ValueError('prime must be either 3 or 5 (int).')
+        if(length < 1):
+            raise ValueError('Prime length must be positive integer.')
+
+        if(prime == 5):
+            return self.protein_sequence[:length]
+        else:  # prime == 3
+            return self.protein_sequence[-length:]
 
     def sequence_signal(self, scale, window, edge):
         return sequtil.seq_signal(self.protein_sequence, scale, window, edge)
@@ -485,75 +525,6 @@ class Pfam(object):
     data store currently.
     '''
 
-    CLANS = [
-        'CL0001', 'CL0003', 'CL0004', 'CL0005', 'CL0006', 'CL0007', 'CL0009',
-        'CL0010', 'CL0011', 'CL0012', 'CL0013', 'CL0014', 'CL0015', 'CL0016', 'CL0018',
-        'CL0020', 'CL0021', 'CL0022', 'CL0023', 'CL0025', 'CL0026', 'CL0027', 'CL0028',
-        'CL0029', 'CL0030', 'CL0031', 'CL0032', 'CL0033', 'CL0034', 'CL0035', 'CL0036',
-        'CL0037', 'CL0039', 'CL0040', 'CL0041', 'CL0042', 'CL0043', 'CL0044', 'CL0045',
-        'CL0046', 'CL0047', 'CL0048', 'CL0049', 'CL0050', 'CL0051', 'CL0052', 'CL0053',
-        'CL0054', 'CL0055', 'CL0056', 'CL0057', 'CL0058', 'CL0059', 'CL0060', 'CL0061',
-        'CL0062', 'CL0063', 'CL0064', 'CL0065', 'CL0066', 'CL0067', 'CL0068', 'CL0069',
-        'CL0070', 'CL0071', 'CL0072', 'CL0073', 'CL0074', 'CL0075', 'CL0076', 'CL0077',
-        'CL0078', 'CL0079', 'CL0080', 'CL0081', 'CL0082', 'CL0083', 'CL0084', 'CL0085',
-        'CL0086', 'CL0087', 'CL0088', 'CL0089', 'CL0090', 'CL0091', 'CL0092', 'CL0093',
-        'CL0094', 'CL0095', 'CL0096', 'CL0097', 'CL0098', 'CL0099', 'CL0100', 'CL0101',
-        'CL0103', 'CL0104', 'CL0105', 'CL0106', 'CL0107', 'CL0108', 'CL0109', 'CL0110',
-        'CL0111', 'CL0112', 'CL0113', 'CL0114', 'CL0115', 'CL0116', 'CL0117', 'CL0118',
-        'CL0121', 'CL0122', 'CL0123', 'CL0124', 'CL0125', 'CL0126', 'CL0127', 'CL0128',
-        'CL0129', 'CL0130', 'CL0131', 'CL0132', 'CL0133', 'CL0135', 'CL0136', 'CL0137',
-        'CL0139', 'CL0140', 'CL0141', 'CL0142', 'CL0143', 'CL0144', 'CL0145', 'CL0146',
-        'CL0147', 'CL0148', 'CL0149', 'CL0151', 'CL0153', 'CL0154', 'CL0155', 'CL0156',
-        'CL0157', 'CL0158', 'CL0159', 'CL0160', 'CL0161', 'CL0162', 'CL0163', 'CL0164',
-        'CL0165', 'CL0166', 'CL0167', 'CL0168', 'CL0169', 'CL0170', 'CL0171', 'CL0172',
-        'CL0173', 'CL0174', 'CL0175', 'CL0176', 'CL0177', 'CL0178', 'CL0179', 'CL0181',
-        'CL0182', 'CL0183', 'CL0184', 'CL0186', 'CL0187', 'CL0188', 'CL0189', 'CL0190',
-        'CL0191', 'CL0192', 'CL0193', 'CL0194', 'CL0195', 'CL0196', 'CL0197', 'CL0198',
-        'CL0199', 'CL0200', 'CL0201', 'CL0202', 'CL0203', 'CL0204', 'CL0205', 'CL0206',
-        'CL0207', 'CL0208', 'CL0209', 'CL0210', 'CL0212', 'CL0213', 'CL0214', 'CL0217',
-        'CL0218', 'CL0219', 'CL0220', 'CL0221', 'CL0222', 'CL0223', 'CL0224', 'CL0225',
-        'CL0226', 'CL0227', 'CL0228', 'CL0229', 'CL0230', 'CL0231', 'CL0232', 'CL0233',
-        'CL0234', 'CL0235', 'CL0236', 'CL0237', 'CL0238', 'CL0239', 'CL0240', 'CL0241',
-        'CL0242', 'CL0243', 'CL0244', 'CL0245', 'CL0246', 'CL0247', 'CL0248', 'CL0249',
-        'CL0250', 'CL0251', 'CL0252', 'CL0254', 'CL0255', 'CL0256', 'CL0257', 'CL0258',
-        'CL0259', 'CL0260', 'CL0261', 'CL0262', 'CL0263', 'CL0264', 'CL0265', 'CL0266',
-        'CL0267', 'CL0268', 'CL0269', 'CL0270', 'CL0271', 'CL0272', 'CL0273', 'CL0274',
-        'CL0275', 'CL0276', 'CL0277', 'CL0278', 'CL0279', 'CL0280', 'CL0281', 'CL0282',
-        'CL0283', 'CL0284', 'CL0285', 'CL0286', 'CL0287', 'CL0288', 'CL0289', 'CL0290',
-        'CL0291', 'CL0292', 'CL0293', 'CL0294', 'CL0295', 'CL0296', 'CL0297', 'CL0298',
-        'CL0299', 'CL0300', 'CL0301', 'CL0302', 'CL0303', 'CL0304', 'CL0305', 'CL0306',
-        'CL0307', 'CL0308', 'CL0310', 'CL0311', 'CL0312', 'CL0314', 'CL0315', 'CL0316',
-        'CL0317', 'CL0318', 'CL0319', 'CL0320', 'CL0321', 'CL0322', 'CL0323', 'CL0324',
-        'CL0325', 'CL0326', 'CL0327', 'CL0328', 'CL0329', 'CL0330', 'CL0331', 'CL0332',
-        'CL0333', 'CL0334', 'CL0335', 'CL0336', 'CL0337', 'CL0339', 'CL0340', 'CL0341',
-        'CL0342', 'CL0343', 'CL0344', 'CL0345', 'CL0346', 'CL0347', 'CL0348', 'CL0349',
-        'CL0350', 'CL0351', 'CL0352', 'CL0353', 'CL0354', 'CL0355', 'CL0356', 'CL0357',
-        'CL0359', 'CL0360', 'CL0361', 'CL0362', 'CL0363', 'CL0364', 'CL0365', 'CL0366',
-        'CL0367', 'CL0368', 'CL0369', 'CL0370', 'CL0371', 'CL0372', 'CL0373', 'CL0374',
-        'CL0375', 'CL0376', 'CL0377', 'CL0378', 'CL0379', 'CL0380', 'CL0381', 'CL0382',
-        'CL0383', 'CL0384', 'CL0385', 'CL0386', 'CL0387', 'CL0388', 'CL0389', 'CL0390',
-        'CL0391', 'CL0392', 'CL0393', 'CL0394', 'CL0395', 'CL0396', 'CL0397', 'CL0398',
-        'CL0399', 'CL0400', 'CL0401', 'CL0402', 'CL0403', 'CL0404', 'CL0405', 'CL0406',
-        'CL0407', 'CL0408', 'CL0409', 'CL0410', 'CL0411', 'CL0412', 'CL0413', 'CL0414',
-        'CL0416', 'CL0417', 'CL0418', 'CL0419', 'CL0420', 'CL0421', 'CL0422', 'CL0423',
-        'CL0424', 'CL0425', 'CL0426', 'CL0428', 'CL0429', 'CL0430', 'CL0431', 'CL0433',
-        'CL0434', 'CL0435', 'CL0436', 'CL0437', 'CL0438', 'CL0439', 'CL0441', 'CL0442',
-        'CL0444', 'CL0445', 'CL0446', 'CL0447', 'CL0448', 'CL0449', 'CL0450', 'CL0451',
-        'CL0452', 'CL0453', 'CL0454', 'CL0455', 'CL0456', 'CL0457', 'CL0458', 'CL0459',
-        'CL0461', 'CL0462', 'CL0464', 'CL0465', 'CL0466', 'CL0468', 'CL0469', 'CL0470',
-        'CL0471', 'CL0472', 'CL0474', 'CL0475', 'CL0476', 'CL0477', 'CL0478', 'CL0479',
-        'CL0480', 'CL0481', 'CL0482', 'CL0483', 'CL0484', 'CL0486', 'CL0487', 'CL0488',
-        'CL0489', 'CL0490', 'CL0491', 'CL0492', 'CL0493', 'CL0494', 'CL0496', 'CL0497',
-        'CL0498', 'CL0499', 'CL0500', 'CL0501', 'CL0502', 'CL0503', 'CL0504', 'CL0505',
-        'CL0506', 'CL0507', 'CL0508', 'CL0509', 'CL0511', 'CL0512', 'CL0513', 'CL0515',
-        'CL0516', 'CL0517', 'CL0520', 'CL0521', 'CL0522', 'CL0523', 'CL0524', 'CL0525',
-        'CL0526', 'CL0527', 'CL0528', 'CL0529', 'CL0530', 'CL0531', 'CL0532', 'CL0533',
-        'CL0534', 'CL0535', 'CL0536', 'CL0537', 'CL0538', 'CL0539', 'CL0540', 'CL0541',
-        'CL0542', 'CL0543', 'CL0544', 'CL0545', 'CL0546', 'CL0547', 'CL0548', 'CL0549',
-        'CL0550', 'CL0551', 'CL0552', 'CL0553'
-    ]
-    CLAN_TO_INDEX = dict(zip(CLANS, xrange(len(CLANS))))
-
     def __init__(self, start_pos, end_pos, hmm_acc, hmm_name, type_,
                  bit_score, e_value, clan, active_residues):
         self.start_pos = start_pos
@@ -564,10 +535,6 @@ class Pfam(object):
         self.bit_score = bit_score
         self.e_value = e_value
         self.clan = clan
-        if(self.clan in self.CLAN_TO_INDEX.keys()):
-            self.clan_index = self.CLAN_TO_INDEX[self.clan]
-        else:
-            self.clan_index = -1
         self.active_residues = active_residues
 
     def single_line_str(self):

@@ -131,9 +131,10 @@ class ProjectManager(object):
     def get_job_id(self):
         return self.timestamp_str()
 
-    '''
     def fetch_job_files(self, app):
-
+        '''
+        Used by classification list page
+        '''
         status_dirs = {
             'done': self.job_done_dir,
             'running': self.job_running_dir,
@@ -154,7 +155,6 @@ class ProjectManager(object):
                     app_files.append((os.path.basename(f), f, status))
 
         return sorted(app_files, key=operator.itemgetter(0), reverse=True)
-    '''
 
     def get_feat_calc_status(self):
         '''
@@ -190,7 +190,7 @@ class ProjectManager(object):
                         for c, t in sortl]
 
                 cat_status[status] = tstr
-        
+
         return cat_status
 
     def parse_featext_job_file(self, f):
@@ -231,7 +231,7 @@ class ProjectManager(object):
     def get_cl_dir(self, cl_id):
         ''' This function returns the results directory for classifier cl_id.
         '''
-        
+
         # there should be only one dir... this is a bit of hack to get it
         cl_base_dir = os.path.join(self.cl_dir, cl_id)
         dirs = []
@@ -264,7 +264,7 @@ class ProjectManager(object):
             for line in fin:
                 result += line
         return result
-    
+
     def get_classifier_error(self, cl_id):
 
         f = os.path.join(self.cl_dir, cl_id, 'error.txt')
@@ -283,7 +283,7 @@ class ProjectManager(object):
             return False
 
     def get_classifier_settings(self, cl_id):
-        
+
         with open(os.path.join(self.get_cl_dir(cl_id), 'settings.txt'), 'r')\
                 as fin:
             keys = fin.readline().strip().split(',')
@@ -390,7 +390,7 @@ class ProjectManager(object):
         ref_seqs = []
         if not(reference_taxon is None):
 
-            # TODO 
+            # TODO
             if(sequence_type == 'orf_seq'):
                 return 'Reference set can only be compared to protein' +\
                        'amino acid sequences, not to ORF sequences.'
@@ -589,7 +589,7 @@ class ProjectManager(object):
 
         else:
             return 'A project with the same project id allready exists'
-        
+
         # create project details file
         with open(self.project_details_f, 'w') as fout:
             fout.write('project_id\t%s\n' % (self.project_id))
@@ -602,7 +602,7 @@ class ProjectManager(object):
         return ''
 
     def add_data_source(self, data_type, data_file, mapping_f=None):
-        
+
         # for now, only fasta files are handled as data_path, no dirs or zips
         # with data and correspondig mapping_files.
 
@@ -708,7 +708,7 @@ class ProjectManager(object):
         return ''
 
     ###########################################################################
-    # Functions that write a job file and add the job to the job queue (put it 
+    # Functions that write a job file and add the job to the job queue (put it
     # in the waiting dir) These are the jobs which need to be runned using
     # SPiCa on the compute servers.
     ###########################################################################
