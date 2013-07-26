@@ -23,8 +23,10 @@ from util import file_io
 
 class FeatureCategory():
 
-    def __init__(self, fc_id, fc_name, feature_func, param_names, param_types, 
+    def __init__(self, fc_id, fc_name, feature_func, param_names, param_types,
                  required_data):
+
+        assert(len(param_names) == len(param_types))
 
         self._fc_id = fc_id
         self._fc_name = fc_name
@@ -57,12 +59,30 @@ class FeatureCategory():
     def required_data(self):
         return self._required_data
 
+    def param_values(self, param_id):
+        '''
+        This function turns a parameter id into a list of its parameter values.
+        '''
+        param_tokens = param_id.split(':')
+        assert(len(param_tokens) == len(self.param_types))
+        return [t(p) for t, p in zip(self.param_types, param_tokens)]
+
+    def param_str(self, param_id):
+        '''
+        This function rurns a parameter id into a readable parameters string.
+        '''
+        param_tokens = param_id.split(':')
+        assert(len(param_tokens) == len(self.param_names))
+        param_strings = ['%s: %s' % (p, v) for p, v in
+                         zip(self.param_names, param_tokens)]
+        return ', '.join(param_strings)
+
 
 class FeatureExtraction(object):
 
     PROTEIN_FEATURE_CATEGORY_IDS = ['aac']
 
-    # - name 
+    # - name
     # - feature calculation function
     # - parameter names
     # - parameter types
@@ -78,7 +98,7 @@ class FeatureExtraction(object):
             [(protein.Protein.get_protein_sequence, True)])
 
     }
-    assert(sorted(PROTEIN_FEATURE_CATEGORY_IDS) == 
+    assert(sorted(PROTEIN_FEATURE_CATEGORY_IDS) ==
            sorted(PROTEIN_FEATURE_CATEGORIES.keys()))
 
     def __init__(self):
@@ -135,7 +155,7 @@ class FeatureExtraction(object):
         # use the mutation ids as object ids in the mutation feature matrix
         mut_ids = self.protein_data_set.get_mutation_ids()
         self.fm_missense.object_ids = mut_ids
-        
+
         # and create mutation feature vector object
         #self.fv_dict_missense = MutationFeatureVectorFactory().\
         #    get_feature_vectors(self.protein_data_set.get_mutations())
@@ -202,13 +222,13 @@ class FeatureExtraction(object):
         contains a mapping from parameter settings for this category to the
         list with corresponding feature ids.
 
-        { 
-            'aac': 
+        {
+            'aac':
             {
-                '2' : ['aac_2_A1', 'aac_2_R1', ..., 'aac_2_V2'], 
+                '2' : ['aac_2_A1', 'aac_2_R1', ..., 'aac_2_V2'],
                 '5' : ['aac_5_A1', 'aac_5_R1', ..., 'aac_5_V5'],
                 ...
-            }, 
+            },
             ...
         }
 
@@ -504,11 +524,11 @@ class ProteinFeatureVectorFactory(FeatureVectorFactory):
                 [(protein.Protein.get_protein_sequence, True)]),
             'sigavg': ('average signal value',
                 protein.Protein.average_signal,
-                {'window': 5, 'edge':0.5},
+                {'window': 5, 'edge': 0.5},
                 [(protein.Protein.get_protein_sequence, True)]),
-            'sigpeak': ('signal value peaks area', 
+            'sigpeak': ('signal value peaks area',
                 protein.Protein.signal_peaks_area,
-                {'window': 5, 'edge':0.5, 'threshold':1.0},
+                {'window': 5, 'edge': 0.5, 'threshold': 1.0},
                 [(protein.Protein.get_protein_sequence, True)]),
             'len': ('protein length',
                 protein.Protein.length, {},
@@ -619,7 +639,7 @@ if __name__ == '__main__':
                 sys.exit(1)
 
         fe.save()
-    
+
     # add protein sequence data (obtain from fasta file using uniprot ids)
     if(args.protein_sequence_data):
 
@@ -681,7 +701,6 @@ if __name__ == '__main__':
                     print traceback.print_exc()
                     sys.exit(1)
         fe.save()
-
 
     # set labels
     if(args.labels):
