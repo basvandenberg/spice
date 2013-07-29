@@ -239,14 +239,9 @@ class Protein(object):
 
             return (feat_ids, feat_names)
 
-    def autocorrelation_mb(self, scales, lags, feature_ids=False):
+    def autocorrelation(self, ac_type, scales, lag, feature_ids=False):
 
-        scales, scale_ids, scale_names = self._parse_scales(scales)
-
-        # check lags parameter
-        if not(type(lags) == list and all([type[i] == int for i in lags])):
-            raise ValueError('Incorrect lags provided: %s\n'
-                             % (str(lags)))
+        scale_list, scale_ids, scale_names = self._parse_scales(scales)
 
         # calculatie features
         if not(feature_ids):
@@ -254,24 +249,14 @@ class Protein(object):
             #num_feat = len(scales) * len(lags)
             result = []
 
-            for s in scales:
-                for l in lags:
-                    result.append(sequtil.autocorrelation_mb(s, l))
+            for scale in scale_list:
+                result.append(sequtil.autocorrelation(ac_type,
+                              self.protein_sequence, scale, lag))
 
             return result
         # or return feature ids and names
         else:
-
-            feat_ids = []
-            feat_names = []
-            for s in scales:
-                for l in lags:
-                    feat_ids.append('acmb:%03d:%02d' % (s, l))
-                    feat_names.append(
-                        'Autocorrelation Moreau-Broto (scale:%03d lag:%02d' %
-                        (s, l))
-
-            return (feat_ids, feat_names)
+            return (scale_ids, scale_names)
 
     def length(self, feature_ids=False):
         if not(feature_ids):

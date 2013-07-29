@@ -77,10 +77,16 @@ class FeatureCategory():
                          zip(self.param_names, param_tokens)]
         return ', '.join(param_strings)
 
+    def feat_id_name_dict(self, param_id):
+        args = [protein.Protein('')]
+        args.extend(self.param_values(param_id))
+        kwargs = {'feature_ids': True}
+        feat_ids, feat_names = self.feature_func(*args, **kwargs)
+        return dict(zip(feat_ids, feat_names))
 
 class FeatureExtraction(object):
 
-    PROTEIN_FEATURE_CATEGORY_IDS = ['aac', 'paac', 'sigavg', 'sigpeak', 'acmb',
+    PROTEIN_FEATURE_CATEGORY_IDS = ['aac', 'paac', 'sigavg', 'sigpeak', 'ac',
                                     'len']
 
     # - name
@@ -122,12 +128,12 @@ class FeatureExtraction(object):
             [str, int, float, float],
             [(protein.Protein.get_protein_sequence, True)]),
             
-        'acmb': FeatureCategory(
-            'acmb',
-            'autocorrelation Moreau-Broton',
-            protein.Protein.autocorrelation_mb,
-            ['scale', 'lag'],
-            [str, int],
+        'ac': FeatureCategory(
+            'ac',
+            'autocorrelation',
+            protein.Protein.autocorrelation,
+            ['type', 'scale', 'lag'],
+            [str, str, int],
             [(protein.Protein.get_protein_sequence, True)]),
 
         'len': FeatureCategory(
