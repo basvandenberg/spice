@@ -258,6 +258,58 @@ class Protein(object):
         else:
             return (scale_ids, scale_names)
 
+    def property_ctd(self, property, feature_ids=False):
+
+        property_map = {
+            'hyd': 'hydrophobicity', 
+            'vdw': 'normvdw',
+            'plr': 'polarity',
+            'plz': 'polarizability',
+            'chr': 'charge',
+            'ss': 'ss', 
+            'sa': 'sa'
+        }
+
+        if not(property in property_map.keys()):
+            raise ValueError('Invalid property id provided.')
+
+        # calculatie features
+        if not(feature_ids):
+
+            property_name = property_map[property]
+
+            return sequtil.property_ctd(self.protein_sequence, property_name)
+
+        # or return feature ids and names
+        else:
+            feat_ids = ['c1', 'c2', 'c3', 't1', 't2', 't3',
+                        'd10', 'd11', 'd12', 'd13', 'd14',
+                        'd20', 'd21', 'd22', 'd23', 'd24',
+                        'd30', 'd31', 'd32', 'd33', 'd34']
+            feat_names = ['composition letter %i' % (i) for i in xrange(1,4)]
+            feat_names.extend([
+                'transitions 1-2 2-1',
+                'transitions 1-3 3-1',
+                'transitions 2-3 3-2',
+                'distribution letter 1 frac to first letter',
+                'distribution letter 1 frac to 25%',
+                'distribution letter 1 frac to 50%',
+                'distribution letter 1 frac to 75%',
+                'distribution letter 1 frac to 100%',
+                'distribution letter 2 frac to first letter',
+                'distribution letter 2 frac to 25%',
+                'distribution letter 2 frac to 50%',
+                'distribution letter 2 frac to 75%',
+                'distribution letter 2 frac to 100%',
+                'distribution letter 3 frac to first letter',
+                'distribution letter 3 frac to 25%',
+                'distribution letter 3 frac to 50%',
+                'distribution letter 3 frac to 75%',
+                'distribution letter 3 frac to 100%'])
+                
+            return (feat_ids, feat_names)
+
+
     def length(self, feature_ids=False):
         if not(feature_ids):
             return [len(self.protein_sequence)]

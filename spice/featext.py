@@ -87,7 +87,7 @@ class FeatureCategory():
 class FeatureExtraction(object):
 
     PROTEIN_FEATURE_CATEGORY_IDS = ['aac', 'paac', 'sigavg', 'sigpeak', 'ac',
-                                    'len']
+                                    'ctd', 'len']
 
     # - name
     # - feature calculation function
@@ -134,6 +134,14 @@ class FeatureExtraction(object):
             protein.Protein.autocorrelation,
             ['type', 'scale', 'lag'],
             [str, str, int],
+            [(protein.Protein.get_protein_sequence, True)]),
+
+        'ctd': FeatureCategory(
+            'ctd',
+            'property CTD',
+            protein.Protein.property_ctd,
+            ['property'],
+            [str],
             [(protein.Protein.get_protein_sequence, True)]),
 
         'len': FeatureCategory(
@@ -233,6 +241,7 @@ class FeatureExtraction(object):
 
         # parse the parameter string to a list of parameters
         param_list = params_str.split('-')
+        
         assert(len(param_list) == len(featcat.param_types))
         args = []
         for p, pt in zip(param_list, featcat.param_types):
