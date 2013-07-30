@@ -224,6 +224,39 @@ class ProjectManager(object):
             app = os.path.splitext(os.path.basename(app_path))[0]
         return app
 
+    def parse_classify_job_files(self):
+        '''
+        Returns statuses of projects that are being classified.
+        '''
+        cat_status = {}
+
+        if not(self.project_id is None):
+
+            status_dirs = {
+                'done': self.job_done_dir,
+                'running': self.job_running_dir,
+                'error': self.job_error_dir,
+                'waiting': self.job_waiting_dir
+            }
+
+            for status in status_dirs.keys():
+
+                # initialize empty list
+                project_list = []
+
+                for f in glob.glob(os.path.join(status_dirs[status], '*')):
+                    with open(f, 'r') as fin:
+                        cmd = fin.readline()
+                    tokens = cmd.split()
+                    if(tokens[0] == 'classify'):
+                        assert(tokens[1] == '-f')
+                        project_list.append(os.path.basename(os.path.dirname(
+                            os.path.dirname(tokens[2]))))
+
+                status_dirs[status] = project_list
+
+        return status_dirs
+
     ###########################################################################
     # Functions to obtain classification data
     ###########################################################################
@@ -256,6 +289,13 @@ class ProjectManager(object):
         pred_f = os.path.join(self.get_cl_dir(cl_id), 'predictions.txt')
         return pred_f
 
+    def get_classifier_f(self, cl_id):
+        cl_f = os.path.join(self.get_cl_dir(cl_id), 'classifier.joblib.pkl')
+        if(os.path.exists(cl_f)):
+            return cl_f
+        else:
+            return None
+
     def get_classifier_progress(self, cl_id):
 
         f = os.path.join(self.cl_dir, cl_id, 'progress.txt')
@@ -283,19 +323,8 @@ class ProjectManager(object):
             return False
 
     def get_classifier_settings(self, cl_id):
-
-        with open(os.path.join(self.get_cl_dir(cl_id), 'settings.txt'), 'r')\
-                as fin:
-            keys = fin.readline().strip().split(',')
-            settings = {}
-            for key in keys:
-                line = fin.readline().strip()
-                try:
-                    settings[key] = eval(line)
-                except Exception:
-                    settings[key] = line
-
-        return settings
+        settings_f = os.path.join(self.get_cl_dir(cl_id), 'settings.txt')
+        return file_io.read_settings_dict(settings_f)
 
     def get_classifier_ids(self):
 
@@ -778,3 +807,58 @@ class ProjectManager(object):
             fout.write('%s\n' % (cmd))
             fout.write('%s\n' % (progress_f))
             fout.write('%s\n' % (error_f))
+
+    def run_classify(self, cl_id, project_id):
+
+        # obtain job id
+        jobid = self.get_job_id()
+
+        # read feature required for classifier
+        settings_dict = self.get_classifier_settings(cl_id)
+        feature_ids = settings_dict['feature_names']
+        feature_cats = set(['_'.join(f.split('_')[:2]) for f in feature_ids])
+
+        # path to trained classifier file
+        classifier_f = self.get_classifier_f
+
+        # SWITCH TO OTHER PROJECT FOR FEATURE CALCULATION
+        prev_proj = self.project_id
+        self.set_project(project_id)
+
+        # load feature extraction and obtain calculated feature categories
+        fe = self.get_feature_extraction()
+        calculated_feature_cats = fe.available_protein_featcat_ids()
+
+        # determine missing feature categories
+        missing_feature_cats = sorted(feature_cats - calculated_feature_cats)
+
+        # queue feature calculation job if neccesary
+        if(len(missing_feature_cats) > 0):
+            self.run_feature_extraction(missing_feature_cats)
+
+        # store path to feature matrix dir
+        fm_dir = self.fm_dir        
+
+        # SWITCH BACK TO ORIGINAL PROJECT
+        self.set_project(prev_proj)
+
+        # output files
+        progress_f = os.path.join(self.get_cl_dir(cl_id), 'progress.txt')
+        error_f = os.path.join(self.get_cl_dir(cl_id), 'error.txt')
+
+        
+        # create the list of options for the classification command
+        options = [
+            '-f %s' % (fm_dir),
+            '-c %s' % (self.get_cl_dir(cl_id))
+        ]
+
+        # create command
+        cmd = 'classify %s' % (' '.join(options))
+
+        # create job file
+        with open(os.path.join(self.job_waiting_dir, jobid), 'w') as fout:
+            fout.write('%s\n' % (cmd))
+            fout.write('%s\n' % (progress_f))
+            fout.write('%s\n' % (error_f))
+

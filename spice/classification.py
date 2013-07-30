@@ -26,6 +26,7 @@ from sklearn.grid_search import GridSearchCV
 from sklearn import preprocessing
 from sklearn import cross_validation
 from sklearn import metrics
+from sklearn.externals import joblib
 
 from spice import featmat
 from util import timeout
@@ -138,7 +139,7 @@ def grid_search(data, target, classifier, n, scoring, param, cv=None, cpu=1,
 
 
 def cv_score(data, target, classifier, n, scoring, param=None, cv=None, cpu=1,
-             log_f=None, standardize=True):
+             log_f=None, standardize=True, return_trained_cl=True):
     '''
     A grid search is done if parameters (param) are provided. Otherwise the
     parameters in the provided classifier are used.
@@ -220,9 +221,38 @@ def cv_score(data, target, classifier, n, scoring, param=None, cv=None, cpu=1,
     print
     sys.stdout.flush()
 
+    # train classifier on full data set if requested
+    all_data_cl = None
+    if(return_trained_cl):
+
+        # scale the whole data set
+        if(standardize):
+
+            # create scaler for full data set
+            scaler = preprocessing.StandardScaler().fit(data)
+            # scale data set
+            data = scaler.transform(data)
+
+            # obtain the original classifier parameters
+            classifier_param = classifier.get_params()
+
+            # perform grid search, if parameters are provided
+            if(param):
+
+                # optimize parameters on train set (s is train score)
+                (s, p) = grid_search(data, target, classifier, n, scoring,
+                                     param, cpu=cpu, log_f=log_f)
+
+                # update parameters with the optimized ones
+                classifier_param.update(p)
+
+            # use parameters to create new classifier object and train it
+            all_data_cl = type(classifier)(**classifier_param)
+            all_data_cl.fit(data, target)
+
     # return average score over the cv loops
     return (cv_scores, cv_params, cv_confusion, cv_all_scores, cv_roc_curves,
-            predictions)
+            predictions, all_data_cl)
 
 
 def ffs(data, target, classifier, n, scoring, param=None, cv=None,
@@ -232,6 +262,7 @@ def ffs(data, target, classifier, n, scoring, param=None, cv=None,
     possible combinations of features is to extensive. This method limits
     the amount of explored feature combinations.
     '''
+    #TODO add all_data_cl
 
     if(feat_names):
         assert(data.shape[1] == len(feat_names))
@@ -393,6 +424,7 @@ def bfs(data, target, classifier, n, scoring, param=None, cv=None,
     possible combinations of features is to extensive. This method limits
     the amount of explored feature combinations.
     '''
+    # TODO add all_data_cl
 
     if(feat_names):
         assert(data.shape[1] == len(feat_names))
@@ -546,8 +578,28 @@ def bfs(data, target, classifier, n, scoring, param=None, cv=None,
             cv_featis, predictions)
 
 
+def classify(data, classifier):
+
+    # prediction class labels on data set
+    pred = classifier.predict(data)
+
+    # and predict probabilities (if possible)
+    if(hasattr(classifier, 'predict_proba')):
+        proba = classifier.predict_proba(data)
+        # get the probabilities of class one
+        # TODO this only works for 2-class problems...
+        proba = proba[:, 1]
+    elif(hasattr(classifier, 'decision_function')):
+        proba = classifier.decision_function(data)
+    else:
+        proba = pred
+
+    return (pred, proba)
+
+
 def test_classifier(tst_data, tst_target, classifier, scoring):
 
+    '''
     # prediction class labels on test set
     tst_pred = classifier.predict(tst_data)
 
@@ -561,6 +613,8 @@ def test_classifier(tst_data, tst_target, classifier, scoring):
         tst_proba = classifier.decision_function(tst_data)
     else:
         tst_proba = tst_pred
+    '''
+    tst_pred, tst_proba = classify(tst_data, classifier)
 
     args_pred = [tst_target, tst_pred]
     args_proba = [tst_target, tst_proba]
@@ -1006,9 +1060,11 @@ if __name__ == '__main__':
             cm_f = os.path.join(exp_d, 'confusion_matrix.txt')
             gs_f = os.path.join(exp_d, 'grid_search.txt')
             fs_f = os.path.join(exp_d, 'feature_selection.txt')
+            param_f = os.path.join(exp_d, 'parameters.txt')
             roc_f = os.path.join(exp_d, 'roc.txt')
             roc_fig_f = os.path.join(exp_d, 'roc.png')
             predictions_f = os.path.join(exp_d, 'predictions.txt')
+            all_data_cl_f = os.path.join(exp_d, 'classifier.joblib.pkl')
 
             ###################################################################
             # RUN EXPERIMENT
@@ -1034,13 +1090,14 @@ if __name__ == '__main__':
                 if(args.feature_selection == 'none'):
                     print 'start cv score...'
                     (cv_scores, cv_params, cv_confusion, cv_all_scores,
-                        cv_roc_curves, predictions) = cv_score(
+                        cv_roc_curves, predictions, all_data_cl) = cv_score(
                             data, target, cl, args.n_fold_cv, scoring,
                             param=param, cv=cv, log_f=gs_log_f, cpu=args.cpu,
                             standardize=args.standardize)
                     cv_feat_is = None
 
                 # run CV experiment with forward feature selection
+                # TODO all_data_cl
                 elif(args.feature_selection == 'ffs'):
                     print 'start ffs...'
                     (cv_scores, cv_params, cv_confusion, cv_all_scores,
@@ -1050,6 +1107,7 @@ if __name__ == '__main__':
                             standardize=args.standardize)
 
                 # run CV experiment with backward feature selection
+                # TODO all_data_cl
                 elif(args.feature_selection == 'bfs'):
                     print 'start bfs...'
                     (cv_scores, cv_params, cv_confusion, cv_all_scores,
@@ -1070,6 +1128,8 @@ if __name__ == '__main__':
                 print traceback.format_exc()
                 raise e
                 sys.exit()
+            finally:
+                gs_log_f.close()
 
             ###################################################################
             # Write experiment results
@@ -1088,7 +1148,9 @@ if __name__ == '__main__':
                     fout.write('sample_names,feature_names,target_names,' +
                                'classifier_name,classifier_params,' +
                                'grid_params,n_fold_cv,feature_selection\n')
-                    fout.write('%s...\n' % (str(ds['sample_names'][:5])))
+                    first_sample_names = ds['sample_names'][:10]
+                    first_sample_names.append('...')
+                    fout.write('%s\n' % (str(first_sample_names)))
                     fout.write('%s\n' % (str(ds['feature_names'])))
                     fout.write('%s\n' % (str(ds['target_names'])))
                     fout.write('%s\n' % (str(classifier_str)))
@@ -1110,9 +1172,18 @@ if __name__ == '__main__':
                         fout.write('CV%i\n' % (index))
                         fout.write('%s\n\n' % (str(cm)))
 
+                # write parameters
+                with open(param_f, 'w') as fout:
+                    for cv_param in cv_params:
+                        fout.write('%s\n' % (str(cv_param)))
+
                 # plot roc curves
                 if not(cv_roc_curves.is_empty()):
                     cv_roc_curves.save_avg_roc_plot(roc_fig_f)
+
+                # store classifier trained on full data set
+                if not(all_data_cl is None):
+                    _ = joblib.dump(all_data_cl, all_data_cl_f, compress=9)
 
                 # sort predictions by object index
                 sorted_predictions = sorted(predictions,
