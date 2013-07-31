@@ -224,7 +224,7 @@ class ProjectManager(object):
             app = os.path.splitext(os.path.basename(app_path))[0]
         return app
 
-    def parse_classify_job_files(self):
+    def parse_classify_job_files(self, cl_id):
         '''
         Returns statuses of projects that are being classified.
         '''
@@ -242,7 +242,7 @@ class ProjectManager(object):
             for status in status_dirs.keys():
 
                 # initialize empty list
-                project_list = []
+                data_set_list = []
 
                 for f in glob.glob(os.path.join(status_dirs[status], '*')):
                     with open(f, 'r') as fin:
@@ -250,10 +250,18 @@ class ProjectManager(object):
                     tokens = cmd.split()
                     if(tokens[0] == 'classify'):
                         assert(tokens[1] == '-f')
-                        project_list.append(os.path.basename(os.path.dirname(
-                            os.path.dirname(tokens[2]))))
+                        assert(tokens[3] == '-c')
+                        cid = os.path.basename(
+                            os.path.dirname(
+                            os.path.dirname(tokens[4])))
 
-                status_dirs[status] = project_list
+                        if(cid == cl_id):
+                            data_set = os.path.basename(
+                                os.path.dirname(
+                                os.path.dirname(tokens[2])))
+                            data_set_list.append(data_set)
+
+                status_dirs[status] = data_set_list
 
         return status_dirs
 
@@ -268,7 +276,7 @@ class ProjectManager(object):
         # there should be only one dir... this is a bit of hack to get it
         cl_base_dir = os.path.join(self.cl_dir, cl_id)
         dirs = []
-        for d in glob.glob('%s/*/*/' % (cl_base_dir)):
+        for d in glob.glob('%s/*/*' % (cl_base_dir)):
             dirs.append(d)
 
         assert(len(dirs) < 2)
@@ -332,8 +340,9 @@ class ProjectManager(object):
 
         # iterate over all directories in the classification dir
         for d in glob.glob(os.path.join(self.cl_dir, '*')):
-            cl_id = os.path.basename(d)
-            cl_ids.append(cl_id)
+            if os.path.isdir(d):
+                cl_id = os.path.basename(d)
+                cl_ids.append(cl_id)
 
         return cl_ids
 
