@@ -108,9 +108,9 @@ class FeatureMatrix(object):
         self._delete_all_features()
 
     def _delete_all_features(self):
-        self.feature_matrix = None
-        self.feature_ids = []
-        self.feature_names = {}
+        self._feature_matrix = None
+        self._feature_ids = []
+        self._feature_names = {}
 
     @property
     def feature_names(self):
@@ -294,9 +294,40 @@ class FeatureMatrix(object):
         # add feature names
         self.feature_names.update(feat_name_dict)
 
+    def remove_features(self, feature_ids):
+        '''
+        This function removes the feature with id feat_id from the feature
+        matrix.
+
+        Args:
+            feature_ids ([str]): List with feature ids.
+        Raises:
+            ValueError: If one of the feature_ids does not exist in this
+                        feature matrix
+        '''
+        try:
+
+            # get the column indices of the provided feature ids
+            fis = self.feature_indices(feature_ids)
+
+            # if all feature ids are given, use the feature matrix deleter
+            if(len(fis) == len(self.feature_ids)):
+                del self.feature_matrix
+            else:
+                # otherwise delete columns from feature matrix
+                self._feature_matrix = numpy.delete(self.feature_matrix, fis, 1)
+
+                # and delete feature ids and names
+                for fid in feature_ids:
+                    self.feature_ids.remove(fid)
+                    del self.feature_names[fid]
+
+        except ValueError:
+            raise ValueError('Feature id not in the feature matrix.')
+
     def merge(self, other):
 
-        # check if other has the some objects and labels (same order as well)
+        # check if other has the same objects and labels (same order as well)
         if not(self.object_ids == other.object_ids):
             raise ValueError('Object of the two feature matrices ' +
                              'do not correspond.')
@@ -321,6 +352,7 @@ class FeatureMatrix(object):
 
         cust_feats = self.get_custom_features().values()
         cust_feats = [c[0].split('_')[0] for c in cust_feats]
+
         print
         print cust_feats
         print
@@ -366,13 +398,16 @@ class FeatureMatrix(object):
         return result
 
     def feature_indices(self, feature_ids):
-        # TODO
         '''
-        Where do I use this for??? Looks like a mistake, obtaining all
-        feature indices, and then sort them??? sounds like the same as
-        range(len(self.feature_ids))
+        This function returns the feature matrix column indices where the
+        features with the provided ids can be found.
 
-        update: is used in get_dataset, is voor feature subsets
+        Args:
+            feature_ids ([str]): List with feature ids.
+        Returns:
+            list with column indices.
+        Raises:
+            ValueError: if one of the feature_ids is not in the list.
         '''
         return sorted([self.feature_ids.index(f) for f in feature_ids])
 
@@ -388,7 +423,8 @@ class FeatureMatrix(object):
         return sorted([labeling.class_names.index(c) for c in class_ids])
 
     def get_custom_features(self):
-        ''' This function returns the available custom feature vector ids.
+        ''' 
+        This function returns the available custom feature vector ids.
 
         Returns a dictionary with the custom feature vector ids as keys and the
         number of features in this vector as value. Custom feature vectors are
