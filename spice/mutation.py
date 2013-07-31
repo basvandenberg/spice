@@ -93,8 +93,8 @@ class MissenseMutation(object):
             names = sequtil.aa_unambiguous_name
             return (list(alph), names)
 
-    def georgiev_signal_diff(self, feature_ids=False):
-
+    def signal_diff(self, scale, feature_ids=False):
+        # TODO scale
         num_scales = 19
 
         if not(feature_ids):
@@ -109,10 +109,10 @@ class MissenseMutation(object):
                      for i in xrange(num_scales)]
             return (ids, names)
 
-    def georgiev_signal_auc(self, env_window=21, sig_window=9, edge=1.0,
+    def signal_auc(self, scale, env_window=21, sig_window=9, edge=1.0,
                             threshold=1.5, below_threshold=False,
                             feature_ids=False):
-
+        # TODO scale
         num_scales = 19
 
         if not(feature_ids):
@@ -346,8 +346,8 @@ class MissenseMutation(object):
                      'number of aligned amino acids']
             return (ids, names)
 
-    def msa_scale_diff(self, feature_ids=False):
-
+    def msa_signal_diff(self, scale, feature_ids=False):
+        # TODO scale
         num_scales = 19
 
         if not(feature_ids):

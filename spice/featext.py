@@ -86,8 +86,9 @@ class FeatureCategory():
 
 class FeatureExtraction(object):
 
-    PROTEIN_FEATURE_CATEGORY_IDS = ['aac', 'paac', 'sigavg', 'sigpeak', 'ac',
-                                    'ctd', 'len']
+    PROTEIN_FEATURE_CATEGORY_IDS = [
+        'aac', 'paac', 'sigavg', 'sigpeak', 'ac', 'ctd', 'len'
+    ]
 
     # - name
     # - feature calculation function
@@ -155,6 +156,97 @@ class FeatureExtraction(object):
 
     assert(sorted(PROTEIN_FEATURE_CATEGORY_IDS) ==
            sorted(PROTEIN_FEATURE_CATEGORIES.keys()))
+
+    MUTATION_FEATURE_CATEGORY_IDS = [
+        'mutvec', 'mutsigdiff', 'seqenv', 'msa', 'msasigdiff', 'pfam', 'flex',
+        'interaction', 'codonvec', 'codonenv'
+    ]
+
+    MUTATION_FEATURE_CATEGORIES = {
+
+        'mutvec': FeatureCategory(
+            'mutvec',
+            'mutation vector',
+            mutation.MissenseMutation.mutation_vector,
+            [],
+            [],
+            []),
+
+        'mutsigdiff': FeatureCategory(
+            'mutsigdiff',
+            'mutation signal difference',
+            mutation.MissenseMutation.signal_diff,
+            ['scale'],
+            [str],
+            []),
+
+        'seqenv': FeatureCategory(
+            'seqenv',
+            'sequence environment amino acid counts',
+            mutation.MissenseMutation.seq_env_aa_count,
+            ['window'],
+            [int],
+            []),
+
+        'msa': FeatureCategory(
+            'msa',
+            'msa-based',
+            mutation.MissenseMutation.msa,
+            [],
+            [],
+            []),
+
+        'msasigdiff': FeatureCategory(
+            'msasigdiff',
+            'msa signal difference',
+            mutation.MissenseMutation.msa_signal_diff,
+            ['scale'],
+            [str],
+            []),
+
+        'pfam': FeatureCategory(
+            'pfam',
+            'pfam annotation',
+            mutation.MissenseMutation.pfam_annotation,
+            [],
+            [],
+            []),
+
+        'flex': FeatureCategory(
+            'flex',
+            'backbone_dynamics',
+            mutation.MissenseMutation.residue_flexibility,
+            [],
+            [],
+            []),
+
+        'interaction': FeatureCategory(
+            'interaction',
+            'protein interaction counts',
+            mutation.MissenseMutation.interaction_counts,
+            [],
+            [],
+            []),
+
+        'codonvec': FeatureCategory(
+            'codonvec',
+            'from codon vector',
+            mutation.MissenseMutation.from_codon_vector,
+            [],
+            [],
+            []),
+
+        'codonenv': FeatureCategory(
+            'codonenv',
+            'sequence environment codon counts',
+            mutation.MissenseMutation.seq_env_codon_count,
+            ['window'],
+            [int],
+            [])
+    }
+
+    assert(sorted(MUTATION_FEATURE_CATEGORY_IDS) ==
+           sorted(MUTATION_FEATURE_CATEGORIES.keys()))
 
     def __init__(self):
 
@@ -233,16 +325,24 @@ class FeatureExtraction(object):
 
         assert(self.fm_protein.object_ids)
 
-        # split feature id and paramaters string
-        fc_id, params_str = featcat_id.split('_')
+        if('_' in featcat_id):
+
+            # split feature id and paramaters string
+            fc_id, params_str = featcat_id.split('_')
+
+            # parse the parameter string to a list of parameters
+            param_list = params_str.split('-')
+
+        else:
+
+            fc_id = featcat_id
+            param_list = []
 
         # obtain feature category object for given feature category id
         featcat = self.PROTEIN_FEATURE_CATEGORIES[fc_id]
-
-        # parse the parameter string to a list of parameters
-        param_list = params_str.split('-')
         
         assert(len(param_list) == len(featcat.param_types))
+
         args = []
         for p, pt in zip(param_list, featcat.param_types):
             args.append(pt(p))
@@ -263,12 +363,50 @@ class FeatureExtraction(object):
 
         self.fm_protein.add_features(feat_ids, fm, feature_names=names)
 
-    # TODO split in calculate and add function? or add remove from featmat
-    # TODO turn into same method as the one above...
-    def calculate_missense_features(self, feat_vector_id):
+    def calculate_missense_features(self, featcat_id):
+        #assert(self.fm_protein.object_ids)
+        #(fm, fids, fnames) = self.fv_dict_missense[feat_vector_id].calc_feats()
+        #self.fm_missense.add_features(fids, fm, feature_names=fnames)
+        
         assert(self.fm_protein.object_ids)
-        (fm, fids, fnames) = self.fv_dict_missense[feat_vector_id].calc_feats()
-        self.fm_missense.add_features(fids, fm, feature_names=fnames)
+
+        if('_' in featcat_id):
+
+            # split feature id and paramaters string
+            fc_id, params_str = featcat_id.split('_')
+
+            # parse the parameter string to a list of parameters
+            param_list = params_str.split('-')
+
+        else:
+
+            fc_id = featcat_id
+            param_list = []
+
+        # obtain feature category object for given feature category id
+        featcat = self.MUTATION_FEATURE_CATEGORIES[fc_id]
+        
+        assert(len(param_list) == len(featcat.param_types))
+
+        args = []
+        for p, pt in zip(param_list, featcat.param_types):
+            args.append(pt(p))
+
+        # fetch feature ids and names
+        (ids, names) = featcat.feature_func(mutation.MissenseMutation(''),
+                                            feature_ids=True, *args)
+
+        # append feature id to feature category id
+        feat_ids = ['%s_%s' % (featcat_id, i) for i in ids]
+
+        # initialize empty feature matrix
+        fm = numpy.empty((len(self.fm_mutation.object_ids), len(feat_ids)))
+
+        # fill the matrix
+        for index, m in enumerate(self.protein_data_set.get_mutations()):
+            fm[index, :] = featcat.feature_func(m, *args)
+
+        self.fm_mutation.add_features(feat_ids, fm, feature_names=names)
 
     def available_protein_featcat_ids(self):
         '''
@@ -315,26 +453,6 @@ class FeatureExtraction(object):
                              .setdefault(params_str, []).append(feat_id)
 
         return cat_feat_dict
-
-    #def available_protein_feature_vectors(self):
-    #    available = []
-    #    if(self.fm_protein.feature_ids):
-    #        feat_ids_set = set(self.fm_protein.feature_ids)
-    #        for featvec in self.fv_dict_protein.values():
-    #            if(set(featvec.feat_ids) <= feat_ids_set):
-    #                available.append(featvec)
-    #    return available
-
-    #def protein_feat_id_to_name_dict(self):
-    #    result = {}
-    #    for featvec in self.fv_dict_protein.values():
-    #        featvec_dict = featvec.feat_name_dict()
-    #        for key in featvec_dict.keys():
-    #            result[key] = (featvec.name, featvec_dict[key])
-    #    return result
-
-    #def get_protein_feature_vector_ids(self):
-    #    return ProteinFeatureVectorFactory.FEATVEC_IDS
 
     def load(self):
 
