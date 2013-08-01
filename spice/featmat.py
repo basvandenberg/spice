@@ -353,10 +353,6 @@ class FeatureMatrix(object):
         cust_feats = self.get_custom_features().values()
         cust_feats = [c[0].split('_')[0] for c in cust_feats]
 
-        print
-        print cust_feats
-        print
-
         if(len(cust_feats) == 0):
             new_cust_feat_i = 0
         else:
@@ -365,10 +361,6 @@ class FeatureMatrix(object):
             print len(self.CUSTOM_FEAT_PRE) + 1
             new_cust_feat_i =\
                     int(last_cust_feat[(len(self.CUSTOM_FEAT_PRE)):]) + 1
-
-        print
-        print new_cust_feat_i
-        print
 
         featvec_id = '%s%i' % (self.CUSTOM_FEAT_PRE, new_cust_feat_i)
         feat_ids = ['%s_%i' % (featvec_id, i) for i in xrange(num_feat)]
@@ -409,9 +401,23 @@ class FeatureMatrix(object):
         Raises:
             ValueError: if one of the feature_ids is not in the list.
         '''
-        return sorted([self.feature_ids.index(f) for f in feature_ids])
+        return [self.feature_ids.index(fid) for fid in feature_ids]
 
-    def object_indices(self, labeling_name, class_ids):
+    def object_indices(self, object_ids):
+        '''
+        This function returns the feature matrix row aindices where the objects
+        with the provided ids can be found.
+
+        Args:
+            object_ids ([str]): List with object ids.
+        Returns:
+            list with row indices.
+        Raises:
+            ValueError: if one of the object_ids is not in the list.
+        '''
+        return [self.object_ids.index(oid) for oid in object_ids]
+
+    def filtered_object_indices(self, labeling_name, class_ids):
         labeling = self.labeling_dict[labeling_name]
         indices = []
         for c in class_ids:
@@ -454,8 +460,8 @@ class FeatureMatrix(object):
             if not(class_ids):
                 class_ids = labeling.class_names
 
-            feat_is = self.feature_indices(feat_ids)
-            object_is = self.object_indices(labeling_name, class_ids)
+            feat_is = sorted(self.feature_indices(feat_ids))
+            object_is = self.filtered_object_indices(labeling_name, class_ids)
             class_is = self.class_indices(labeling_name, class_ids)
             if standardized:
                 fm = self.standardized_slice(feat_is, object_is)
