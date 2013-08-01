@@ -24,7 +24,7 @@ from util import file_io
 class FeatureCategory():
 
     def __init__(self, fc_id, fc_name, feature_func, param_names, param_types,
-                 required_data):
+                 required_data, model_object):
 
         assert(len(param_names) == len(param_types))
 
@@ -34,6 +34,7 @@ class FeatureCategory():
         self._param_names = param_names
         self._param_types = param_types
         self._required_data = required_data
+        self._model_object = model_object
 
     @property
     def fc_id(self):
@@ -58,6 +59,10 @@ class FeatureCategory():
     @property
     def required_data(self):
         return self._required_data
+
+    @property
+    def model_object(self):
+        return self._model_object
 
     def param_values(self, param_id):
         '''
@@ -103,7 +108,8 @@ class FeatureExtraction(object):
             protein.Protein.amino_acid_composition,
             ['number of segments'],
             [int],
-            [(protein.Protein.get_protein_sequence, True)]),
+            [(protein.Protein.get_protein_sequence, True)],
+            protein.Protein),
 
         'paac': FeatureCategory(
             'paac',
@@ -111,7 +117,8 @@ class FeatureExtraction(object):
             protein.Protein.prime_amino_acid_count,
             ['prime side', 'length'],
             [int, int],
-            [(protein.Protein.get_protein_sequence, True)]),
+            [(protein.Protein.get_protein_sequence, True)],
+            protein.Protein),
             
         'sigavg': FeatureCategory(
             'sigavg',
@@ -119,7 +126,8 @@ class FeatureExtraction(object):
             protein.Protein.average_signal,
             ['scale', 'window', 'edge'],
             [str, int, float],
-            [(protein.Protein.get_protein_sequence, True)]),
+            [(protein.Protein.get_protein_sequence, True)],
+            protein.Protein),
         
         'sigpeak': FeatureCategory(
             'sigpeak',
@@ -127,7 +135,8 @@ class FeatureExtraction(object):
             protein.Protein.signal_peaks_area,
             ['scale', 'window', 'edge', 'threshold'],
             [str, int, float, float],
-            [(protein.Protein.get_protein_sequence, True)]),
+            [(protein.Protein.get_protein_sequence, True)],
+            protein.Protein),
             
         'ac': FeatureCategory(
             'ac',
@@ -135,7 +144,8 @@ class FeatureExtraction(object):
             protein.Protein.autocorrelation,
             ['type', 'scale', 'lag'],
             [str, str, int],
-            [(protein.Protein.get_protein_sequence, True)]),
+            [(protein.Protein.get_protein_sequence, True)],
+            protein.Protein),
 
         'ctd': FeatureCategory(
             'ctd',
@@ -143,7 +153,8 @@ class FeatureExtraction(object):
             protein.Protein.property_ctd,
             ['property'],
             [str],
-            [(protein.Protein.get_protein_sequence, True)]),
+            [(protein.Protein.get_protein_sequence, True)],
+            protein.Protein),
 
         'len': FeatureCategory(
             'len',
@@ -151,7 +162,8 @@ class FeatureExtraction(object):
             protein.Protein.length,
             [],
             [],
-            [(protein.Protein.get_protein_sequence, True)])
+            [(protein.Protein.get_protein_sequence, True)],
+            protein.Protein)
     }
 
     assert(sorted(PROTEIN_FEATURE_CATEGORY_IDS) ==
@@ -170,7 +182,8 @@ class FeatureExtraction(object):
             mutation.MissenseMutation.mutation_vector,
             [],
             [],
-            []),
+            [],
+            mutation.MissenseMutation),
 
         'mutsigdiff': FeatureCategory(
             'mutsigdiff',
@@ -178,7 +191,8 @@ class FeatureExtraction(object):
             mutation.MissenseMutation.signal_diff,
             ['scale'],
             [str],
-            []),
+            [],
+            mutation.MissenseMutation),
 
         'seqenv': FeatureCategory(
             'seqenv',
@@ -186,7 +200,8 @@ class FeatureExtraction(object):
             mutation.MissenseMutation.seq_env_aa_count,
             ['window'],
             [int],
-            []),
+            [],
+            mutation.MissenseMutation),
 
         'msa': FeatureCategory(
             'msa',
@@ -194,7 +209,8 @@ class FeatureExtraction(object):
             mutation.MissenseMutation.msa,
             [],
             [],
-            []),
+            [],
+            mutation.MissenseMutation),
 
         'msasigdiff': FeatureCategory(
             'msasigdiff',
@@ -202,7 +218,8 @@ class FeatureExtraction(object):
             mutation.MissenseMutation.msa_signal_diff,
             ['scale'],
             [str],
-            []),
+            [],
+            mutation.MissenseMutation),
 
         'pfam': FeatureCategory(
             'pfam',
@@ -210,7 +227,8 @@ class FeatureExtraction(object):
             mutation.MissenseMutation.pfam_annotation,
             [],
             [],
-            []),
+            [],
+            mutation.MissenseMutation),
 
         'flex': FeatureCategory(
             'flex',
@@ -218,7 +236,8 @@ class FeatureExtraction(object):
             mutation.MissenseMutation.residue_flexibility,
             [],
             [],
-            []),
+            [],
+            mutation.MissenseMutation),
 
         'interaction': FeatureCategory(
             'interaction',
@@ -226,7 +245,8 @@ class FeatureExtraction(object):
             mutation.MissenseMutation.interaction_counts,
             [],
             [],
-            []),
+            [],
+            mutation.MissenseMutation),
 
         'codonvec': FeatureCategory(
             'codonvec',
@@ -234,7 +254,8 @@ class FeatureExtraction(object):
             mutation.MissenseMutation.from_codon_vector,
             [],
             [],
-            []),
+            [],
+            mutation.MissenseMutation),
 
         'codonenv': FeatureCategory(
             'codonenv',
@@ -242,7 +263,8 @@ class FeatureExtraction(object):
             mutation.MissenseMutation.seq_env_codon_count,
             ['window'],
             [int],
-            [])
+            [],
+            mutation.MissenseMutation),
     }
 
     assert(sorted(MUTATION_FEATURE_CATEGORY_IDS) ==
@@ -444,13 +466,15 @@ class FeatureExtraction(object):
 
             tokens = feat_id.split('_')
 
-            if not(tokens[0] == self.fm_protein.CUSTOM_FEAT_PRE):
-
+            if(len(tokens) == 2):
+                cat, feat = tokens
+                params_str = ''
+            else:
                 cat, params_str, feat = tokens
 
-                # not so easy to read, but works... building dict with dicts
-                cat_feat_dict.setdefault(cat, {})\
-                             .setdefault(params_str, []).append(feat_id)
+            # not so easy to read, but works... building dict with dicts
+            cat_feat_dict.setdefault(cat, {})\
+                         .setdefault(params_str, []).append(feat_id)
 
         return cat_feat_dict
 
