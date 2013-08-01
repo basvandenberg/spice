@@ -26,8 +26,12 @@ class ProteinDataSet(object):
         self.set_proteins(protein_ids)
 
     def set_proteins(self, protein_ids):
-        assert(len(protein_ids) == len(set(protein_ids)))
+
+        if not(len(protein_ids) == len(set(protein_ids))):
+            raise ValueError('Duplicate ids encoutered.')
+
         assert(all([type(pid) == str for pid in protein_ids]))
+
         self.proteins = [Protein(pid) for pid in protein_ids]
 
     def set_root_dir(self, root_dir):
@@ -239,9 +243,10 @@ class DataSource():
         for func in self.check_funcs:
             # check only the non-None items
             items_to_check = [s[1] for s in self.data if not s[1] is None]
-            if not(all(map(func, items_to_check))):
+            if (any(map(func, items_to_check))):
                 self.data = None
-                raise ValueError('Error in data %s. (%s)' % (self.name, func.__name__))
+                raise ValueError('Error in %s data, contains item that %s.' %
+                    (self.name.lower(), ' '.join(func.__name__.split('_'))))
 
     def get_data_path(self):
         return(os.path.join(self.root_dir, self.data_path))
@@ -316,30 +321,29 @@ class DataSourceFactory(object):
                     file_io.read_fasta, file_io.write_fasta,
                     Protein.set_protein_sequence,
                     [
-                        # TODO add this to protein object
-                        lambda x: len(x) > 0,
-                        sequtil.is_amino_acid_sequence
+                        sequtil.is_empty,
+                        sequtil.is_not_an_amino_acid_sequence
                     ], 'protein.fsa', None),
             'orf_seq': ('ORF sequence',
                     file_io.read_fasta, file_io.write_fasta,
                     Protein.set_orf_sequence,
                     [
-                        lambda x: len(x) > 0,
-                        sequtil.is_nucleotide_sequence
+                        sequtil.is_empty,
+                        sequtil.is_not_a_nucleotide_sequence
                     ], 'orf.fsa', 'uni_orf.map'),
             'ss_seq': ('Secundary structure sequence',
                     file_io.read_fasta, file_io.write_fasta,
                     Protein.set_ss_sequence,
                     [
-                        lambda x: len(x) > 0,
-                        sequtil.is_sec_struct_sequence
+                        sequtil.is_empty,
+                        sequtil.is_not_a_sec_struct_sequence
                     ], 'ss.fsa', 'uni_ss.map'),
             'sa_seq': ('Solvent accessible sequence',
                     file_io.read_fasta, file_io.write_fasta,
                     Protein.set_sa_sequence,
                     [
-                        lambda x: len(x) > 0,
-                        sequtil.is_solv_access_sequence
+                        sequtil.is_empty,
+                        sequtil.is_not_a_solv_access_sequence
                     ], 'sa.fsa', 'uni_sa.map'),
             'prot_struct': ('protein structure',
                     file_io.read_pdb_dir, file_io.write_pdb_dir,
@@ -350,9 +354,6 @@ class DataSourceFactory(object):
                     file_io.read_rasa_dir, file_io.write_rasa_dir,
                     Protein.set_rasa,
                     [
-                        lambda x: type(x) == list,
-                        lambda x: all([type(item) == float and item >= 0.0
-                                for item in x])
                     ], os.path.join('structure_data', 'rasa'),
                     'uni_rasa.map'),
             #'residue_rank': ('protein residue ranking',
