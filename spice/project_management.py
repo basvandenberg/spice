@@ -2,6 +2,7 @@ import os
 import operator
 import glob
 import datetime
+import time
 import numpy
 import shutil
 import traceback
@@ -491,8 +492,8 @@ class ProjectManager(object):
             seqs = [s for s in file_io.read_fasta(fasta_file.file)]
             seqs.extend(ref_seqs)
             ids = [s[0] for s in seqs]
-        except Exception:
-            return 'Error in fasta file'
+        except Exception as e:
+            return str(e)
 
         # reset pointer to begin of file
         #fasta_file.file.seek(0)
@@ -729,9 +730,16 @@ class ProjectManager(object):
 
         fm = self.get_feature_matrix()
 
-        if not(object_ids == fm.object_ids):
+        if not(sorted(object_ids) == sorted(fm.object_ids)):
             return 'The protein ids do not correspond to the proteins ' +\
                    'in this project'
+
+        if not(featmat.shape[0] == len(fm.object_ids)):
+            return 'The number of rows in the feature matrix does not ' +\
+                   'correspond to the number of proteins in this project.'
+
+        # reorder feature matrix rows
+        featmat = featmat[fm.object_indices(object_ids)]
 
         try:
             fm.add_custom_features(featmat)
@@ -845,16 +853,23 @@ class ProjectManager(object):
         if(len(missing_feature_cats) > 0):
             self.run_feature_extraction(missing_feature_cats)
 
+        # sleep for a second, to make sure feat calc job is first in queue
+        time.sleep(2)
+
         # store path to feature matrix dir
         fm_dir = self.fm_dir        
 
         # SWITCH BACK TO ORIGINAL PROJECT
         self.set_project(prev_proj)
 
-        # output files
-        progress_f = os.path.join(self.get_cl_dir(cl_id), 'progress.txt')
-        error_f = os.path.join(self.get_cl_dir(cl_id), 'error.txt')
+        # output dir
+        out_d = os.path.join(self.get_cl_dir(cl_id), 'class_output')
+        if not(os.path.exists(out_d)):
+            os.mkdir(out_d)
 
+        # output files
+        progress_f = os.path.join(out_d, 'progress.txt')
+        error_f = os.path.join(out_d, 'error.txt')
         
         # create the list of options for the classification command
         options = [
