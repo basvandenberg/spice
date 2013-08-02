@@ -92,7 +92,7 @@ class FeatureCategory():
 class FeatureExtraction(object):
 
     PROTEIN_FEATURE_CATEGORY_IDS = [
-        'aac', 'paac', 'sigavg', 'sigpeak', 'ac', 'ctd', 'len'
+        'aac', 'psaac', 'sigavg', 'sigpeak', 'ac', 'ctd', 'len'
     ]
 
     # - name
@@ -111,8 +111,8 @@ class FeatureExtraction(object):
             [(protein.Protein.get_protein_sequence, True)],
             protein.Protein),
 
-        'paac': FeatureCategory(
-            'paac',
+        'psaac': FeatureCategory(
+            'psaac',
             'prime side amino acid count',
             protein.Protein.prime_amino_acid_count,
             ['prime side', 'length'],
