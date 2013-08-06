@@ -290,6 +290,7 @@ class FeatureExtraction(object):
         '''
         Set the root dir if you want to load or store the data to file.
         '''
+
         # store the root dir
         self.root_dir = root_dir
 
@@ -389,7 +390,7 @@ class FeatureExtraction(object):
         #assert(self.fm_protein.object_ids)
         #(fm, fids, fnames) = self.fv_dict_missense[feat_vector_id].calc_feats()
         #self.fm_missense.add_features(fids, fm, feature_names=fnames)
-        
+
         assert(self.fm_protein.object_ids)
 
         if('_' in featcat_id):
@@ -415,20 +416,20 @@ class FeatureExtraction(object):
             args.append(pt(p))
 
         # fetch feature ids and names
-        (ids, names) = featcat.feature_func(mutation.MissenseMutation(''),
+        (ids, names) = featcat.feature_func(mutation.MissenseMutation(),
                                             feature_ids=True, *args)
 
         # append feature id to feature category id
         feat_ids = ['%s_%s' % (featcat_id, i) for i in ids]
 
         # initialize empty feature matrix
-        fm = numpy.empty((len(self.fm_mutation.object_ids), len(feat_ids)))
+        fm = numpy.empty((len(self.fm_missense.object_ids), len(feat_ids)))
 
         # fill the matrix
         for index, m in enumerate(self.protein_data_set.get_mutations()):
             fm[index, :] = featcat.feature_func(m, *args)
 
-        self.fm_mutation.add_features(feat_ids, fm, feature_names=names)
+        self.fm_missense.add_features(feat_ids, fm, feature_names=names)
 
     def available_protein_featcat_ids(self):
         '''
@@ -794,7 +795,7 @@ if __name__ == '__main__':
 
     # initialize new project
     if(args.init):
-
+        
         if(os.path.exists(args.root) and os.listdir(args.root)):
             print('\nUnable to initialize a new project in '
                   '%s, the directory is not empty.\n' % (args.root))

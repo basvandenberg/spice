@@ -7,6 +7,133 @@ from util import sequtil
 
 class MissenseMutation(object):
 
+    def __init__(self):
+
+        self._mid = None
+
+        self._protein = None
+        self._position = None
+        self._aa_from = None
+        self._aa_to = None
+
+        self._label = None
+
+        self._aa_pep = None
+        self._aa_pep_i = None
+
+        self._codons = None
+        self._codon_fr = None
+        self._codons_to = None
+
+        self._pdb_id = None
+        self._pdb_chain = None
+        self._pdb_resnum = None
+
+    @property
+    def mid(self):
+        return self._mid
+
+    @property
+    def protein(self):
+        return self._protein
+
+    @property
+    def position(self):
+        return self._position
+
+    @property
+    def aa_from(self):
+        return self._aa_from
+
+    @property
+    def aa_to(self):
+        return self._aa_to
+
+    @property
+    def label(self):
+        return self._label
+
+    @property
+    def aa_pep(self):
+        return self._aa_pep
+
+    @property
+    def aa_pep_i(self):
+        return self._aa_pep_i
+
+    @property
+    def codons(self):
+        return self._codons
+
+    @property
+    def codon_fr(self):
+        return self._codon_fr
+
+    @property
+    def codons_to(self):
+        return self._codons_to
+
+    @property
+    def pdb_id(self):
+        return self._pdb_id
+
+    @property
+    def pdb_chain(self):
+        return self._pdb_chain
+
+    @property
+    def pdb_resnum(self):
+        return self._pdb_resnum
+
+    def set_protein_data(self, protein, position, aa_from, aa_to):
+
+        if not(protein.protein_sequence[position - 1] == aa_from):
+            raise ValueError('Amino acid %s not ' % (aa_from) +\
+                             'on position %i ' % (position) +\
+                             'in protein %s.' % (protein.pid))
+
+        self._protein = protein
+        self._position = position
+        self._aa_from = aa_from
+        self._aa_to = aa_to
+
+        # set mutation id
+        self._mid = '_'.join([protein.pid, str(position), aa_from, aa_to])
+
+        # callback
+        self.protein.add_missense_mutation(self)
+
+    @label.setter
+    def label(self, label):
+        self._label = label
+
+    def set_peptide_data(self, aa_pep, aa_pep_i):
+
+        if(self.protein is None):
+            raise ValueError('Protein data must be set.')
+        if not(aa_pep[aa_pep_i] == self.aa_from):
+            raise ValueError('Amino acid on aa_pep_i in aa_pep does not ' +\
+                             'correspond to aa_from.')
+
+        self._aa_pep = aa_pep
+        self._aa_pep_i = aa_pep_i
+
+    def set_codon_data(self, codons, codon_fr, codons_to):
+        # TODO correct from codon
+        self._codons = codons
+        self._codon_fr = codon_fr
+        self._codons_to = codons_to
+
+    def set_struct_data(self, pdb_id, pdb_resnum):
+
+        self._pdb_id = pdb_id  # None if not available
+        if(self.pdb_id):
+            self._pdb_chain = pdb_id.split('_')[-1]
+        else:
+            self._pdb_chain = None
+        self._pdb_resnum = pdb_resnum  # -1 if not available
+
+    '''
     def __init__(self, protein, position, aa_from, aa_to, label, aa_pep,
                  aa_pep_i, codons, codon_fr, codons_to, pdb_id, pdb_resnum):
 
@@ -38,6 +165,7 @@ class MissenseMutation(object):
 
         # add this mutation to the protein (NOTE: two direction reference)
         self.protein.add_missense_mutation(self)
+    '''
 
     '''
     TODO use proper getter setter methods...
@@ -72,6 +200,16 @@ class MissenseMutation(object):
 
         return self(...)
     '''
+
+    @classmethod
+    def from_tuple(cls, tuple):
+        mismut = cls()
+        mismut.set_protein_data(tuple[0], tuple[1], tuple[2], tuple[3])
+        mismut.label = tuple[4]
+        mismut.set_peptide_data(tuple[5], tuple[6])
+        mismut.set_codon_data(tuple[7], tuple[8], tuple[9])
+        mismut.set_struct_data(tuple[10], tuple[11])
+        return mismut    
 
     def tuple_representation(self):
         return (self.protein.pid, self.position, self.aa_from, self.aa_to,

@@ -612,7 +612,7 @@ class Pfam(object):
         self.e_value = e_value
         self.clan = clan
         self.active_residues = active_residues
-
+    '''
     def single_line_str(self):
         return '%i\t%i\t%s\t%s\t%s\t%.1f\t%e\t%s\t%s' % (
             self.start_pos, self.end_pos, self.hmm_acc, self.hmm_name,
@@ -634,3 +634,4 @@ class Pfam(object):
 
         return self(start_pos, end_pos, hmm_acc, hmm_name, type_, bit_score,
                     e_value, clan, active_residues)
+    '''

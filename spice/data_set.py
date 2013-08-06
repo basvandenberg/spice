@@ -92,12 +92,31 @@ class ProteinDataSet(object):
         assert(self.proteins)
         protein_dict = dict(zip(self.get_protein_ids(), self.proteins))
 
+        '''
         for (pid, pos, fr, to, label, pep, pep_i, codons, codon_fr, codons_to,
              pdb_id, pdb_i) in mutation_data:
             if(pid in protein_dict.keys()):
                 protein = protein_dict[pid]
+                
                 MissenseMutation(protein, pos, fr, to, label, pep, pep_i,
                                  codons, codon_fr, codons_to, pdb_id, pdb_i)
+        '''
+        for mismut_tuple in mutation_data:
+            pid = mismut_tuple[0]
+            if(pid in protein_dict.keys()):
+
+                # fetch protein object
+                protein = protein_dict[pid]
+
+                # replace protein id by protein object in mutation tuple
+                # TODO inefficient.... HACK
+                mismut_list = list(mismut_tuple)
+                mismut_list[0] = protein
+                mismut_tuple = tuple(mismut_list)
+                
+                # create mutation object, which will imediately linked to the 
+                # protein object
+                MissenseMutation.from_tuple(mismut_tuple)
 
     def load(self):
         assert(self.root_dir)
