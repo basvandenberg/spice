@@ -156,6 +156,11 @@ def cv_score(data, target, classifier, n, scoring, param=None, cv=None, cpu=1,
     cv_roc_curves = roc.RocCollection()
     predictions = []
 
+    if(standardize):
+        # create scaler and scale the data with it
+        scaler = preprocessing.StandardScaler().fit(data)
+        data = scaler.transform(data)
+
     print
     print 'start cross-validation...'
     print
@@ -169,6 +174,7 @@ def cv_score(data, target, classifier, n, scoring, param=None, cv=None, cpu=1,
         trn_target = target[trn_indices]
         tst_target = target[tst_indices]
 
+        '''
         if(standardize):
 
             # create scaler using the training instances
@@ -177,6 +183,7 @@ def cv_score(data, target, classifier, n, scoring, param=None, cv=None, cpu=1,
             # scale the train and test data
             trn_data = scaler.transform(trn_data)
             tst_data = scaler.transform(tst_data)
+        '''
 
         # obtain the original classifier parameters
         classifier_param = classifier.get_params()
@@ -225,6 +232,7 @@ def cv_score(data, target, classifier, n, scoring, param=None, cv=None, cpu=1,
     all_data_cl = None
     if(return_trained_cl):
 
+        '''
         # scale the whole data set
         if(standardize):
 
@@ -232,23 +240,24 @@ def cv_score(data, target, classifier, n, scoring, param=None, cv=None, cpu=1,
             scaler = preprocessing.StandardScaler().fit(data)
             # scale data set
             data = scaler.transform(data)
+        '''
 
-            # obtain the original classifier parameters
-            classifier_param = classifier.get_params()
+        # obtain the original classifier parameters
+        classifier_param = classifier.get_params()
 
-            # perform grid search, if parameters are provided
-            if(param):
+        # perform grid search, if parameters are provided
+        if(param):
 
-                # optimize parameters on train set (s is train score)
-                (s, p) = grid_search(data, target, classifier, n, scoring,
-                                     param, cpu=cpu, log_f=log_f)
+            # optimize parameters on train set (s is train score)
+            (s, p) = grid_search(data, target, classifier, n, scoring,
+                                 param, cpu=cpu, log_f=log_f)
 
-                # update parameters with the optimized ones
-                classifier_param.update(p)
+            # update parameters with the optimized ones
+            classifier_param.update(p)
 
-            # use parameters to create new classifier object and train it
-            all_data_cl = type(classifier)(**classifier_param)
-            all_data_cl.fit(data, target)
+        # use parameters to create new classifier object and train it
+        all_data_cl = type(classifier)(**classifier_param)
+        all_data_cl.fit(data, target)
 
     # return average score over the cv loops
     return (cv_scores, cv_params, cv_confusion, cv_all_scores, cv_roc_curves,
@@ -282,6 +291,12 @@ def ffs(data, target, classifier, n, scoring, param=None, cv=None,
     cv_featis = []
 
     (rand_score, max_score) = metric_rand_max_score[scoring]
+    
+    if(standardize):
+        # create scaler and scale the data with it
+        scaler = preprocessing.StandardScaler().fit(data)
+        data = scaler.transform(data)
+
 
     # outer CV
     for fold_i, (trn_indices, tst_indices) in enumerate(cv):
@@ -292,6 +307,7 @@ def ffs(data, target, classifier, n, scoring, param=None, cv=None,
         trn_target = target[trn_indices]
         tst_target = target[tst_indices]
 
+        '''
         if(standardize):
             # create scaler using the training instances
             scaler = preprocessing.StandardScaler().fit(trn_data)
@@ -299,6 +315,7 @@ def ffs(data, target, classifier, n, scoring, param=None, cv=None,
             # scale the train and test data
             trn_data = scaler.transform(trn_data)
             tst_data = scaler.transform(tst_data)
+        '''
 
         # initialize list of selected features
         select = [(rand_score, None, []),
@@ -445,6 +462,11 @@ def bfs(data, target, classifier, n, scoring, param=None, cv=None,
 
     (rand_score, max_score) = metric_rand_max_score[scoring]
 
+    if(standardize):
+        # create scaler and scale the data with it
+        scaler = preprocessing.StandardScaler().fit(data)
+        data = scaler.transform(data)
+
     # outer CV
     for fold_i, (trn_indices, tst_indices) in enumerate(cv):
 
@@ -454,6 +476,7 @@ def bfs(data, target, classifier, n, scoring, param=None, cv=None,
         trn_target = target[trn_indices]
         tst_target = target[tst_indices]
 
+        '''
         if(standardize):
             # create scaler using the training instances
             scaler = preprocessing.StandardScaler().fit(trn_data)
@@ -461,6 +484,7 @@ def bfs(data, target, classifier, n, scoring, param=None, cv=None,
             # scale the train and test data
             trn_data = scaler.transform(trn_data)
             tst_data = scaler.transform(tst_data)
+        '''
 
         # keep track of removed features
         select = [(rand_score, None, []),
