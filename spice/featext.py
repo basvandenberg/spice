@@ -69,8 +69,12 @@ class FeatureCategory():
         This function turns a parameter id into a list of its parameter values.
         '''
         param_tokens = param_id.split('-')
-        assert(len(param_tokens) == len(self.param_types))
-        return [t(p) for t, p in zip(self.param_types, param_tokens)]
+
+        if(len(param_tokens) == 1 and param_tokens[0] == ''):
+            return []
+        else:
+            assert(len(param_tokens) == len(self.param_types))
+            return [t(p) for t, p in zip(self.param_types, param_tokens)]
 
     def param_str(self, param_id):
         '''
@@ -82,12 +86,25 @@ class FeatureCategory():
                          zip(self.param_names, param_tokens)]
         return ', '.join(param_strings)
 
-    def feat_id_name_dict(self, param_id):
-        args = [protein.Protein('')]
+    def full_feat_ids(self, param_id):
+        fids, _ = self.feat_id_name_list(param_id)
+        full_ids = []
+        for fid in fids:
+            if not(param_id == '' or param_id is None):
+                full_ids.append('%s_%s_%s' % (self.fc_id, param_id, fid))
+            else:
+                full_ids.append('%s_%s' % (self.fc_id, fid))
+        return full_ids
+
+    def feat_id_name_list(self, param_id):
+        args = [self.model_object]
         args.extend(self.param_values(param_id))
         kwargs = {'feature_ids': True}
-        feat_ids, feat_names = self.feature_func(*args, **kwargs)
-        return dict(zip(feat_ids, feat_names))
+        return self.feature_func(*args, **kwargs)
+
+    def feat_id_name_dict(self, param_id):
+        return dict(zip(self.feat_id_name_list(param_id)))
+
 
 class FeatureExtraction(object):
 
@@ -109,7 +126,7 @@ class FeatureExtraction(object):
             ['number of segments'],
             [int],
             [(protein.Protein.get_protein_sequence, True)],
-            protein.Protein),
+            protein.Protein('')),
 
         'psaac': FeatureCategory(
             'psaac',
@@ -118,7 +135,7 @@ class FeatureExtraction(object):
             ['prime side', 'length'],
             [int, int],
             [(protein.Protein.get_protein_sequence, True)],
-            protein.Protein),
+            protein.Protein('')),
             
         'sigavg': FeatureCategory(
             'sigavg',
@@ -127,7 +144,7 @@ class FeatureExtraction(object):
             ['scale', 'window', 'edge'],
             [str, int, float],
             [(protein.Protein.get_protein_sequence, True)],
-            protein.Protein),
+            protein.Protein('')),
         
         'sigpeak': FeatureCategory(
             'sigpeak',
@@ -136,7 +153,7 @@ class FeatureExtraction(object):
             ['scale', 'window', 'edge', 'threshold'],
             [str, int, float, float],
             [(protein.Protein.get_protein_sequence, True)],
-            protein.Protein),
+            protein.Protein('')),
             
         'ac': FeatureCategory(
             'ac',
@@ -145,7 +162,7 @@ class FeatureExtraction(object):
             ['type', 'scale', 'lag'],
             [str, str, int],
             [(protein.Protein.get_protein_sequence, True)],
-            protein.Protein),
+            protein.Protein('')),
 
         'ctd': FeatureCategory(
             'ctd',
@@ -154,7 +171,7 @@ class FeatureExtraction(object):
             ['property'],
             [str],
             [(protein.Protein.get_protein_sequence, True)],
-            protein.Protein),
+            protein.Protein('')),
 
         'len': FeatureCategory(
             'len',
@@ -163,7 +180,7 @@ class FeatureExtraction(object):
             [],
             [],
             [(protein.Protein.get_protein_sequence, True)],
-            protein.Protein)
+            protein.Protein(''))
     }
 
     assert(sorted(PROTEIN_FEATURE_CATEGORY_IDS) ==
@@ -183,7 +200,7 @@ class FeatureExtraction(object):
             [],
             [],
             [],
-            mutation.MissenseMutation),
+            mutation.MissenseMutation()),
 
         'mutsigdiff': FeatureCategory(
             'mutsigdiff',
@@ -192,7 +209,7 @@ class FeatureExtraction(object):
             ['scale'],
             [str],
             [],
-            mutation.MissenseMutation),
+            mutation.MissenseMutation()),
 
         'seqenv': FeatureCategory(
             'seqenv',
@@ -201,7 +218,7 @@ class FeatureExtraction(object):
             ['window'],
             [int],
             [],
-            mutation.MissenseMutation),
+            mutation.MissenseMutation()),
 
         'msa': FeatureCategory(
             'msa',
@@ -210,7 +227,7 @@ class FeatureExtraction(object):
             [],
             [],
             [],
-            mutation.MissenseMutation),
+            mutation.MissenseMutation()),
 
         'msasigdiff': FeatureCategory(
             'msasigdiff',
@@ -219,7 +236,7 @@ class FeatureExtraction(object):
             ['scale'],
             [str],
             [],
-            mutation.MissenseMutation),
+            mutation.MissenseMutation()),
 
         'pfam': FeatureCategory(
             'pfam',
@@ -228,7 +245,7 @@ class FeatureExtraction(object):
             [],
             [],
             [],
-            mutation.MissenseMutation),
+            mutation.MissenseMutation()),
 
         'flex': FeatureCategory(
             'flex',
@@ -237,7 +254,7 @@ class FeatureExtraction(object):
             [],
             [],
             [],
-            mutation.MissenseMutation),
+            mutation.MissenseMutation()),
 
         'interaction': FeatureCategory(
             'interaction',
@@ -246,7 +263,7 @@ class FeatureExtraction(object):
             [],
             [],
             [],
-            mutation.MissenseMutation),
+            mutation.MissenseMutation()),
 
         'codonvec': FeatureCategory(
             'codonvec',
@@ -255,7 +272,7 @@ class FeatureExtraction(object):
             [],
             [],
             [],
-            mutation.MissenseMutation),
+            mutation.MissenseMutation()),
 
         'codonenv': FeatureCategory(
             'codonenv',
@@ -264,7 +281,7 @@ class FeatureExtraction(object):
             ['window'],
             [int],
             [],
-            mutation.MissenseMutation),
+            mutation.MissenseMutation()),
     }
 
     assert(sorted(MUTATION_FEATURE_CATEGORY_IDS) ==
