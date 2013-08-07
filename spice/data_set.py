@@ -335,6 +335,10 @@ class DataSourceFactory(object):
                                 'prot_struct', 'residue_rasa',
                                 'msa', 'pfam', 'flex', 'interaction']
 
+        # TODO somehow add function that checks if added data source is
+        # consistent with allready available data, e.g. if the length of the
+        # secondary structure sequences corresponds to the protein sequence
+        # lengths.
         self.data_sources = {
             'prot_seq': ('Protein sequence',
                     file_io.read_fasta, file_io.write_fasta,
