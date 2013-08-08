@@ -646,10 +646,10 @@ class Protein(object):
     def get_orf_sequence(self):
         return self.orf_sequence
 
-    def get_ss_sequence(self):
+    def get_secondary_structure_sequence(self):
         return self.ss_sequence
 
-    def get_sa_sequence(self):
+    def get_solvent_accessibility_sequence(self):
         return self.sa_sequence
 
     def get_msa(self):
