@@ -109,7 +109,8 @@ class FeatureCategory():
 class FeatureExtraction(object):
 
     PROTEIN_FEATURE_CATEGORY_IDS = [
-        'aac', 'dc', 'psaac', 'sigavg', 'sigpeak', 'ac', 'ctd', 'len'
+        'aac', 'dc', 'psaac', 'sigavg', 'sigpeak', 'ac', 'ctd', 'len', 'ssc',
+        'ssaac', 'sac', 'saaac', 'cc', 'cu'
     ]
 
     # - name
@@ -189,6 +190,62 @@ class FeatureExtraction(object):
             [],
             [],
             [(protein.Protein.get_protein_sequence, True)],
+            protein.Protein('')),
+
+        'ssc': FeatureCategory(
+            'ssc',
+            'secondary structure composition',
+            protein.Protein.ss_composition,
+            ['number of segments'],
+            [int],
+            [(protein.Protein.get_ss_sequence, True)],
+            protein.Protein('')),
+
+        'ssaac': FeatureCategory(
+            'ssaac',
+            'per secondary structure amino acid composition',
+            protein.Protein.ss_aa_composition,
+            [],
+            [],
+            [(protein.Protein.get_ss_sequence, True),
+             (protein.Protein.get_protein_sequence, True)],
+            protein.Protein('')),
+
+        'sac': FeatureCategory(
+            'sac',
+            'solvent accessibility composition',
+            protein.Protein.sa_composition,
+            ['number of segments'],
+            [int],
+            [(protein.Protein.get_sa_sequence, True)],
+            protein.Protein('')),
+
+        'saaac': FeatureCategory(
+            'saaac',
+            'per solvent accessibility class amino acid composition',
+            protein.Protein.sa_aa_composition,
+            [],
+            [],
+            [(protein.Protein.get_sa_sequence, True),
+             (protein.Protein.get_protein_sequence, True)],
+            protein.Protein('')),
+
+        'cc': FeatureCategory(
+            'cc',
+            'codon composition',
+            protein.Protein.codon_composition,
+            [],
+            [],
+            [(protein.Protein.get_orf_sequence, True)],
+            protein.Protein('')),
+
+        'cu': FeatureCategory(
+            'cu',
+            'codon usage',
+            protein.Protein.codon_usage,
+            [],
+            [],
+            [(protein.Protein.get_orf_sequence, True)],
             protein.Protein(''))
     }
 
