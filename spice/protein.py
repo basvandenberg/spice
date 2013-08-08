@@ -157,21 +157,34 @@ class Protein(object):
 
             return (feat_ids, feat_names)
 
-    def dipeptide_composition(self, feature_ids=False):
+    def dipeptide_composition(self, num_segments, feature_ids=False):
 
         alph = sequtil.aa_unambiguous_alph
 
         if not(feature_ids):
 
             seq = self.protein_sequence
-            distance = 1
 
-            return sequtil.diletter_composition(seq, alph, distance)
+            if(num_segments == 1):
+                return sequtil.diletter_composition(seq, alph, 1)
+            else:
+                seqs = sequtil.segment(seq, num_segments)
+                return numpy.concatenate(
+                    [sequtil.diletter_composition(s, alph, 1) for s in seqs])
 
         else:
 
             pairs = sequtil.ordered_alph_pairs(alph)
-            return(pairs, pairs)
+
+            feat_ids = []
+            feat_names = []
+            
+            for si in xrange(1, num_segments + 1):
+                for p in pairs:
+                    feat_ids.append('%s%i' % (p, si))
+                    feat_names.append('%s, segment %i' % (p, si))
+
+            return (feat_ids, feat_names)
 
     def prime_amino_acid_count(self, prime, length, feature_ids=False):
 

@@ -132,8 +132,8 @@ class FeatureExtraction(object):
             'dc',
             'dipeptide composition',
             protein.Protein.dipeptide_composition,
-            [],
-            [],
+            ['number of segments'],
+            [int],
             [(protein.Protein.get_protein_sequence, True)],
             protein.Protein('')),
 
@@ -397,8 +397,8 @@ class FeatureExtraction(object):
             args.append(pt(p))
 
         # fetch feature ids and names
-        (ids, names) = featcat.feature_func(protein.Protein(''),
-                                            feature_ids=True, *args)
+        (ids, names) = featcat.feature_func(featcat.model_object, *args,
+                                            feature_ids=True)
 
         # append feature id to feature category id
         feat_ids = ['%s_%s' % (featcat_id, i) for i in ids]
@@ -439,8 +439,8 @@ class FeatureExtraction(object):
             args.append(pt(p))
 
         # fetch feature ids and names
-        (ids, names) = featcat.feature_func(mutation.MissenseMutation(),
-                                            feature_ids=True, *args)
+        (ids, names) = featcat.feature_func(featcat.model_object, *args,
+                                            feature_ids=True)
 
         # append feature id to feature category id
         feat_ids = ['%s_%s' % (featcat_id, i) for i in ids]
