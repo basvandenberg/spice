@@ -109,7 +109,7 @@ class FeatureCategory():
 class FeatureExtraction(object):
 
     PROTEIN_FEATURE_CATEGORY_IDS = [
-        'aac', 'psaac', 'sigavg', 'sigpeak', 'ac', 'ctd', 'len'
+        'aac', 'dc', 'psaac', 'sigavg', 'sigpeak', 'ac', 'ctd', 'len'
     ]
 
     # - name
@@ -128,6 +128,15 @@ class FeatureExtraction(object):
             [(protein.Protein.get_protein_sequence, True)],
             protein.Protein('')),
 
+        'dc': FeatureCategory(
+            'dc',
+            'dipeptide composition',
+            protein.Protein.dipeptide_composition,
+            [],
+            [],
+            [(protein.Protein.get_protein_sequence, True)],
+            protein.Protein('')),
+
         'psaac': FeatureCategory(
             'psaac',
             'prime side amino acid count',
@@ -136,7 +145,7 @@ class FeatureExtraction(object):
             [int, int],
             [(protein.Protein.get_protein_sequence, True)],
             protein.Protein('')),
-            
+
         'sigavg': FeatureCategory(
             'sigavg',
             'average signal value',
@@ -145,7 +154,7 @@ class FeatureExtraction(object):
             [str, int, float],
             [(protein.Protein.get_protein_sequence, True)],
             protein.Protein('')),
-        
+
         'sigpeak': FeatureCategory(
             'sigpeak',
             'signal value peaks area',
@@ -154,7 +163,7 @@ class FeatureExtraction(object):
             [str, int, float, float],
             [(protein.Protein.get_protein_sequence, True)],
             protein.Protein('')),
-            
+
         'ac': FeatureCategory(
             'ac',
             'autocorrelation',
@@ -380,7 +389,7 @@ class FeatureExtraction(object):
 
         # obtain feature category object for given feature category id
         featcat = self.PROTEIN_FEATURE_CATEGORIES[fc_id]
-        
+
         assert(len(param_list) == len(featcat.param_types))
 
         args = []
@@ -404,9 +413,6 @@ class FeatureExtraction(object):
         self.fm_protein.add_features(feat_ids, fm, feature_names=names)
 
     def calculate_missense_features(self, featcat_id):
-        #assert(self.fm_protein.object_ids)
-        #(fm, fids, fnames) = self.fv_dict_missense[feat_vector_id].calc_feats()
-        #self.fm_missense.add_features(fids, fm, feature_names=fnames)
 
         assert(self.fm_protein.object_ids)
 
@@ -425,7 +431,7 @@ class FeatureExtraction(object):
 
         # obtain feature category object for given feature category id
         featcat = self.MUTATION_FEATURE_CATEGORIES[fc_id]
-        
+
         assert(len(param_list) == len(featcat.param_types))
 
         args = []
@@ -540,12 +546,13 @@ class FeatureExtraction(object):
     def __str__(self):
         return '%s\n%s\n' % (str(self.fm_protein), str(self.fm_missense))
 
+    # TODO remove this???
     def plot_mutation_environment_signals(self, env_window, scale, sig_window,
-            edge, labeling_name):
+                                          edge, labeling_name):
 
         if(sig_window > env_window):
             raise ValueError('Signal window (sig_window) must be equal or ' +
-                    'smaller than environment window (env_window).')
+                             'smaller than environment window (env_window).')
 
         mutations = self.protein_data_set.get_mutations()
         labeling = self.fm_missense.labeling_dict[labeling_name]
@@ -561,7 +568,7 @@ class FeatureExtraction(object):
 
         for index, mut in enumerate(mutations):
             data[:, index] = mut.environment_signal(env_window, scale,
-                    sig_window, edge)
+                                                    sig_window, edge)
 
         # split data per label # TODO implement multiple labels
         data0 = data[:, indices_0]
@@ -574,11 +581,11 @@ class FeatureExtraction(object):
         #pyplot.plot(data1, color="#ff5555")
         pyplot.show()
 
-
+'''
 class FeatureVector():
 
     def __init__(self, uid, object_list, name, feature_func, kwargs,
-            required_data=None):
+                 required_data=None):
 
         assert(object_list)
 
@@ -592,21 +599,12 @@ class FeatureVector():
         self.required_data = required_data
 
         (ids, names) = self.feature_func(self.object_list[0],
-                feature_ids=True, **kwargs)
-
-        #self.short_ids = ids
-        #self.short_names = names
+                                         feature_ids=True, **kwargs)
 
         self.feat_ids = ['%s_%s' % (self.uid, i) for i in ids]
-        #self.feat_names = ['%s %s' % (self.name, n) for n in names]
         self.feat_names = names
 
     def required_data_available(self, get_data_func, all_objects=True):
-        '''
-        get_data_func: is a simple getter that should be available for the
-        objects in self.object_list
-        all_objects: if False, then any is assumed.
-        '''
         if(all_objects):
             return(all([get_data_func(obj) for obj in self.object_list]))
         else:
@@ -750,7 +748,7 @@ class ProteinFeatureVectorFactory(FeatureVectorFactory):
 
         # make sure that all ids are in the ids list
         assert(set(self.FEATVEC_IDS) == set(self.feature_vectors.keys()))
-
+'''
 
 if __name__ == '__main__':
 
@@ -802,7 +800,7 @@ if __name__ == '__main__':
 
     # delete feature matrix TODO do this without loading the data set???
     parser.add_argument('--delete_feature_matrices', action='store_true',
-            default=False)
+                        default=False)
 
     args = parser.parse_args()
 
@@ -812,7 +810,7 @@ if __name__ == '__main__':
 
     # initialize new project
     if(args.init):
-        
+
         if(os.path.exists(args.root) and os.listdir(args.root)):
             print('\nUnable to initialize a new project in '
                   '%s, the directory is not empty.\n' % (args.root))
@@ -892,7 +890,7 @@ if __name__ == '__main__':
         # check if protein sequences are available
         if not(fe.protein_data_set.ds_dict['prot_seq'].available()):
             print('\nMutation data can only be added if protein sequences' +
-                    ' are available.\n')
+                  ' are available.\n')
             sys.exit()
 
         else:
@@ -1066,7 +1064,7 @@ if __name__ == '__main__':
         else:
             try:
                 prot_ds.read_data_source(ds_name, ds_path,
-                        mapping_file=uni_orf_map_f)
+                                         mapping_file=uni_orf_map_f)
             except IOError as e:
                 print '\nData source io error: %s\n\n%s' % (ds_name, e)
                 print traceback.format_exc()
