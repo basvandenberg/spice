@@ -151,9 +151,9 @@ class Protein(object):
             feat_names = []
 
             for si in xrange(1, num_segments + 1):
-                for aa, aa_name in zip(alph, sequtil.aa_unambiguous_name):
+                for aa in alph:
                     feat_ids.append('%s%i' % (aa, si))
-                    feat_names.append('%s, segment %i' % (aa_name, si))
+                    feat_names.append('%s, segment %i' % (aa, si))
 
             return (feat_ids, feat_names)
 
