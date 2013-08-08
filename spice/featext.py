@@ -204,7 +204,7 @@ class FeatureExtraction(object):
             protein.Protein.ss_composition,
             ['number of segments'],
             [int],
-            [(protein.Protein.get_ss_sequence, True)],
+            [(protein.Protein.get_secondary_structure_sequence, True)],
             protein.Protein('')),
 
         'ssaac': FeatureCategory(
@@ -213,7 +213,7 @@ class FeatureExtraction(object):
             protein.Protein.ss_aa_composition,
             [],
             [],
-            [(protein.Protein.get_ss_sequence, True),
+            [(protein.Protein.get_secondary_structure_sequence, True),
              (protein.Protein.get_protein_sequence, True)],
             protein.Protein('')),
 
@@ -223,7 +223,7 @@ class FeatureExtraction(object):
             protein.Protein.sa_composition,
             ['number of segments'],
             [int],
-            [(protein.Protein.get_sa_sequence, True)],
+            [(protein.Protein.get_solvent_accessibility_sequence, True)],
             protein.Protein('')),
 
         'saaac': FeatureCategory(
@@ -232,7 +232,7 @@ class FeatureExtraction(object):
             protein.Protein.sa_aa_composition,
             [],
             [],
-            [(protein.Protein.get_sa_sequence, True),
+            [(protein.Protein.get_solvent_accessibility_sequence, True),
              (protein.Protein.get_protein_sequence, True)],
             protein.Protein('')),
 
