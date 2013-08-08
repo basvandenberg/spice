@@ -81,10 +81,15 @@ class FeatureCategory():
         This function rurns a parameter id into a readable parameters string.
         '''
         param_tokens = param_id.split('-')
-        assert(len(param_tokens) == len(self.param_names))
-        param_strings = ['%s: %s' % (p, v) for p, v in
-                         zip(self.param_names, param_tokens)]
-        return ', '.join(param_strings)
+
+        if(len(param_tokens) == 1 and param_tokens[0] == ''):
+            return ''
+        else:
+        
+            assert(len(param_tokens) == len(self.param_names))
+            param_strings = ['%s: %s' % (p, v) for p, v in
+                             zip(self.param_names, param_tokens)]
+            return ', '.join(param_strings)
 
     def full_feat_ids(self, param_id):
         fids, _ = self.feat_id_name_list(param_id)
