@@ -29,9 +29,9 @@ from sklearn import metrics
 from sklearn.externals import joblib
 
 from spice import featmat
-from util import timeout
-from util import roc
-from util import file_io
+from biopy import timeout
+from biopy import roc
+from biopy import file_io
 
 # classification performance measures
 all_score_names = ['roc_auc', 'f1', 'precision', 'average_precision',

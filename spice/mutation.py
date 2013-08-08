@@ -2,7 +2,7 @@ import numpy
 import scipy
 import prody
 
-from util import sequtil
+from biopy import sequtil
 
 
 class MissenseMutation(object):

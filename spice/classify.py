@@ -12,7 +12,7 @@ from sklearn.externals import joblib
 
 from spice import classification
 from spice import featmat
-from util import file_io
+from biopy import file_io
 
 def classify(fm_dir, cl_dir):
     '''

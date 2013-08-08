@@ -18,7 +18,7 @@ from spice import featmat
 from spice import data_set
 from spice import protein
 from spice import mutation
-from util import file_io
+from biopy import file_io
 
 
 class FeatureCategory():

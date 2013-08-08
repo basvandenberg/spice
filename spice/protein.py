@@ -1,5 +1,5 @@
 import math
-from util import sequtil
+from biopy import sequtil
 
 
 class Protein(object):
@@ -350,39 +350,12 @@ class Protein(object):
                      for a in sequtil.aa_unambiguous_name]
             return (ids, names)
 
-    '''
-    def five_prime_amino_acid_count(self, seq_length=75, feature_ids=False):
-        if not(feature_ids):
-            return sequtil.aa_count(self.five_prime_seq(seq_length))
-        else:
-            return (list(sequtil.aa_unambiguous_alph),
-                    sequtil.aa_unambiguous_name)
-
-    def three_prime_amino_acid_count(self, seq_length=75, feature_ids=False):
-        if not(feature_ids):
-            return sequtil.aa_count(self.three_prime_seq(seq_length))
-        else:
-            return (list(sequtil.aa_unambiguous_alph),
-                    sequtil.aa_unambiguous_name)
-    '''
     def cluster_composition(self, feature_ids=False):
         if not(feature_ids):
             return sequtil.aa_cluster_composition(self.protein_sequence)
         else:
             return (sequtil.aa_subsets, sequtil.aa_subsets)
-    '''
-    def five_prime_cluster_count(self, seq_length=75, feature_ids=False):
-        if not(feature_ids):
-            return sequtil.aa_cluster_count(self.five_prime_seq(seq_length))
-        else:
-            return (sequtil.aa_subsets, sequtil.aa_subsets)
-
-    def three_prime_cluster_count(self, seq_length=75, feature_ids=False):
-        if not(feature_ids):
-            return sequtil.aa_cluster_count(self.three_prime_seq(seq_length))
-        else:
-            return (sequtil.aa_subsets, sequtil.aa_subsets)
-    '''
+    
     def codon_composition(self, feature_ids=False):
         if not(feature_ids):
             return sequtil.codon_composition(self.orf_sequence)
