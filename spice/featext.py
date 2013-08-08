@@ -103,7 +103,8 @@ class FeatureCategory():
         return self.feature_func(*args, **kwargs)
 
     def feat_id_name_dict(self, param_id):
-        return dict(zip(self.feat_id_name_list(param_id)))
+        fids, fnames =  self.feat_id_name_list(param_id)
+        return dict(zip(fids, fnames))
 
 
 class FeatureExtraction(object):
