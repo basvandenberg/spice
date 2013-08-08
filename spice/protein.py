@@ -353,6 +353,13 @@ class Protein(object):
 
             return (feat_ids, feat_names)
 
+    def quasi_sequence_order_descriptors(self, aa_dists, max_rank,
+                                         feature_ids=False):
+        '''
+        TODO
+        '''
+        pass
+
     def length(self, feature_ids=False):
         if not(feature_ids):
             return [len(self.protein_sequence)]
