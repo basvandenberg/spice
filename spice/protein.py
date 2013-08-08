@@ -1,4 +1,7 @@
 import math
+
+import numpy
+
 from biopy import sequtil
 
 
@@ -132,7 +135,15 @@ class Protein(object):
 
         if not(feature_ids):
 
-            return sequtil.aa_composition(self.protein_sequence, num_segments)
+            alph = sequtil.aa_unambiguous_alph
+            seq = self.protein_sequence
+
+            if(num_segments == 1):
+                return sequtil.letter_composition(seq, alph)
+            else:
+                seqs = sequtil.segment(seq, num_segments)
+                return numpy.concatenate(
+                    [sequtil.letter_composition(s, alph) for s in seqs])
         else:
 
             feat_ids = []
@@ -149,8 +160,9 @@ class Protein(object):
     def prime_amino_acid_count(self, prime, length, feature_ids=False):
 
         if not(feature_ids):
-
-            return sequtil.aa_count(self.prime_seq(prime, length))
+            alph = sequtil.aa_unambiguous_alph
+            seq = self.prime_seq(prime, length)
+            return sequtil.letter_count(seq, alph)
         else:
             aa_alph = sequtil.aa_unambiguous_alph
             feat_ids = ['%ip%s' % (prime, aa) for aa in aa_alph]
@@ -201,8 +213,8 @@ class Protein(object):
             result = []
 
             for scale in scales:
-                result.append(sequtil.avg_seq_signal(
-                              self.protein_sequence, scale, window, edge))
+                seq = self.protein_sequence
+                result.append(sequtil.avg_seq_signal(seq, scale, window, edge))
 
             return result
 
@@ -220,8 +232,9 @@ class Protein(object):
             result = []
 
             for scale in scales:
-                top, bot = sequtil.auc_seq_signal(self.protein_sequence, scale,
-                                                  window, edge, threshold)
+                seq = self.protein_sequence
+                top, bot = sequtil.auc_seq_signal(seq, scale, window, edge,
+                                                  threshold)
                 result.append(top)
                 result.append(bot)
 
@@ -250,8 +263,9 @@ class Protein(object):
             result = []
 
             for scale in scale_list:
-                result.append(sequtil.autocorrelation(ac_type,
-                              self.protein_sequence, scale, lag))
+                seq = self.protein_sequence
+                result.append(sequtil.autocorrelation(ac_type, seq, scale,
+                              lag))
 
             return result
         # or return feature ids and names
@@ -261,12 +275,12 @@ class Protein(object):
     def property_ctd(self, property, feature_ids=False):
 
         property_map = {
-            'hyd': 'hydrophobicity', 
+            'hyd': 'hydrophobicity',
             'vdw': 'normvdw',
             'plr': 'polarity',
             'plz': 'polarizability',
             'chr': 'charge',
-            'ss': 'ss', 
+            'ss': 'ss',
             'sa': 'sa'
         }
 
@@ -277,8 +291,9 @@ class Protein(object):
         if not(feature_ids):
 
             property_name = property_map[property]
+            seq = self.protein_sequence
 
-            return sequtil.property_ctd(self.protein_sequence, property_name)
+            return sequtil.property_ctd(seq, property_name)
 
         # or return feature ids and names
         else:
@@ -286,7 +301,7 @@ class Protein(object):
                         'd10', 'd11', 'd12', 'd13', 'd14',
                         'd20', 'd21', 'd22', 'd23', 'd24',
                         'd30', 'd31', 'd32', 'd33', 'd34']
-            feat_names = ['composition letter %i' % (i) for i in xrange(1,4)]
+            feat_names = ['composition letter %i' % (i) for i in xrange(1, 4)]
             feat_names.extend([
                 'transitions 1-2 2-1',
                 'transitions 1-3 3-1',
@@ -306,9 +321,8 @@ class Protein(object):
                 'distribution letter 3 frac to 50%',
                 'distribution letter 3 frac to 75%',
                 'distribution letter 3 frac to 100%'])
-                
-            return (feat_ids, feat_names)
 
+            return (feat_ids, feat_names)
 
     def length(self, feature_ids=False):
         if not(feature_ids):
@@ -316,37 +330,91 @@ class Protein(object):
         else:
             return (['len'], ['Protein length'])
 
-    def ss_composition(self, feature_ids=False):
-        if not(feature_ids):
-            return sequtil.ss_composition(self.ss_sequence)
-        else:
-            return (list(sequtil.ss_alph), sequtil.ss_name)
+    def ss_composition(self, num_segments, feature_ids=False):
 
-    def sa_composition(self, feature_ids=False):
+        alph = sequtil.ss_alph
+
         if not(feature_ids):
-            return sequtil.sa_composition(self.sa_sequence)
+
+            seq = self.ss_sequence
+
+            if(num_segments == 1):
+                return sequtil.letter_composition(seq, alph)
+            else:
+                seqs = sequtil.segment(seq, num_segments)
+                return numpy.concatenate(
+                    [sequtil.letter_composition(s, alph) for s in seqs])
         else:
-            return (list(sequtil.sa_alph), sequtil.sa_name)
+
+            feat_ids = []
+            feat_names = []
+
+            for si in xrange(1, num_segments + 1):
+                for ss_id, ss_name in zip(alph, sequtil.ss_name):
+                    feat_ids.append('%s%i' % (ss_id, si))
+                    feat_names.append('%s, segment %i' % (ss_name, si))
+
+            return (feat_ids, feat_names)
+
+    def sa_composition(self, num_segments, feature_ids=False):
+
+        alph = sequtil.sa_alph
+
+        if not(feature_ids):
+
+            seq = self.sa_sequence
+
+            if(num_segments == 1):
+                return sequtil.letter_composition(seq, alph)
+            else:
+                seqs = sequtil.segment(seq, num_segments)
+                return numpy.concatenate(
+                    [sequtil.letter_composition(s, alph) for s in seqs])
+        else:
+
+            feat_ids = []
+            feat_names = []
+
+            for si in xrange(1, num_segments + 1):
+                for sa_id, sa_name in zip(alph, sequtil.sa_name):
+                    feat_ids.append('%s%i' % (sa_id, si))
+                    feat_names.append('%s, segment %i' % (sa_name, si))
+
+            return (feat_ids, feat_names)
 
     def ss_aa_composition(self, feature_ids=False):
+
+        alph = sequtil.aa_unambiguous_alph
+        st_alph = sequtil.ss_alph
+
         if not(feature_ids):
-            return sequtil.ss_aa_composition(self.protein_sequence,
-                                             self.ss_sequence)
+
+            seq = self.protein_sequence
+            st_seq = self.ss_sequence
+
+            return sequtil.state_subseq_composition(seq, st_seq, alph, st_alph)
         else:
-            ids = ['%s%s' % (s, a) for s in sequtil.ss_alph
-                   for a in sequtil.aa_unambiguous_alph]
-            names = ['%s-%s' % (s, a) for s in sequtil.ss_name
+            ids = ['%s%s' % (s, a) for s in st_alph for a in alph]
+            names = ['%s-%s' % (s, a)
+                     for s in sequtil.ss_name
                      for a in sequtil.aa_unambiguous_name]
             return (ids, names)
 
     def sa_aa_composition(self, feature_ids=False):
+
+        alph = sequtil.aa_unambiguous_alph
+        st_alph = sequtil.sa_alph
+
         if not(feature_ids):
-            return sequtil.sa_aa_composition(self.protein_sequence,
-                                             self.sa_sequence)
+
+            seq = self.protein_sequence
+            st_seq = self.sa_sequence
+
+            return sequtil.state_subseq_composition(seq, st_seq, alph, st_alph)
         else:
-            ids = ['%s%s' % (s, a) for s in sequtil.sa_alph
-                   for a in sequtil.aa_unambiguous_alph]
-            names = ['%s-%s' % (s, a) for s in sequtil.sa_name
+            ids = ['%s%s' % (s, a) for s in st_alph for a in alph]
+            names = ['%s-%s' % (s, a)
+                     for s in sequtil.sa_name
                      for a in sequtil.aa_unambiguous_name]
             return (ids, names)
 
@@ -355,7 +423,7 @@ class Protein(object):
             return sequtil.aa_cluster_composition(self.protein_sequence)
         else:
             return (sequtil.aa_subsets, sequtil.aa_subsets)
-    
+
     def codon_composition(self, feature_ids=False):
         if not(feature_ids):
             return sequtil.codon_composition(self.orf_sequence)
