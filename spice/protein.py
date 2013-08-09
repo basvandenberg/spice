@@ -207,21 +207,31 @@ class Protein(object):
             except ValueError:
                 pass
 
-        # 'parse' the scale parameter
+        # retrieve the set of Georgiev aa scales
         if(scales == 'gg'):
-            # retrieve set of georgiev scales
             scale_list = sequtil.get_georgiev_scales()
             scale_ids = ['gg%i' % (i) for i in xrange(1, len(scale_list) + 1)]
             scale_names = ['Georgiev scale %i' % (i)
                            for i in xrange(1, len(scale_list) + 1)]
+
+        if(scales[:4] == 'paac'):
+            scale_index = int(scales[4:])
+            scale_list = [sequtil.get_pseaac_scale(scale_index)]
+            scale_ids = ['paac%i' % (scale_index + 1)]
+            scale_names = ['PseAAC scale %i' % (scale_index + 1)]
+
+        # retrieve AAIndex scale with index scales
         elif(type(scales) == int):
             scale_list = [sequtil.get_aaindex_scale(scales)]
             scale_ids = ['aai%i' % (scales)]
             scale_names = ['amino acid index %i' % (scales)]
+
+        # retrieve list of AAIndex scales... (still used somewhere?)
         elif(type(scales) == list and all([type[i] == int for i in scales])):
             scale_list = [sequtil.get_aaindex_scale(i) for i in scales]
             scale_ids = ['aai%i' % (i) for i in scales]
             scale_names = ['amino acid index %i' % (i) for i in scales]
+
         else:
             raise ValueError('Incorrect scale provided: %s\n' % (str(scales)))
 
@@ -229,11 +239,10 @@ class Protein(object):
 
     def _parse_aa_matrix(self, aa_matrix_id):
         
-        if(type(aa_matrix_id) == str):
-            try:
-                aa_matrix_id = int(aa_matrix_id)
-            except ValueError:
-                pass
+        try:
+            aa_matrix_id = int(aa_matrix_id)
+        except ValueError:
+            pass
 
         if(aa_matrix_id == 'sw'):
             aa_matrix = sequtil.aa_matrix_sw
@@ -385,7 +394,8 @@ class Protein(object):
         if not (feature_ids):
 
             seq = self.protein_sequence
-            return sequtil.quasi_sequence_order_descriptors(seq, aam, rank)
+            return sequtil.quasi_sequence_order_descriptors(seq, aam, rank,
+                                                            weight)
 
         else:
             feat_ids = ['%s' % (l) for l in alph]
@@ -396,7 +406,30 @@ class Protein(object):
 
     def pseudo_amino_acid_composition(self, aa_scale, lambda_, weight=0.05,
                                       feature_ids=False):
-        pass
+        '''
+        aa_scale should be paac0, paac1, ..., paac5
+        '''
+
+        alph = sequtil.aa_unambiguous_alph
+        
+        scale_list, _, _ = self._parse_scales(aa_scale)
+        aas = scale_list[0]
+
+        if not (feature_ids):
+
+            seq = self.protein_sequence
+            return sequtil.pseudo_amino_acid_composition(seq, aas, lambda_,
+                                                         weight)
+
+        else:
+
+            feat_ids = ['%s' % (l) for l in alph]
+            feat_ids.extend(['l%i' % (i) for i in xrange(lambda_)])
+            feat_names = ['amino acid %s' % (aa) for aa in alph]
+            feat_names.extend(['lambda %i' % (i)
+                               for i in xrange(lambda_)])
+
+            return (feat_ids, feat_names)
 
     def length(self, feature_ids=False):
         if not(feature_ids):
