@@ -29,7 +29,7 @@ from sklearn import metrics
 from sklearn.externals import joblib
 
 from spice import featmat
-from biopy import timeout
+#from biopy import timeout
 from biopy import roc
 from biopy import file_io
 
