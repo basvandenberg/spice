@@ -627,41 +627,6 @@ class FeatureExtraction(object):
     def __str__(self):
         return '%s\n%s\n' % (str(self.fm_protein), str(self.fm_missense))
 
-    # TODO remove this???
-    def plot_mutation_environment_signals(self, env_window, scale, sig_window,
-                                          edge, labeling_name):
-
-        if(sig_window > env_window):
-            raise ValueError('Signal window (sig_window) must be equal or ' +
-                             'smaller than environment window (env_window).')
-
-        mutations = self.protein_data_set.get_mutations()
-        labeling = self.fm_missense.labeling_dict[labeling_name]
-
-        # TODO use any labeling... now hacked to my mut labels
-        indices_0 = labeling.object_indices_per_class['neutral']
-        indices_1 = labeling.object_indices_per_class['disease']
-
-        nrows = env_window - (sig_window - 1)
-        ncols = len(mutations)
-
-        data = numpy.zeros((nrows, ncols))
-
-        for index, mut in enumerate(mutations):
-            data[:, index] = mut.environment_signal(env_window, scale,
-                                                    sig_window, edge)
-
-        # split data per label # TODO implement multiple labels
-        data0 = data[:, indices_0]
-        data1 = data[:, indices_1]
-
-        from matplotlib import pyplot
-        pyplot.plot(data0[:, range(300)], color="#55ff55", alpha=0.1)
-        pyplot.plot(data1[:, range(300)], color="#ff5555", alpha=0.1)
-        #pyplot.plot(data0, color="#55ff55")
-        #pyplot.plot(data1, color="#ff5555")
-        pyplot.show()
-
 
 if __name__ == '__main__':
 
