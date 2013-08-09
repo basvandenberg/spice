@@ -11,10 +11,6 @@ import traceback
 import numpy
 #from matplotlib import pyplot
 
-# HACK TODO remove if sklearn is updated to 0.14
-sys.path.insert(1, os.environ['SKL'])
-import sklearn
-assert(sklearn.__version__ == '0.14-git')
 from sklearn import svm
 from sklearn import neighbors
 from sklearn import lda
@@ -291,12 +287,11 @@ def ffs(data, target, classifier, n, scoring, param=None, cv=None,
     cv_featis = []
 
     (rand_score, max_score) = metric_rand_max_score[scoring]
-    
+
     if(standardize):
         # create scaler and scale the data with it
         scaler = preprocessing.StandardScaler().fit(data)
         data = scaler.transform(data)
-
 
     # outer CV
     for fold_i, (trn_indices, tst_indices) in enumerate(cv):
@@ -704,7 +699,7 @@ def parse_feature_file(feature_f):
             feature_experiments.append((tokens[0], tokens[1:]))
     return feature_experiments
 
-
+'''
 def get_timed_parameter_range(classifier, data, target, standardize,
                               time_limit, param_name, param_range=None):
 
@@ -765,6 +760,7 @@ def get_timed_parameter_range(classifier, data, target, standardize,
     print('\nRUNTIME TIMING TEST: %i' % (run_time))
 
     return (param_range[:param_index], run_time)
+'''
 
 
 def get_classifier(classifier_str):

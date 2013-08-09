@@ -6,7 +6,6 @@
 """
 
 import os
-import sys
 import glob
 
 import numpy
@@ -15,10 +14,6 @@ from scipy.cluster import hierarchy
 from scipy.spatial import distance
 from matplotlib import pyplot
 
-# HACK TODO remove if sklearn is updated to 0.14
-sys.path.insert(1, os.environ['SKL'])
-import sklearn
-assert(sklearn.__version__ == '0.14-git')
 from sklearn.datasets.base import Bunch
 
 from biopy import file_io
@@ -145,13 +140,6 @@ class FeatureMatrix(object):
 
         As soon as the objects are set, a (one class) labeling is created in
         which all objects obtain the same label.
-
-        >>> fm = featmat.FeatureMatrix()
-        >>> fm.set_object_ids(['same_id', 'same_id'])
-        Traceback (most recent call last):
-            ...
-        ValueError: There are multiple objects with the same id.
-
         '''
 
         # check if the objects are allready set
