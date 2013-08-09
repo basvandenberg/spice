@@ -85,7 +85,7 @@ class FeatureCategory():
         if(len(param_tokens) == 1 and param_tokens[0] == ''):
             return ''
         else:
-        
+
             assert(len(param_tokens) == len(self.param_names))
             param_strings = ['%s: %s' % (p, v) for p, v in
                              zip(self.param_names, param_tokens)]
@@ -108,7 +108,7 @@ class FeatureCategory():
         return self.feature_func(*args, **kwargs)
 
     def feat_id_name_dict(self, param_id):
-        fids, fnames =  self.feat_id_name_list(param_id)
+        fids, fnames = self.feat_id_name_list(param_id)
         return dict(zip(fids, fnames))
 
 
@@ -116,7 +116,7 @@ class FeatureExtraction(object):
 
     PROTEIN_FEATURE_CATEGORY_IDS = [
         'aac', 'dc', 'psaac', 'sigavg', 'sigpeak', 'ac', 'ctd', 'len', 'ssc',
-        'ssaac', 'sac', 'saaac', 'cc', 'cu'
+        'ssaac', 'sac', 'saaac', 'cc', 'cu', 'qso', 'paac'
     ]
 
     # - name
@@ -252,6 +252,24 @@ class FeatureExtraction(object):
             [],
             [],
             [(protein.Protein.get_orf_sequence, True)],
+            protein.Protein('')),
+
+        'qso': FeatureCategory(
+            'qso',
+            'quasi-sequence-order descriptors',
+            protein.Protein.quasi_sequence_order_descriptors,
+            ['aa distance matrix', 'rank'],
+            [str, int],
+            [(protein.Protein.get_protein_sequence, True)],
+            protein.Protein('')),
+
+        'paac': FeatureCategory(
+            'paac',
+            'pseudo amino acid composition',
+            protein.Protein.pseudo_amino_acid_composition,
+            ['amino acid scale', 'lambda'],
+            [str, int],
+            [(protein.Protein.get_protein_sequence, True)],
             protein.Protein(''))
     }
 

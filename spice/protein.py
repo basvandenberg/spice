@@ -227,6 +227,27 @@ class Protein(object):
 
         return (scale_list, scale_ids, scale_names)
 
+    def _parse_aa_matrix(self, aa_matrix_id):
+        
+        if(type(aa_matrix_id) == str):
+            try:
+                aa_matrix_id = int(aa_matrix_id)
+            except ValueError:
+                pass
+
+        if(aa_matrix_id == 'sw'):
+            aa_matrix = sequtil.aa_matrix_sw
+            aa_matrix_id = 'sw'
+            aa_matrix_name = 'schneider-wrede'
+        elif(type(sc) == int):
+            aa_matrix = sequtil.aa_matrices[aa_matrix_id]
+            aa_matrix_id = ['aam%i' % (aa_matrix_id)]
+            aa_matrix_name = ['amino acid index matrix %i' % (aa_matrix_id)]
+        else:
+            raise ValueError('Incorrect matrix provided: %s\n' % (str(scales)))
+
+        return (aa_matrix, aa_matrix_id, aa_matrix_name)
+
     def average_signal(self, scales, window, edge, feature_ids=False):
         '''
         scales: 'gg',1 ,2 ,3, ..., '1', '2', ...
@@ -353,11 +374,28 @@ class Protein(object):
 
             return (feat_ids, feat_names)
 
-    def quasi_sequence_order_descriptors(self, aa_dists, max_rank,
+    def quasi_sequence_order_descriptors(self, aa_matrix, rank, weight=0.1,
                                          feature_ids=False):
-        '''
-        TODO
-        '''
+        
+        # fetch aa distance matrix
+        aam, aam_id, aam_name = self._parse_aa_matrix(aa_matrix)
+
+        alph = sequtil.aa_unambiguous_alph
+
+        if not (feature_ids):
+
+            seq = self.protein_sequence
+            return sequtil.quasi_sequence_order_descriptors(seq, aam, rank)
+
+        else:
+            feat_ids = ['%s' % (l) for l in alph]
+            feat_ids.extend(['r%i' % (i) for i in xrange(1, rank + 1)])
+            feat_names = ['amino acid %s' % (aa) for aa in alph]
+            feat_names.extend(['rank %i' % (i) for i in xrange(1, rank + 1)])
+            return (feat_ids, feat_names)
+
+    def pseudo_amino_acid_composition(self, aa_scale, lambda_, weight=0.05,
+                                      feature_ids=False):
         pass
 
     def length(self, feature_ids=False):
