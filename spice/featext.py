@@ -673,8 +673,8 @@ if __name__ == '__main__':
 
     # TODO implement this
     # user should provide 2 paths, one to feature matrix, one to feature ids
-    parser.add_argument('--custom_missense_features', nargs=2)
-    parser.add_argument('--custom_protein_features', nargs=2)
+    #parser.add_argument('--custom_missense_features', nargs=2)
+    #parser.add_argument('--custom_protein_features', nargs=2)
 
     # delete feature matrix TODO do this without loading the data set???
     parser.add_argument('--delete_feature_matrices', action='store_true',
@@ -1105,6 +1105,7 @@ if __name__ == '__main__':
 
         fe.save()
 
+    '''
     # add custom features
     if(args.custom_missense_features):
         feat_ids_f, feat_mat_f = args.custom_missense_features
@@ -1113,6 +1114,7 @@ if __name__ == '__main__':
     if(args.custom_protein_features):
         feat_ids_f, feat_mat_f = args.custom_protein_features
         # TODO implement
+    '''
 
     if(args.delete_feature_matrices):
         fe.delete_feature_matrices()
