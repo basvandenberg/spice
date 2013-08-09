@@ -33,7 +33,7 @@ from biopy import file_io
 all_score_names = ['roc_auc', 'f1', 'precision', 'average_precision',
                    'recall', 'accuracy']
 all_score_funcs = dict(zip(all_score_names, [
-    metrics.auc_score,
+    metrics.roc_auc_score,
     metrics.f1_score,
     metrics.precision_score,
     metrics.average_precision_score,
@@ -69,12 +69,12 @@ classifiers_per_param = {
 default_param_range = {
     'n_neighbors': [1, 2, 3, 4, 5, 10, 20, 30, 40, 50, 100],
     'radius': range(1, 11),
-    'C': 10.0 ** numpy.arange(-5, 6),
-    'gamma': 10.0 ** numpy.arange(-6, 3)
+    'C': 10.0 ** numpy.arange(-3, 4),
+    'gamma': 10.0 ** numpy.arange(-1, 2)
 }
 
 # timed parameters
-timed_param = ['C', 'radius', 'n_neighbors']
+# timed_param = ['C', 'radius', 'n_neighbors']
 
 #
 # methods for scaled data
@@ -116,12 +116,13 @@ def grid_search(data, target, classifier, n, scoring, param, cv=None, cpu=1,
         cv = cross_validation.StratifiedKFold(target, n)
 
     # run grid search
-    clf = GridSearchCV(classifier, param, scoring=scoring, cv=cv, n_jobs=cpu)
+    clf = GridSearchCV(classifier, param, scoring=scoring, cv=cv, refit=False,
+                       n_jobs=cpu)
     clf.fit(data, target)
 
     # log results if requested
     if(log_f):
-        for params, mean_score, scores in clf.cv_scores_:
+        for params, mean_score, scores in clf.grid_scores_:
             log_f.write('%0.3f;%0.3f;[%s];%r\n' % (mean_score, scores.std(),
                         ', '.join(['%.3f' % (s) for s in scores]), params))
         log_f.write('\n')
@@ -135,7 +136,7 @@ def grid_search(data, target, classifier, n, scoring, param, cv=None, cpu=1,
 
 
 def cv_score(data, target, classifier, n, scoring, param=None, cv=None, cpu=1,
-             log_f=None, standardize=True, return_trained_cl=True):
+             log_f=None, standardize=True, refit=True):
     '''
     A grid search is done if parameters (param) are provided. Otherwise the
     parameters in the provided classifier are used.
@@ -191,7 +192,7 @@ def cv_score(data, target, classifier, n, scoring, param=None, cv=None, cpu=1,
                 log_f.write('CV-loop %i\n' % (fold_i))
 
             # optimize parameters on train set (s is train score)
-            (s, p) = grid_search(trn_data, trn_target, classifier, n,
+            _, p = grid_search(trn_data, trn_target, classifier, n,
                                  scoring, param, cpu=cpu, log_f=log_f)
 
             # update parameters with the optimized ones
@@ -226,7 +227,7 @@ def cv_score(data, target, classifier, n, scoring, param=None, cv=None, cpu=1,
 
     # train classifier on full data set if requested
     all_data_cl = None
-    if(return_trained_cl):
+    if(refit):
 
         '''
         # scale the whole data set
@@ -670,18 +671,6 @@ def test_classifier(tst_data, tst_target, classifier, scoring):
     return(score, all_scores, confusion, roc_curve, tst_proba)
 
 
-def lda_weights(data, target):
-
-    # scale data
-    scaler = preprocessing.StandardScaler().fit(data)
-    data = scaler.transform(data)
-
-    # train lda classifier
-    clf = lda.LDA()
-    clf.fit(data, target)
-
-    return clf.coef_
-
 #
 # helper methods
 #
@@ -935,30 +924,6 @@ if __name__ == '__main__':
     if not(os.path.exists(args.output_dir)):
         os.mkdir(args.output_dir)
 
-    '''
-    if(args.lda_weights):
-
-        # for each feature set experiment
-        for exp_name, feature_list in feature_experiments:
-
-            # obtain scikit-learn dataset (NOTE not standardized)
-            ds = fm.get_sklearn_dataset(feat_ids=feature_list,
-                                        labeling_name=args.labeling,
-                                        class_ids=args.classes,
-                                        standardized=False)
-
-            # obtain data and target from it
-            data = ds.data
-            target = ds.target
-
-            # two-class only!!!
-            weights = lda_weights(data, target)
-            out_f = os.path.join(args.output_dir, 'lda_weights.txt')
-            file_io.write_tuple_list(out_f, zip(feature_list, weights[:, 0]))
-
-        sys.exit()
-    '''
-
     # track runtime
     overall_start_time = int(time.time())
 
@@ -1026,6 +991,10 @@ if __name__ == '__main__':
                     # use default range otherwise
                     else:
                         param[par] = default_param_range[par]
+
+                        # reduce C param range for rbf kernel
+                        if(par == 'C' and classifier_str == 'svc_rbf'):
+                            param[par] = 10.0 ** numpy.arange(-1, 2)
 
                         ''' remove timeout for the moment
                         # adjust range if timeout is provided
