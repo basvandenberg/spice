@@ -116,7 +116,7 @@ class FeatureExtraction(object):
 
     PROTEIN_FEATURE_CATEGORY_IDS = [
         'aac', 'dc', 'psaac', 'sigavg', 'sigpeak', 'ac', 'ctd', 'len', 'ssc',
-        'ssaac', 'sac', 'saaac', 'cc', 'cu', 'qso', 'paac'
+        'ssaac', 'sac', 'saaac', 'cc', 'cu', 'qso', 'paac1', 'paac2'
     ]
 
     # - name
@@ -263,10 +263,19 @@ class FeatureExtraction(object):
             [(protein.Protein.get_protein_sequence, True)],
             protein.Protein('')),
 
-        'paac': FeatureCategory(
-            'paac',
-            'pseudo amino acid composition',
-            protein.Protein.pseudo_amino_acid_composition,
+        'paac1': FeatureCategory(
+            'paac1',
+            'pseudo amino acid composition type 1',
+            protein.Protein.pseaac_type1,
+            ['amino acid scale', 'lambda'],
+            [str, int],
+            [(protein.Protein.get_protein_sequence, True)],
+            protein.Protein('')),
+
+        'paac2': FeatureCategory(
+            'paac2',
+            'pseudo amino acid composition type 2',
+            protein.Protein.pseaac_type2,
             ['amino acid scale', 'lambda'],
             [str, int],
             [(protein.Protein.get_protein_sequence, True)],

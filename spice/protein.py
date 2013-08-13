@@ -207,6 +207,11 @@ class Protein(object):
             except ValueError:
                 pass
 
+        print
+        print 'aoeuaoeua'
+        print scales
+        print
+
         # retrieve the set of Georgiev aa scales
         if(scales == 'gg'):
             scale_list = sequtil.get_georgiev_scales()
@@ -214,10 +219,13 @@ class Protein(object):
             scale_names = ['Georgiev scale %i' % (i)
                            for i in xrange(1, len(scale_list) + 1)]
 
-        if(scales[:4] == 'paac'):
-            scale_index = int(scales[4:])
-            scale_list = [sequtil.get_pseaac_scale(scale_index)]
-            scale_ids = ['paac%i' % (scale_index + 1)]
+        # retrieve pseaac scale
+        elif(scales[:6] == 'pseaac'):
+            scale_index = int(scales[6:])
+            # list with indices
+            scale_list = [scale_index]
+            print scale_list
+            scale_ids = ['pseaac%i' % (scale_index + 1)]
             scale_names = ['PseAAC scale %i' % (scale_index + 1)]
 
         # retrieve AAIndex scale with index scales
@@ -231,6 +239,13 @@ class Protein(object):
             scale_list = [sequtil.get_aaindex_scale(i) for i in scales]
             scale_ids = ['aai%i' % (i) for i in scales]
             scale_names = ['amino acid index %i' % (i) for i in scales]
+
+        # retrieve list of pseaac scale
+        elif(type(scales) == list and all([i[:6] == 'pseaac' for i in scales])):
+            scale_indices = [int(s[6:]) for s in scales]
+            scale_list = [sequtil.get_pseaac_scale(i) for i in scale_indices]
+            scale_ids = ['pseaac%i' % (i + 1) for i in scale_indices]
+            scale_names = ['PseAAC scale %i' % (i + 1) for i in scale_indices]
 
         else:
             raise ValueError('Incorrect scale provided: %s\n' % (str(scales)))
@@ -404,22 +419,20 @@ class Protein(object):
             feat_names.extend(['rank %i' % (i) for i in xrange(1, rank + 1)])
             return (feat_ids, feat_names)
 
-    def pseudo_amino_acid_composition(self, aa_scale, lambda_, weight=0.05,
-                                      feature_ids=False):
+    def pseaac_type1(self, aa_scales, lambda_, weight=0.05, feature_ids=False):
         '''
         aa_scale should be paac0, paac1, ..., paac5
         '''
 
         alph = sequtil.aa_unambiguous_alph
         
-        scale_list, _, _ = self._parse_scales(aa_scale)
-        aas = scale_list[0]
+        pseaac_scale_indices, _, _ = self._parse_scales(aa_scales)
 
         if not (feature_ids):
 
             seq = self.protein_sequence
-            return sequtil.pseudo_amino_acid_composition(seq, aas, lambda_,
-                                                         weight)
+            return sequtil.pseaac_type1(seq, pseaac_scale_indices, lambda_,
+                                        weight)
 
         else:
 
@@ -428,6 +441,34 @@ class Protein(object):
             feat_names = ['amino acid %s' % (aa) for aa in alph]
             feat_names.extend(['lambda %i' % (i)
                                for i in xrange(lambda_)])
+
+            return (feat_ids, feat_names)
+
+    def pseaac_type2(self, aa_scales, lambda_, weight=0.05, feature_ids=False):
+        '''
+        aa_scale should be paac0, paac1, ..., paac5
+        '''
+
+        alph = sequtil.aa_unambiguous_alph
+        
+        pseaac_scale_indices, _, _ = self._parse_scales(aa_scale)
+
+        if not (feature_ids):
+
+            seq = self.protein_sequence
+            return sequtil.pseaac_type2(seq, pseaac_scale_indices, lambda_,
+                                        weight)
+
+        else:
+
+            feat_ids = ['%s' % (l) for l in alph]
+            feat_ids.extend(['l%i_s%i' % (i, s)
+                             for i in xrange(lambda_)
+                             for s in xrange(len(scale_list))])
+            feat_names = ['amino acid %s' % (aa) for aa in alph]
+            feat_names.extend(['lambda %i scale %i' % (i, s)
+                               for i in xrange(lambda_)
+                               for s in xrange(len(scale_list))])
 
             return (feat_ids, feat_names)
 
