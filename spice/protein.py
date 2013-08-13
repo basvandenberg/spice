@@ -207,11 +207,6 @@ class Protein(object):
             except ValueError:
                 pass
 
-        print
-        print 'aoeuaoeua'
-        print scales
-        print
-
         # retrieve the set of Georgiev aa scales
         if(scales == 'gg'):
             scale_list = sequtil.get_georgiev_scales()
@@ -219,12 +214,17 @@ class Protein(object):
             scale_names = ['Georgiev scale %i' % (i)
                            for i in xrange(1, len(scale_list) + 1)]
 
+        # retrieve list of pseaac scale
+        elif(scales[0] == 'p' and len(scales) > 2):
+            scale_indices = [int(i) for i in scales.split('p')[1:]]
+            scale_list = scale_indices
+            scale_ids = ['pseaac%i' % (i + 1) for i in scale_indices]
+            scale_names = ['PseAAC scale %i' % (i + 1) for i in scale_indices]
+
         # retrieve pseaac scale
-        elif(scales[:6] == 'pseaac'):
-            scale_index = int(scales[6:])
-            # list with indices
-            scale_list = [scale_index]
-            print scale_list
+        elif(scales[0] == 'p'):
+            scale_index = int(scales[1:])
+            scale_list = [int(scales[1:])]
             scale_ids = ['pseaac%i' % (scale_index + 1)]
             scale_names = ['PseAAC scale %i' % (scale_index + 1)]
 
@@ -239,13 +239,6 @@ class Protein(object):
             scale_list = [sequtil.get_aaindex_scale(i) for i in scales]
             scale_ids = ['aai%i' % (i) for i in scales]
             scale_names = ['amino acid index %i' % (i) for i in scales]
-
-        # retrieve list of pseaac scale
-        elif(type(scales) == list and all([i[:6] == 'pseaac' for i in scales])):
-            scale_indices = [int(s[6:]) for s in scales]
-            scale_list = [sequtil.get_pseaac_scale(i) for i in scale_indices]
-            scale_ids = ['pseaac%i' % (i + 1) for i in scale_indices]
-            scale_names = ['PseAAC scale %i' % (i + 1) for i in scale_indices]
 
         else:
             raise ValueError('Incorrect scale provided: %s\n' % (str(scales)))
@@ -451,7 +444,7 @@ class Protein(object):
 
         alph = sequtil.aa_unambiguous_alph
         
-        pseaac_scale_indices, _, _ = self._parse_scales(aa_scale)
+        pseaac_scale_indices, _, _ = self._parse_scales(aa_scales)
 
         if not (feature_ids):
 
@@ -462,13 +455,13 @@ class Protein(object):
         else:
 
             feat_ids = ['%s' % (l) for l in alph]
-            feat_ids.extend(['l%i_s%i' % (i, s)
+            feat_ids.extend(['l%i-s%i' % (i, s)
                              for i in xrange(lambda_)
-                             for s in xrange(len(scale_list))])
+                             for s in xrange(len(pseaac_scale_indices))])
             feat_names = ['amino acid %s' % (aa) for aa in alph]
             feat_names.extend(['lambda %i scale %i' % (i, s)
                                for i in xrange(lambda_)
-                               for s in xrange(len(scale_list))])
+                               for s in xrange(len(pseaac_scale_indices))])
 
             return (feat_ids, feat_names)
 

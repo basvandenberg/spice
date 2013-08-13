@@ -265,7 +265,7 @@ class FeatureExtraction(object):
 
         'paac1': FeatureCategory(
             'paac1',
-            'pseudo amino acid composition type 1',
+            'pseudo AA composition type 1',
             protein.Protein.pseaac_type1,
             ['amino acid scale', 'lambda'],
             [str, int],
@@ -274,7 +274,7 @@ class FeatureExtraction(object):
 
         'paac2': FeatureCategory(
             'paac2',
-            'pseudo amino acid composition type 2',
+            'pseudo AA composition type 2',
             protein.Protein.pseaac_type2,
             ['amino acid scale', 'lambda'],
             [str, int],
