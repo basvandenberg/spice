@@ -11,6 +11,13 @@ import traceback
 import numpy
 #from matplotlib import pyplot
 
+# HACK TODO remove if sklearn is updated to 0.14 on compute servers...
+import sklearn
+if not(sklearn.__version__ == '0.14.1')
+    sys.path.insert(1, os.environ['SKL'])
+    reload(sklearn)
+assert(sklearn.__version__ == '0.14.1')
+
 from sklearn import svm
 from sklearn import neighbors
 from sklearn import lda

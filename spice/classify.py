@@ -5,9 +5,13 @@ import sys
 import argparse
 import subprocess
 
-sys.path.insert(1, os.environ['SKL'])
+# HACK TODO remove if sklearn is updated to 0.14 on compute servers...
 import sklearn
-assert(sklearn.__version__ == '0.14-git')
+if not(sklearn.__version__ == '0.14.1')
+    sys.path.insert(1, os.environ['SKL'])
+    reload(sklearn)
+assert(sklearn.__version__ == '0.14.1')
+
 from sklearn.externals import joblib
 
 from spice import classification
