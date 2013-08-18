@@ -7,9 +7,10 @@ import argparse
 from spice.job_runner.job_runner import JobQueueManager
 
 # define log output files
-pid_f = 'job_runner_daemon.pid'
-stdout_f = 'job_runner.log'
-stderr_f = 'job_runner.err'
+cur_dir = os.getcwd()
+pid_f = os.path.join(cur_dir, 'job_runner_daemon.pid')
+stdout_f = os.path.join(cur_dir, 'job_runner.log')
+stderr_f = os.path.join(cur_dir, 'job_runner.err')
 
 if __name__ == "__main__":
 

@@ -14,12 +14,6 @@ max_num_jobs = [1, 1, 1]
 # maximal allowed number of jobs per job type
 max_jobs = dict(zip(job_types, max_num_jobs))
 
-# define log output files
-log_dir = os.path.dirname(os.path.abspath(__file__))
-pid_f = os.path.join(log_dir, 'daemon.pid')
-stdout_f = os.path.join(log_dir, 'out.txt')
-stderr_f = os.path.join(log_dir, 'err.txt')
-
 # pause between checking for jobs in queue
 sleep_interval = 5
 
@@ -36,7 +30,7 @@ class JobQueueManager(Daemon):
         print('')
 
         # projects directory
-        self.project_dir
+        self.project_dir = os.path.abspath(project_dir)
 
         # list of running jobs per job type, to keep track of all running jobs
         self.running_jobs = dict(zip(
