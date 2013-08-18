@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import argparse
+
+from spice.job_runner.job_runner import JobQueueManager
+
+# define log output files
+pid_f = 'job_runner_daemon.pid'
+stdout_f = 'job_runner.log'
+stderr_f = 'job_runner.err'
+
+if __name__ == "__main__":
+
+    actions = ['start', 'stop', 'restart']
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--project_dir', required=True)
+    parser.add_argument('-a', '--action', choices=actions, required=True)
+
+    args = parser.parse_args()
+
+    # set path to projects dir
+    if(os.path.exists(args.project_dir)):
+        project_dir = args.project_dir
+    else:
+        print('Provided projects dir does not exist.')
+        print(args.project_dir)
+        sys.exit(2)
+
+    # create the daemon
+    daemon = JobQueueManager(pid_f, project_dir, stdout=stdout_f,
+                             stderr=stderr_f)
+
+    # start, stop, or restart the jobrunner daemon
+    if(args.action == 'start'):
+        daemon.start()
+    elif(args.action == 'stop'):
+        daemon.stop()
+    elif(args.action == 'restart'):
+        daemon.restart()
+    else:
+        print("That's weird, this should not be possible...")
