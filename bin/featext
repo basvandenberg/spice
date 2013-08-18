@@ -1,1 +1,500 @@
-../spice/featext.py
+#!/usr/bin/env python
+
+import os
+import sys
+import argparse
+import traceback
+
+from spice.featext import FeatureExtraction
+
+if __name__ == '__main__':
+
+    # parse arguments
+    parser = argparse.ArgumentParser()
+
+    # required to provide a root directory for the application
+    parser.add_argument('-r', '--root', required=True)
+
+    # initialize a new project
+    parser.add_argument('-i', '--init', action='store_true', default=False)
+
+    # set protein ids
+    parser.add_argument('-u', '--uniprot_ids')
+
+    # add path to mutation data
+    parser.add_argument('-m', '--missense_mutations')
+
+    # optional, only needed for classification stuff (hists, ttest, ...)
+    parser.add_argument('-l', '--labels', nargs=3, action='append')
+
+    # add path to protein sequence data sources (that use the uniprot ids)
+    parser.add_argument('--protein_sequence_data')
+
+    # add path to pfam annotation data
+    parser.add_argument('--pfam_data')
+
+    # add backbone dynamics data
+    parser.add_argument('--flex_data')
+
+    # add protein interaction counts data
+    parser.add_argument('--interaction_data')
+
+    # data sources that have a mapping from their ids to uniprot ids
+    parser.add_argument('--orf_sequence_data', nargs=2)
+    parser.add_argument('--structure_data', nargs=2)
+    parser.add_argument('--rasa_data', nargs=2)
+    #parser.add_argument('--residue_rank_data', nargs=2)
+    parser.add_argument('--msa_data', nargs=2)
+
+    # features to be calculated
+    parser.add_argument('--missense_features', nargs='+', default=None)
+    parser.add_argument('--protein_features', nargs='+', default=None)
+
+    # TODO implement this
+    # user should provide 2 paths, one to feature matrix, one to feature ids
+    #parser.add_argument('--custom_missense_features', nargs=2)
+    #parser.add_argument('--custom_protein_features', nargs=2)
+
+    # delete feature matrix TODO do this without loading the data set???
+    parser.add_argument('--delete_feature_matrices', action='store_true',
+                        default=False)
+
+    args = parser.parse_args()
+
+    # create feature extraction object
+    fe = FeatureExtraction()
+    fe.set_root_dir(args.root)
+
+    # initialize new project
+    if(args.init):
+
+        if(os.path.exists(args.root) and os.listdir(args.root)):
+            print('\nUnable to initialize a new project in '
+                  '%s, the directory is not empty.\n' % (args.root))
+            sys.exit()
+        else:
+            fe.save()
+            print('\nNew project created in %s\n' % (args.root))
+
+    # try to load project
+    if not(os.path.exists(args.root)):
+        print '\nDirectory %s does not exist' % (args.root)
+        print 'Use --init if you want to create a new project.\n'
+        sys.exit(0)
+    else:
+        try:
+            print('\nLoading data...')
+            fe.load()
+            print('Done.')
+        except Exception, e:
+            print '\nError while loading project: %s\n' % (e)
+            raise
+
+    # initialize proteins using a list of ids
+    if(args.uniprot_ids):
+
+        if(fe.protein_data_set.proteins):
+            print('\nProteins are allready set.\n')
+            sys.exit()
+        else:
+            try:
+                fe.load_protein_ids(args.uniprot_ids)
+            except IOError as e:
+                print '\nNo such file: %s\n' % (e)
+                sys.exit(1)
+            except Exception, e:
+                print '\nError in object ids file: %s\n' % (e)
+                sys.exit(1)
+
+        fe.save()
+
+    # add protein sequence data (obtain from fasta file using uniprot ids)
+    if(args.protein_sequence_data):
+
+        ds_name = 'prot_seq'
+        prot_ds = fe.protein_data_set
+        ds_path = args.protein_sequence_data
+
+        # the try is not realy neccasary anymore now... TODO remove
+        try:
+            ds = prot_ds.ds_dict[ds_name]
+        except KeyError:
+            print('\nNo such data source: %s\n' % (ds_name))
+            sys.exit()
+
+        if(ds.available()):
+            print('\nData source already available: %s\n' % (ds_name))
+            sys.exit()
+        else:
+            try:
+                prot_ds.read_data_source(ds_name, ds_path, None)
+            except IOError as e:
+                print '\nData source io error: %s\n\n%s' % (ds_name, e)
+                sys.exit()
+            except ValueError as e:
+                print '\nData source value error: %s\n\n%s' % (ds_name, e)
+                sys.exit()
+            except Exception as e:
+                print '\nData source exception: %s\n\n%s' % (ds_name, e)
+                print sys.exc_info()[0]
+                sys.exit()
+
+        fe.save()
+
+    # add missense mutation data
+    if(args.missense_mutations):
+
+        # check if protein sequences are available
+        if not(fe.protein_data_set.ds_dict['prot_seq'].available()):
+            print('\nMutation data can only be added if protein sequences' +
+                  ' are available.\n')
+            sys.exit()
+
+        else:
+
+            # check if mutations are not allready present
+            if(fe.protein_data_set.get_mutations()):
+                print('\nMutation data already available.\n')
+                sys.exit()
+            else:
+                try:
+                    fe.load_mutation_data(args.missense_mutations)
+                except IOError as e:
+                    print traceback.print_exc()
+                    sys.exit(1)
+                except ValueError as e:
+                    print traceback.print_exc()
+                    sys.exit(1)
+                except Exception as e:
+                    print traceback.print_exc()
+                    sys.exit(1)
+        fe.save()
+
+    # set labels
+    if(args.labels):
+
+        label_types = ['protein', 'missense']
+
+        for (label_type, label_name, label_path) in args.labels:
+
+            if not(label_type in label_types):
+                print '\nWrong label type: %s' % (label_type)
+                print 'Must be one of: %s\n' % (', '.join(label_types))
+                sys.exit(1)
+            try:
+                if(label_type == 'protein'):
+                    fe.fm_protein.add_labeling_from_file(label_name,
+                                                         label_path)
+                elif(label_type == 'missense'):
+                    fe.fm_missense.add_labeling_from_file(label_name,
+                                                          label_path)
+                else:
+                    print '\nWrong label type, error should not occur...\n'
+                    sys.exit(1)
+            except IOError, e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except ValueError, e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except Exception, e:
+                print traceback.format_exc()
+                sys.exit(1)
+
+        fe.save()
+
+    # add pfam annotation data
+    if(args.pfam_data):
+
+        ds_name = 'pfam'
+        prot_ds = fe.protein_data_set
+        ds_path = args.pfam_data
+
+        try:
+            ds = prot_ds.ds_dict[ds_name]
+        except KeyError:
+            print('\nNo such data source: %s\n' % (ds_name))
+            sys.exit()
+
+        if(ds.available()):
+            print('\nData source already available: %s\n' % (ds_name))
+            sys.exit()
+        else:
+            try:
+                prot_ds.read_data_source(ds_name, ds_path, None)
+            except IOError as e:
+                print '\nData source io error: %s\n\n%s' % (ds_name, e)
+                sys.exit()
+            except ValueError as e:
+                print '\nData source value error: %s\n\n%s' % (ds_name, e)
+                sys.exit()
+            except Exception as e:
+                print '\nData source exception: %s\n\n%s' % (ds_name, e)
+                print sys.exc_info()[0]
+                sys.exit()
+
+        fe.save()
+
+    # add backbone dynamics data
+    if(args.flex_data):
+
+        ds_name = 'flex'
+        prot_ds = fe.protein_data_set
+        ds_path = args.flex_data
+
+        try:
+            ds = prot_ds.ds_dict[ds_name]
+        except KeyError:
+            print('\nNo such data source: %s\n' % (ds_name))
+            sys.exit(1)
+
+        if(ds.available()):
+            print('\nData source already available: %s\n' % (ds_name))
+            sys.exit(1)
+        else:
+            try:
+                prot_ds.read_data_source(ds_name, ds_path, None)
+            except IOError as e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except ValueError as e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except Exception as e:
+                print traceback.format_exc()
+                sys.exit(1)
+
+        fe.save()
+
+    # add protein interaction data
+    if(args.interaction_data):
+
+        ds_name = 'interaction'
+        prot_ds = fe.protein_data_set
+        ds_path = args.interaction_data
+
+        try:
+            ds = prot_ds.ds_dict[ds_name]
+        except KeyError:
+            print('\nNo such data source: %s\n' % (ds_name))
+            sys.exit(1)
+
+        if(ds.available()):
+            print('\nData source already available: %s\n' % (ds_name))
+            sys.exit(1)
+        else:
+            try:
+                prot_ds.read_data_source(ds_name, ds_path, None)
+            except IOError as e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except ValueError as e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except Exception as e:
+                print traceback.format_exc()
+                sys.exit(1)
+
+        fe.save()
+
+    # add orf sequence data,
+    if(args.orf_sequence_data):
+
+        (uni_orf_map_f, ds_path) = args.orf_sequence_data
+
+        ds_name = 'orf_seq'
+        prot_ds = fe.protein_data_set
+
+        #ds_path = args.protein_sequence_data
+        #ds_name = 'protseq'
+
+        # the try is not realy neccasary anymore now... TODO remove
+        try:
+            ds = prot_ds.ds_dict[ds_name]
+        except KeyError:
+            print('\nNo such data source: %s\n' % (ds_name))
+            sys.exit()
+
+        if(ds.available()):
+            print('\nData source already available: %s\n' % (ds_name))
+            sys.exit()
+        else:
+            try:
+                prot_ds.read_data_source(ds_name, ds_path,
+                                         mapping_file=uni_orf_map_f)
+            except IOError as e:
+                print '\nData source io error: %s\n\n%s' % (ds_name, e)
+                print traceback.format_exc()
+                sys.exit(1)
+            except ValueError as e:
+                print '\nData source value error: %s\n\n%s' % (ds_name, e)
+                print traceback.format_exc()
+                sys.exit(1)
+            except Exception as e:
+                print '\nData source exception: %s\n\n%s' % (ds_name, e)
+                print traceback.format_exc()
+                sys.exit(1)
+
+        fe.save()
+
+    # add structure data
+    if(args.structure_data):
+
+        (ids_file, pdb_dir) = args.structure_data
+
+        prot_ds = fe.protein_data_set
+        ds = prot_ds.ds_dict['prot_struct']
+
+        if(ds.available()):
+            print('\nProtein structure data already available.\n')
+            sys.exit()
+        else:
+            try:
+                prot_ds.read_data_source('prot_struct', pdb_dir, ids_file)
+            except IOError as e:
+                print '\nData source io error: prot_struct\n'
+                print traceback.format_exc()
+                sys.exit()
+            except ValueError as e:
+                print '\nData source value error: prot_struct\n'
+                print traceback.format_exc()
+                sys.exit()
+            except Exception as e:
+                print '\nData source exception: prot_struct\n'
+                print traceback.format_exc()
+                sys.exit()
+
+        fe.save()
+
+    # add solvent accessibilty data
+    if(args.rasa_data):
+
+        (ids_file, rasa_dir) = args.rasa_data
+
+        prot_ds = fe.protein_data_set
+        ds = prot_ds.ds_dict['residue_rasa']
+
+        if(ds.available()):
+            print('\nSolvent accessibility data already available.\n')
+            sys.exit()
+        else:
+            try:
+                prot_ds.read_data_source('residue_rasa', rasa_dir, ids_file)
+            except IOError as e:
+                print '\nData source io error: residue_rasa\n'
+                print traceback.format_exc()
+                sys.exit()
+            except ValueError as e:
+                print '\nData source value error: residue_rasa\n'
+                print traceback.format_exc()
+                sys.exit()
+            except Exception as e:
+                print '\nData source exception: residue_rasa\n'
+                print traceback.format_exc()
+                sys.exit()
+
+        fe.save()
+
+    # add residue rank data
+    '''
+    if(args.residue_rank_data):
+
+        (ids_file, rank_dir) = args.residue_rank_data
+
+        prot_ds = fe.protein_data_set
+        ds = prot_ds.ds_dict['residue_rank']
+
+        if(ds.available()):
+            print('\nProtein residue rank data already available.\n')
+            sys.exit()
+        else:
+            try:
+                prot_ds.read_data_source('residue_rank', rank_dir, ids_file)
+            except IOError as e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except ValueError as e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except Exception as e:
+                print traceback.format_exc()
+                sys.exit(1)
+
+        #fe.save()
+    '''
+
+    # add MSA data
+    if(args.msa_data):
+
+        (ids_file, msa_dir) = args.msa_data
+
+        prot_ds = fe.protein_data_set
+        ds = prot_ds.ds_dict['msa']
+
+        if(ds.available()):
+            print('\nProtein msa data already available.\n')
+            sys.exit()
+        else:
+            try:
+                prot_ds.read_data_source('msa', msa_dir, ids_file)
+            except IOError as e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except ValueError as e:
+                print traceback.format_exc()
+                sys.exit(1)
+            except Exception as e:
+                print traceback.format_exc()
+                sys.exit(1)
+
+        fe.save()
+
+    # calculate features
+    if(args.missense_features):
+
+        for feature_vector in args.missense_features:
+            try:
+                fe.calculate_missense_features(feature_vector)
+            except ValueError, e:
+                #print('\nFeature category error: %s\n' % (e))
+                print traceback.print_exc()
+                #sys.exit()
+                raise e
+            except Exception as e:
+                print('\nFeature calculation error: %s\n' % (e))
+                print traceback.print_exc()
+                sys.exit(1)
+
+        fe.save()
+
+    if(args.protein_features):
+
+        for feature_vector in args.protein_features:
+
+            try:
+                fe.calculate_protein_features(feature_vector)
+            except ValueError, e:
+                print('\nFeature category error: %s\n' % (e))
+                print traceback.print_exc()
+                raise e
+            except Exception as e:
+                print('\nFeature calculation error: %s\n' % (e))
+                print traceback.print_exc()
+                raise e
+
+        fe.save()
+
+    '''
+    # add custom features
+    if(args.custom_missense_features):
+        feat_ids_f, feat_mat_f = args.custom_missense_features
+        # TODO implement
+
+    if(args.custom_protein_features):
+        feat_ids_f, feat_mat_f = args.custom_protein_features
+        # TODO implement
+    '''
+
+    if(args.delete_feature_matrices):
+        fe.delete_feature_matrices()
+        fe.save()

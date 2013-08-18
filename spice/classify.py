@@ -2,8 +2,6 @@
 
 import os
 import sys
-import argparse
-import subprocess
 
 # HACK TODO remove if sklearn is updated to 0.14 on compute servers...
 import sklearn
@@ -17,6 +15,7 @@ from sklearn.externals import joblib
 from spice import classification
 from spice import featmat
 from biopy import file_io
+
 
 def classify(fm_dir, cl_dir):
     '''
@@ -50,21 +49,9 @@ def classify(fm_dir, cl_dir):
 
     pred_f = os.path.join(out_dir, '%s_pred.txt' % (f_pre))
     proba_f = os.path.join(out_dir, '%s_proba.txt' % (f_pre))
-    
+
     file_io.write_tuple_list(pred_f, zip(fm.object_ids, preds))
     file_io.write_tuple_list(proba_f, zip(fm.object_ids, probas))
 
-if __name__ == '__main__':
-
-    # init argument parsen
-    parser = argparse.ArgumentParser()
-
-    # add arguments
-    parser.add_argument('-f', '--fm_dir', required=True)
-    parser.add_argument('-c', '--cl_dir', required=True)
-
-    # parse arguments
-    args = parser.parse_args()
-
-    # call the classify method
-    classify(args.fm_dir, args.cl_dir)
+#if __name__ == '__main__':
+# TODO add test runs
