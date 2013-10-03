@@ -10,7 +10,7 @@ setup(
     url='http://pypi.python.org/pypi/SPiCE/',
     license='LICENSE.txt',
     description='Sequence-based Protein Classification and Exploration',
-    long_description=open('README.txt').read(),
+    long_description=open('README.md').read(),
     install_requires=[
         "numpy >= 1.7.1",
         "scipy >= 0.12.0",
