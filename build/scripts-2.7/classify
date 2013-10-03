@@ -1,0 +1,21 @@
+#!/usr/bin/python
+
+import argparse
+
+from spice.classify import classify
+
+
+if __name__ == '__main__':
+
+    # init argument parsen
+    parser = argparse.ArgumentParser()
+
+    # add arguments
+    parser.add_argument('-f', '--fm_dir', required=True)
+    parser.add_argument('-c', '--cl_dir', required=True)
+
+    # parse arguments
+    args = parser.parse_args()
+
+    # call the classify method
+    classify(args.fm_dir, args.cl_dir)
