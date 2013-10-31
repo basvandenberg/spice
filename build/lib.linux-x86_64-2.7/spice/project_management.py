@@ -474,26 +474,28 @@ class ProjectManager(object):
         while True:
             data = fasta_file.file.read(8192)
             if(size > max_size):
-                return 'Fasta file (+ reference data) exeeds the maximum ' +\
+                return 'Sequence data exeeds the maximum ' +\
                        'allowed size (5MB)'
 
             if not(data):
                 break
             size += len(data)
         if(size > max_size):
-            return 'Fasta file (+ reference data) exeeds the maximum ' +\
+            return 'Sequence data exeeds the maximum ' +\
                    'allowed size (5MB)'
 
         # reset to beginning of fasta file
         fasta_file.file.seek(0)
 
-        # read sequences from fasta file (to abtain object ids...)
+        # read sequences from fasta file (to obtain object ids...)
         try:
             seqs = [s for s in file_io.read_fasta(fasta_file.file)]
             seqs.extend(ref_seqs)
             ids = [s[0] for s in seqs]
         except Exception as e:
-            return str(e)
+            return str(e) +\
+                'Please consult the documentation (<i>file formats</i> ' +\
+                'section) to learn more about the FASTA file format.'
 
         # reset pointer to begin of file
         #fasta_file.file.seek(0)
