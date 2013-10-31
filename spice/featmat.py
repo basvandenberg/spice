@@ -676,9 +676,6 @@ class FeatureMatrix(object):
         if not(class_ids):
             class_ids = labeling.class_names
 
-        if not(os.path.exists(self.HISTOGRAM_D)):
-            os.makedirs(self.HISTOGRAM_D)
-
         try:
             feature_index = self.feature_ids.index(feat_id)
         except ValueError:
@@ -727,9 +724,6 @@ class FeatureMatrix(object):
                      class_ids=None, colors=None, img_format='png',
                      root_dir='.', feat0_pre=None, feat1_pre=None, 
                      standardized=False):
-
-        if not(os.path.exists(self.SCATTER_D)):
-            os.makedirs(self.SCATTER_D)
 
         try:
             labeling = self.labeling_dict[labeling_name]
@@ -799,9 +793,6 @@ class FeatureMatrix(object):
 
     def get_clustdist_path(self, feature_ids=None, labeling_name=None,
                            class_ids=None, vmin=-3.0, vmax=3.0, root_dir='.'):
-
-        if not(os.path.exists(self.HEATMAP_D)):
-            os.makedirs(self.HEATMAP_D)
 
         if not(labeling_name):
             labeling_name = 'one_class'
