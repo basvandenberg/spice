@@ -27,10 +27,11 @@ from biopy import roc
 
 
 # classification performance measures
-all_score_names = ['roc_auc', 'f1', 'precision', 'average_precision',
+all_score_names = ['roc_auc', 'mcc', 'f1', 'precision', 'average_precision',
                    'recall', 'accuracy']
 all_score_funcs = dict(zip(all_score_names, [
     metrics.roc_auc_score,
+    metrics.matthews_corrcoef,
     metrics.f1_score,
     metrics.precision_score,
     metrics.average_precision_score,
@@ -644,6 +645,8 @@ def test_classifier(tst_data, tst_target, classifier, scoring):
 
     # some score functions only work for binary case, in that case add -1
     # for a multiclass classifier
+    # TODO check if -1 should be changed... -1 is valid output for MCC score, 
+    #      which only is possible for binary cases.
     all_scores = []
     for sn in all_score_names:
         sf = all_score_funcs[sn]
