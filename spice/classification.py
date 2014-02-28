@@ -645,8 +645,6 @@ def test_classifier(tst_data, tst_target, classifier, scoring):
 
     # some score functions only work for binary case, in that case add -1
     # for a multiclass classifier
-    # TODO check if -1 should be changed... -1 is valid output for MCC score, 
-    #      which only is possible for binary cases.
     all_scores = []
     for sn in all_score_names:
         sf = all_score_funcs[sn]
@@ -656,7 +654,7 @@ def test_classifier(tst_data, tst_target, classifier, scoring):
             else:
                 all_scores.append(sf(*args_pred))
         except Exception:
-            all_scores.append(-1.0)
+            all_scores.append(-10.0)
 
     # obtain confusion matrix
     confusion = metrics.confusion_matrix(tst_target, tst_pred)
