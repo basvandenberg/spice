@@ -354,7 +354,7 @@ class DataSourceFactory(object):
                         sequtil.is_empty,
                         sequtil.is_not_a_nucleotide_sequence
                     ], 'orf.fsa', 'uni_orf.map'),
-            'ss_seq': ('Secundary structure sequence',
+            'ss_seq': ('Secondary structure sequence',
                     file_io.read_fasta, file_io.write_fasta,
                     Protein.set_ss_sequence,
                     [
