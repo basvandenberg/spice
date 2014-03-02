@@ -582,8 +582,6 @@ class FeatureExtraction(object):
 
         for feat_id in self.fm_protein.feature_ids:
 
-            # TODO what if there are no parameters...?
-
             tokens = feat_id.split('_')
 
             if(len(tokens) == 2):
