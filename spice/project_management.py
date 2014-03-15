@@ -253,13 +253,11 @@ class ProjectManager(object):
                         assert(tokens[1] == '-f')
                         assert(tokens[3] == '-c')
                         cid = os.path.basename(
-                            os.path.dirname(
-                            os.path.dirname(tokens[4])))
+                            os.path.dirname(os.path.dirname(tokens[4])))
 
                         if(cid == cl_id):
                             data_set = os.path.basename(
-                                os.path.dirname(
-                                os.path.dirname(tokens[2])))
+                                os.path.dirname(os.path.dirname(tokens[2])))
                             data_set_list.append(data_set)
 
                 status_dirs[status] = data_set_list
@@ -849,7 +847,6 @@ class ProjectManager(object):
         settings_dict = self.get_classifier_settings(cl_id)
         feature_ids = settings_dict['feature_names']
 
-
         feature_cats = set()
         for f in feature_ids:
             fparts = f.split('_')
@@ -880,7 +877,7 @@ class ProjectManager(object):
         time.sleep(2)
 
         # store path to feature matrix dir
-        fm_dir = self.fm_dir        
+        fm_dir = self.fm_dir
 
         # SWITCH BACK TO ORIGINAL PROJECT
         self.set_project(prev_proj)
@@ -893,7 +890,7 @@ class ProjectManager(object):
         # output files
         progress_f = os.path.join(out_d, 'progress.txt')
         error_f = os.path.join(out_d, 'error.txt')
-        
+
         # create the list of options for the classification command
         options = [
             '-f %s' % (fm_dir),
@@ -908,4 +905,3 @@ class ProjectManager(object):
             fout.write('%s\n' % (cmd))
             fout.write('%s\n' % (progress_f))
             fout.write('%s\n' % (error_f))
-

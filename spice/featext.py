@@ -548,7 +548,7 @@ class FeatureExtraction(object):
         '''
 
         featcat_ids = set()
-            
+
         for f in self.fm_protein.feature_ids:
             parts = f.split('_')
             if(len(parts) == 2):
