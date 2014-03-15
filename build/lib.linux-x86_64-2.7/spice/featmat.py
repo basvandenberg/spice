@@ -311,7 +311,8 @@ class FeatureMatrix(object):
                 del self.feature_matrix
             else:
                 # otherwise delete columns from feature matrix
-                self._feature_matrix = numpy.delete(self.feature_matrix, fis, 1)
+                self._feature_matrix = numpy.delete(self.feature_matrix,
+                                                    fis, 1)
 
                 # and delete feature ids and names
                 for fid in feature_ids:
@@ -355,8 +356,8 @@ class FeatureMatrix(object):
             last_cust_feat = sorted(cust_feats)[-1]
             print last_cust_feat
             print len(self.CUSTOM_FEAT_PRE) + 1
-            new_cust_feat_i =\
-                    int(last_cust_feat[(len(self.CUSTOM_FEAT_PRE)):]) + 1
+            new_cust_feat_i = int(
+                last_cust_feat[(len(self.CUSTOM_FEAT_PRE)):]) + 1
 
         featvec_id = '%s%i' % (self.CUSTOM_FEAT_PRE, new_cust_feat_i)
         feat_ids = ['%s_%i' % (featvec_id, i) for i in xrange(num_feat)]
@@ -425,7 +426,7 @@ class FeatureMatrix(object):
         return sorted([labeling.class_names.index(c) for c in class_ids])
 
     def get_custom_features(self):
-        ''' 
+        '''
         This function returns the available custom feature vector ids.
 
         Returns a dictionary with the custom feature vector ids as keys and the
@@ -471,7 +472,7 @@ class FeatureMatrix(object):
 
             # map target to use 0,1,2,... as labels
             target_map = dict(zip(class_is, range(len(class_is))))
-            
+
             # targets are floats because liblinear classification wants this...
             target = numpy.array([float(target_map[t]) for t in target])
         else:
@@ -722,7 +723,7 @@ class FeatureMatrix(object):
 
     def save_scatter(self, feat_id0, feat_id1, labeling_name=None,
                      class_ids=None, colors=None, img_format='png',
-                     root_dir='.', feat0_pre=None, feat1_pre=None, 
+                     root_dir='.', feat0_pre=None, feat1_pre=None,
                      standardized=False):
 
         try:
@@ -761,7 +762,7 @@ class FeatureMatrix(object):
         if not(os.path.exists(d)):
             os.makedirs(d)
         out_f = os.path.join(d, 'scatter.%s' % (img_format))
-        
+
         if(standardized):
             # standardize data NOTE that fm is standardized before the objects
             # are sliced out!!!
@@ -887,7 +888,7 @@ class Labeling(object):
     #def __init__(self, name, feature_matrix):
     def __init__(self, name, object_ids, labels, class_names):
         '''
-        Is it really necesary to retain the order of the object ids? Why not 
+        Is it really necesary to retain the order of the object ids? Why not
         initiate with a dict?
         '''
 

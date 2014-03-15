@@ -178,7 +178,7 @@ class Protein(object):
 
             feat_ids = []
             feat_names = []
-            
+
             for si in xrange(1, num_segments + 1):
                 for p in pairs:
                     feat_ids.append('%s%i' % (p, si))
@@ -186,17 +186,18 @@ class Protein(object):
 
             return (feat_ids, feat_names)
 
-    def prime_amino_acid_count(self, prime, length, feature_ids=False):
+    def terminal_end_amino_acid_count(self, terminal_end, length,
+                                      feature_ids=False):
 
         if not(feature_ids):
             alph = sequtil.aa_unambiguous_alph
-            seq = self.prime_seq(prime, length)
+            seq = self.terminal_end_seq(terminal_end, length)
             return sequtil.letter_count(seq, alph)
         else:
             aa_alph = sequtil.aa_unambiguous_alph
-            feat_ids = ['%ip%s' % (prime, aa) for aa in aa_alph]
-            feat_names = ["%i' amino acid count %s" % (prime, aa)
-                          for aa in aa_alph]
+            feat_ids = ['%s%s' % (terminal_end, aa) for aa in aa_alph]
+            feat_names = ["%s'-terminal end amino acid count %s" %
+                          (terminal_end, aa) for aa in aa_alph]
             return (feat_ids, feat_names)
 
     def _parse_scales(self, scales):
@@ -246,7 +247,7 @@ class Protein(object):
         return (scale_list, scale_ids, scale_names)
 
     def _parse_aa_matrix(self, aa_matrix_id):
-        
+
         try:
             aa_matrix_id = int(aa_matrix_id)
         except ValueError:
@@ -393,7 +394,7 @@ class Protein(object):
 
     def quasi_sequence_order_descriptors(self, aa_matrix, rank, weight=0.1,
                                          feature_ids=False):
-        
+
         # fetch aa distance matrix
         aam, aam_id, aam_name = self._parse_aa_matrix(aa_matrix)
 
@@ -418,7 +419,7 @@ class Protein(object):
         '''
 
         alph = sequtil.aa_unambiguous_alph
-        
+
         pseaac_scale_indices, _, _ = self._parse_scales(aa_scales)
 
         if not (feature_ids):
@@ -443,7 +444,7 @@ class Protein(object):
         '''
 
         alph = sequtil.aa_unambiguous_alph
-        
+
         pseaac_scale_indices, _, _ = self._parse_scales(aa_scales)
 
         if not (feature_ids):
@@ -583,34 +584,35 @@ class Protein(object):
 
     # feature calculation help functions
 
-    def prime_seq(self, prime, length):
+    def terminal_end_seq(self, terminal_end, length):
+
         '''
-        This function returns the 3- or 5- prime side of the protein amino acid
-        sequence. The parameter prime must be either 3 or 5 and indicates if
-        the 3-prime side or the 5-prime side should be returned. The length
-        indicates how long the returned prime sequence will be. If length is
+        This function returns the C- or N-terminal end side of the protein
+        amino acid sequence. The parameter terminal_end must be either 'N' or
+        'C' and indicates if the N- or C-terminal end should be returned. The
+        length indicates how long the returned sequence will be. If length is
         greater than or equal to the full protein sequence length, than the
         full protein sequence will be returned.
 
         >>> p = Protein('test')
         >>> p.set_protein_sequence('AAAAACCCCC')
-        >>> p.prime_seq(5, 2)
+        >>> p.terminal_end_seq('N', 2)
         'AA'
-        >>> p.prime_seq(3, 9)
+        >>> p.terminal_end_seq('C', 9)
         'AAAACCCCC'
-        >>> p.prime_seq(3, 10)
+        >>> p.terminal_end_seq('C', 10)
         'AAAAACCCCC'
-        >>> p.prime_seq(3, 11)
+        >>> p.terminal_end_seq('C', 11)
         'AAAAACCCCC'
         '''
-        if not(prime in [3, 5]):
-            raise ValueError('prime must be either 3 or 5 (int).')
+        if not(terminal_end in ['N', 'C']):
+            raise ValueError('terminal_end must be either N or C')
         if(length < 1):
-            raise ValueError('Prime length must be positive integer.')
+            raise ValueError('length must be a positive integer.')
 
-        if(prime == 5):
+        if(terminal_end == 'N'):
             return self.protein_sequence[:length]
-        else:  # prime == 3
+        else:  # terminal_end == 'C'
             return self.protein_sequence[-length:]
 
     def sequence_signal(self, scale, window, edge):
@@ -817,3 +819,7 @@ class Pfam(object):
         return self(start_pos, end_pos, hmm_acc, hmm_name, type_, bit_score,
                     e_value, clan, active_residues)
     '''
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='SPiCE',
-    version='0.1.1',
+    version='0.1.2',
     author='B.A. van den Berg',
     author_email='b.a.vandenberg@gmail.com',
     packages=['spice', 'spice.plotpy', 'spice.job_runner'],

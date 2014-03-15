@@ -253,13 +253,11 @@ class ProjectManager(object):
                         assert(tokens[1] == '-f')
                         assert(tokens[3] == '-c')
                         cid = os.path.basename(
-                            os.path.dirname(
-                            os.path.dirname(tokens[4])))
+                            os.path.dirname(os.path.dirname(tokens[4])))
 
                         if(cid == cl_id):
                             data_set = os.path.basename(
-                                os.path.dirname(
-                                os.path.dirname(tokens[2])))
+                                os.path.dirname(os.path.dirname(tokens[2])))
                             data_set_list.append(data_set)
 
                 status_dirs[status] = data_set_list
@@ -758,7 +756,7 @@ class ProjectManager(object):
     ###########################################################################
     # Functions that write a job file and add the job to the job queue (put it
     # in the waiting dir) These are the jobs which need to be runned using
-    # SPiCa on the compute servers.
+    # SPiCE on the compute servers.
     ###########################################################################
 
     def run_feature_extraction(self, feature_categories):
@@ -774,11 +772,24 @@ class ProjectManager(object):
         log_f = os.path.join(self.fe_dir, 'log.txt')
         error_f = os.path.join(self.fe_dir, 'error.txt')
 
-        # write the job to the queue
-        with open(os.path.join(self.job_waiting_dir, jobid), 'w') as fout:
-            fout.write('%s\n' % (cmd))
-            fout.write('%s\n' % (log_f))    # stdout
-            fout.write('%s\n' % (error_f))  # stderr
+        file_content = '%s\n%s\n%s\n' % (cmd, log_f, error_f)
+
+        # check if the same job is already in one of the job directories
+        found = False
+        dirs = [self.job_waiting_dir, self.job_running_dir, self.job_done_dir]
+        for d in dirs:
+            for f in glob.glob(os.path.join(d, '*')):
+                str = ''
+                with open(f, 'r') as fin:
+                    for line in fin:
+                        str += line
+                if(str == file_content):
+                    found = True
+
+        if not(found):
+            # write the job to the queue
+            with open(os.path.join(self.job_waiting_dir, jobid), 'w') as fout:
+                fout.write(file_content)
 
     def run_classification(self, classifier, n_fold_cv, labeling_name,
                            class_ids, feat_ids, eval_score='roc_auc',
@@ -835,7 +846,14 @@ class ProjectManager(object):
         # read feature required for classifier
         settings_dict = self.get_classifier_settings(cl_id)
         feature_ids = settings_dict['feature_names']
-        feature_cats = set(['_'.join(f.split('_')[:2]) for f in feature_ids])
+
+        feature_cats = set()
+        for f in feature_ids:
+            fparts = f.split('_')
+            if(len(fparts) < 3):
+                feature_cats.add('_'.join(fparts[:1]))
+            else:
+                feature_cats.add('_'.join(fparts[:2]))
 
         # path to trained classifier file
         classifier_f = self.get_classifier_f
@@ -859,7 +877,7 @@ class ProjectManager(object):
         time.sleep(2)
 
         # store path to feature matrix dir
-        fm_dir = self.fm_dir        
+        fm_dir = self.fm_dir
 
         # SWITCH BACK TO ORIGINAL PROJECT
         self.set_project(prev_proj)
@@ -872,7 +890,7 @@ class ProjectManager(object):
         # output files
         progress_f = os.path.join(out_d, 'progress.txt')
         error_f = os.path.join(out_d, 'error.txt')
-        
+
         # create the list of options for the classification command
         options = [
             '-f %s' % (fm_dir),
@@ -887,4 +905,3 @@ class ProjectManager(object):
             fout.write('%s\n' % (cmd))
             fout.write('%s\n' % (progress_f))
             fout.write('%s\n' % (error_f))
-

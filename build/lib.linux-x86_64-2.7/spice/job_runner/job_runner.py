@@ -46,7 +46,7 @@ class JobQueueManager(Daemon):
 
                     job, run_f, done_f, err_f, fout, ferr = job_tuple
 
-                    # close the log files
+                    # close the log files # WHY IS THIS HERE???
                     fout.close()
                     ferr.close()
 
@@ -54,7 +54,7 @@ class JobQueueManager(Daemon):
                     job_status = job.poll()
                     if not(job.poll() is None):
 
-                        # remove the daemon from the list
+                        # remove the job from the list
                         self.running_jobs[job_type].remove(job_tuple)
 
                         if(job_status == 0):

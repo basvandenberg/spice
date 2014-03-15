@@ -112,7 +112,7 @@ class FeatureCategory():
 class FeatureExtraction(object):
 
     PROTEIN_FEATURE_CATEGORY_IDS = [
-        'aac', 'dc', 'psaac', 'sigavg', 'sigpeak', 'ac', 'ctd', 'len', 'ssc',
+        'aac', 'dc', 'teraac', 'sigavg', 'sigpeak', 'ac', 'ctd', 'len', 'ssc',
         'ssaac', 'sac', 'saaac', 'cc', 'cu', 'qso', 'paac1', 'paac2'
     ]
 
@@ -141,12 +141,12 @@ class FeatureExtraction(object):
             [(protein.Protein.get_protein_sequence, True)],
             protein.Protein('')),
 
-        'psaac': FeatureCategory(
-            'psaac',
-            'prime side amino acid count',
-            protein.Protein.prime_amino_acid_count,
-            ['prime side', 'length'],
-            [int, int],
+        'teraac': FeatureCategory(
+            'teraac',
+            'terminal end amino acid count',
+            protein.Protein.terminal_end_amino_acid_count,
+            ['terminal end', 'length'],
+            [str, int],
             [(protein.Protein.get_protein_sequence, True)],
             protein.Protein('')),
 
@@ -546,8 +546,17 @@ class FeatureExtraction(object):
         This function returns the set of allready calculated protein feature
         categories, a set with category ids is returned.
         '''
-        return set(['_'.join(f.split('_')[:2])
-                    for f in self.fm_protein.feature_ids])
+
+        featcat_ids = set()
+
+        for f in self.fm_protein.feature_ids:
+            parts = f.split('_')
+            if(len(parts) == 2):
+                featcat_ids.add(parts[0])
+            elif(len(parts) == 3):
+                featcat_ids.add('_'.join(parts[:2]))
+
+        return featcat_ids
 
     def categorized_protein_feature_ids(self):
         '''
@@ -572,8 +581,6 @@ class FeatureExtraction(object):
         cat_feat_dict = {}
 
         for feat_id in self.fm_protein.feature_ids:
-
-            # TODO what if there are no parameters...?
 
             tokens = feat_id.split('_')
 

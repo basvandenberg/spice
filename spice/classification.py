@@ -27,10 +27,11 @@ from biopy import roc
 
 
 # classification performance measures
-all_score_names = ['roc_auc', 'f1', 'precision', 'average_precision',
+all_score_names = ['roc_auc', 'mcc', 'f1', 'precision', 'average_precision',
                    'recall', 'accuracy']
 all_score_funcs = dict(zip(all_score_names, [
     metrics.roc_auc_score,
+    metrics.matthews_corrcoef,
     metrics.f1_score,
     metrics.precision_score,
     metrics.average_precision_score,
@@ -653,7 +654,7 @@ def test_classifier(tst_data, tst_target, classifier, scoring):
             else:
                 all_scores.append(sf(*args_pred))
         except Exception:
-            all_scores.append(-1.0)
+            all_scores.append(-10.0)
 
     # obtain confusion matrix
     confusion = metrics.confusion_matrix(tst_target, tst_pred)

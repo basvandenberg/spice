@@ -58,7 +58,7 @@ class ProteinDataSet(object):
         assert(self.proteins)
         ds = self.ds_dict[src_id]
         ds.read_data(data_path, mapping_file=mapping_file,
-                object_ids=self.get_protein_ids())
+                     object_ids=self.get_protein_ids())
         self.propagate_data_source_data(ds)
 
     # TODO mapping? like in the function above
@@ -97,7 +97,7 @@ class ProteinDataSet(object):
              pdb_id, pdb_i) in mutation_data:
             if(pid in protein_dict.keys()):
                 protein = protein_dict[pid]
-                
+
                 MissenseMutation(protein, pos, fr, to, label, pep, pep_i,
                                  codons, codon_fr, codons_to, pdb_id, pdb_i)
         '''
@@ -113,8 +113,8 @@ class ProteinDataSet(object):
                 mismut_list = list(mismut_tuple)
                 mismut_list[0] = protein
                 mismut_tuple = tuple(mismut_list)
-                
-                # create mutation object, which will imediately linked to the 
+
+                # create mutation object, which will imediately linked to the
                 # protein object
                 MissenseMutation.from_tuple(mismut_tuple)
 
@@ -166,7 +166,7 @@ class ProteinDataSet(object):
 class DataSource():
 
     def __init__(self, data_set, uid, name, read_func, write_func,
-            set_data_func, check_funcs, data_path, mapping_file):
+                 set_data_func, check_funcs, data_path, mapping_file):
 
         # callback data set
         self.data_set = data_set
@@ -218,7 +218,7 @@ class DataSource():
         # get mapping from our uniprot ids to data source ids
         if(mapping_file):
             object_to_data = [t for t in file_io.read_tuple_list(mapping_file,
-                    (str, str))]
+                              (str, str))]
             # 'unzip' into list of mapped ids and list of data file names
             uni_othe_dict = dict(object_to_data)
 
@@ -234,7 +234,7 @@ class DataSource():
 
             # set the data
             self.set_data(data, data_mapping=uni_othe_dict,
-                    object_ids=object_ids)
+                          object_ids=object_ids)
 
         # or from a single data file
         else:
@@ -245,7 +245,7 @@ class DataSource():
                 data_dict = dict(data)
                 data = [(i, data_dict[uni_othe_dict[i]]) for i in object_ids]
                 self.set_data(data, data_mapping=uni_othe_dict,
-                        object_ids=object_ids)
+                              object_ids=object_ids)
             else:
                 self.set_data(data, object_ids=object_ids)
 
@@ -265,7 +265,8 @@ class DataSource():
             if (any(map(func, items_to_check))):
                 self.data = None
                 raise ValueError('Error in %s data, contains item that %s.' %
-                    (self.name.lower(), ' '.join(func.__name__.split('_'))))
+                                 (self.name.lower(),
+                                 ' '.join(func.__name__.split('_'))))
 
     def get_data_path(self):
         return(os.path.join(self.root_dir, self.data_path))
@@ -325,6 +326,7 @@ class DataSource():
     def available(self):
         return True if self.data else False
 
+
 # TODO store this in configuration file
 class DataSourceFactory(object):
 
@@ -340,72 +342,76 @@ class DataSourceFactory(object):
         # secondary structure sequences corresponds to the protein sequence
         # lengths.
         self.data_sources = {
-            'prot_seq': ('Protein sequence',
-                    file_io.read_fasta, file_io.write_fasta,
-                    Protein.set_protein_sequence,
-                    [
-                        sequtil.is_empty,
-                        sequtil.is_not_an_amino_acid_sequence
-                    ], 'protein.fsa', None),
-            'orf_seq': ('ORF sequence',
-                    file_io.read_fasta, file_io.write_fasta,
-                    Protein.set_orf_sequence,
-                    [
-                        sequtil.is_empty,
-                        sequtil.is_not_a_nucleotide_sequence
-                    ], 'orf.fsa', 'uni_orf.map'),
-            'ss_seq': ('Secundary structure sequence',
-                    file_io.read_fasta, file_io.write_fasta,
-                    Protein.set_ss_sequence,
-                    [
-                        sequtil.is_empty,
-                        sequtil.is_not_a_sec_struct_sequence
-                    ], 'ss.fsa', 'uni_ss.map'),
-            'sa_seq': ('Solvent accessible sequence',
-                    file_io.read_fasta, file_io.write_fasta,
-                    Protein.set_sa_sequence,
-                    [
-                        sequtil.is_empty,
-                        sequtil.is_not_a_solv_access_sequence
-                    ], 'sa.fsa', 'uni_sa.map'),
-            'prot_struct': ('protein structure',
-                    file_io.read_pdb_dir, file_io.write_pdb_dir,
-                    Protein.set_protein_structure,
-                    [
-                    ], os.path.join('structure_data', 'pdb'), 'uni_pdb.map'),
-            'residue_rasa': ('residue relative accessible surface area',
-                    file_io.read_rasa_dir, file_io.write_rasa_dir,
-                    Protein.set_rasa,
-                    [
-                    ], os.path.join('structure_data', 'rasa'),
-                    'uni_rasa.map'),
-            #'residue_rank': ('protein residue ranking',
-            #        file_io.read_residue_rank_dir,
-            #        file_io.write_residue_rank_dir,
-            #        Protein.set_msa_data,
-            #        [
-            #        ], os.path.join('msa_data', 'residue_rank'),
-            #        'uni_rank.map'),
-            'msa': ('Multiple sequence alignment with homologous proteins',
-                    file_io.read_msa_dir,
-                    file_io.write_msa_dir,
-                    Protein.set_msa,
-                    [
-                    ], os.path.join('msa_data', 'msa'),
-                    'uni_msa.map'),
-            'pfam': ('protein family data',
-                    file_io.read_pfam, file_io.write_pfam,
-                    Protein.set_pfam_annotations,
-                    [], 'pfam.txt', None),
-            'flex': ('backbone dynamics data',
-                    file_io.read_flex, file_io.write_flex,
-                    Protein.set_backbone_dynamics,
-                    [], 'flex.txt', None),
-            'interaction': ('interaction counts data',
-                    file_io.read_interaction_counts,
-                    file_io.write_interaction_counts,
-                    Protein.set_interaction_counts,
-                    [], 'interaction.txt', None)
+            'prot_seq': (
+                'Protein sequence',
+                file_io.read_fasta, file_io.write_fasta,
+                Protein.set_protein_sequence,
+                [
+                    sequtil.is_empty,
+                    sequtil.is_not_an_amino_acid_sequence
+                ], 'protein.fsa', None),
+            'orf_seq': (
+                'ORF sequence',
+                file_io.read_fasta, file_io.write_fasta,
+                Protein.set_orf_sequence,
+                [
+                    sequtil.is_empty,
+                    sequtil.is_not_a_nucleotide_sequence
+                ], 'orf.fsa', 'uni_orf.map'),
+            'ss_seq': (
+                'Secondary structure sequence',
+                file_io.read_fasta, file_io.write_fasta,
+                Protein.set_ss_sequence,
+                [
+                    sequtil.is_empty,
+                    sequtil.is_not_a_sec_struct_sequence
+                ], 'ss.fsa', 'uni_ss.map'),
+            'sa_seq': (
+                'Solvent accessible sequence',
+                file_io.read_fasta, file_io.write_fasta,
+                Protein.set_sa_sequence,
+                [
+                    sequtil.is_empty,
+                    sequtil.is_not_a_solv_access_sequence
+                ], 'sa.fsa', 'uni_sa.map'),
+            'prot_struct': (
+                'protein structure',
+                file_io.read_pdb_dir, file_io.write_pdb_dir,
+                Protein.set_protein_structure,
+                [],
+                os.path.join('structure_data', 'pdb'),
+                'uni_pdb.map'),
+            'residue_rasa': (
+                'residue relative accessible surface area',
+                file_io.read_rasa_dir, file_io.write_rasa_dir,
+                Protein.set_rasa,
+                [],
+                os.path.join('structure_data', 'rasa'),
+                'uni_rasa.map'),
+            'msa': (
+                'Multiple sequence alignment with homologous proteins',
+                file_io.read_msa_dir,
+                file_io.write_msa_dir,
+                Protein.set_msa,
+                [
+                ], os.path.join('msa_data', 'msa'),
+                'uni_msa.map'),
+            'pfam': (
+                'protein family data',
+                file_io.read_pfam, file_io.write_pfam,
+                Protein.set_pfam_annotations,
+                [], 'pfam.txt', None),
+            'flex': (
+                'backbone dynamics data',
+                file_io.read_flex, file_io.write_flex,
+                Protein.set_backbone_dynamics,
+                [], 'flex.txt', None),
+            'interaction': (
+                'interaction counts data',
+                file_io.read_interaction_counts,
+                file_io.write_interaction_counts,
+                Protein.set_interaction_counts,
+                [], 'interaction.txt', None)
         }
 
         # make sure that all ids are in the ids list
