@@ -88,8 +88,8 @@ class MissenseMutation(object):
     def set_protein_data(self, protein, position, aa_from, aa_to):
 
         if not(protein.protein_sequence[position - 1] == aa_from):
-            raise ValueError('Amino acid %s not ' % (aa_from) +\
-                             'on position %i ' % (position) +\
+            raise ValueError('Amino acid %s not ' % (aa_from) +
+                             'on position %i ' % (position) +
                              'in protein %s.' % (protein.pid))
 
         self._protein = protein
@@ -112,7 +112,7 @@ class MissenseMutation(object):
         if(self.protein is None):
             raise ValueError('Protein data must be set.')
         if not(aa_pep[aa_pep_i] == self.aa_from):
-            raise ValueError('Amino acid on aa_pep_i in aa_pep does not ' +\
+            raise ValueError('Amino acid on aa_pep_i in aa_pep does not ' +
                              'correspond to aa_from.')
 
         self._aa_pep = aa_pep
@@ -209,7 +209,7 @@ class MissenseMutation(object):
         mismut.set_peptide_data(tuple[5], tuple[6])
         mismut.set_codon_data(tuple[7], tuple[8], tuple[9])
         mismut.set_struct_data(tuple[10], tuple[11])
-        return mismut    
+        return mismut
 
     def tuple_representation(self):
         return (self.protein.pid, self.position, self.aa_from, self.aa_to,
@@ -248,8 +248,8 @@ class MissenseMutation(object):
             return (ids, names)
 
     def signal_auc(self, scale, env_window=21, sig_window=9, edge=1.0,
-                            threshold=1.5, below_threshold=False,
-                            feature_ids=False):
+                   threshold=1.5, below_threshold=False,
+                   feature_ids=False):
         # TODO scale
         num_scales = 19
 
