@@ -178,7 +178,7 @@ class Protein(object):
 
             feat_ids = []
             feat_names = []
-            
+
             for si in xrange(1, num_segments + 1):
                 for p in pairs:
                     feat_ids.append('%s%i' % (p, si))
@@ -196,7 +196,7 @@ class Protein(object):
         else:
             aa_alph = sequtil.aa_unambiguous_alph
             feat_ids = ['%s%s' % (terminal_end, aa) for aa in aa_alph]
-            feat_names = ["%s'-terminal end amino acid count %s" % 
+            feat_names = ["%s'-terminal end amino acid count %s" %
                           (terminal_end, aa) for aa in aa_alph]
             return (feat_ids, feat_names)
 
@@ -247,7 +247,7 @@ class Protein(object):
         return (scale_list, scale_ids, scale_names)
 
     def _parse_aa_matrix(self, aa_matrix_id):
-        
+
         try:
             aa_matrix_id = int(aa_matrix_id)
         except ValueError:
@@ -394,7 +394,7 @@ class Protein(object):
 
     def quasi_sequence_order_descriptors(self, aa_matrix, rank, weight=0.1,
                                          feature_ids=False):
-        
+
         # fetch aa distance matrix
         aam, aam_id, aam_name = self._parse_aa_matrix(aa_matrix)
 
@@ -419,7 +419,7 @@ class Protein(object):
         '''
 
         alph = sequtil.aa_unambiguous_alph
-        
+
         pseaac_scale_indices, _, _ = self._parse_scales(aa_scales)
 
         if not (feature_ids):
@@ -444,7 +444,7 @@ class Protein(object):
         '''
 
         alph = sequtil.aa_unambiguous_alph
-        
+
         pseaac_scale_indices, _, _ = self._parse_scales(aa_scales)
 
         if not (feature_ids):
