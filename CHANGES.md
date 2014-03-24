@@ -1,3 +1,7 @@
+### 0.1.3 - 24 March 2014.
+
+HOTFIX - SpiceWeb ISSUE #6.
+
 ### 0.1.2 - 15 March 2014.
 
 - Fixed a number of bugs.
