@@ -774,9 +774,9 @@ class ProjectManager(object):
 
         file_content = '%s\n%s\n%s\n' % (cmd, log_f, error_f)
 
-        # check if the same job is already in one of the job directories
+        # check if the same job is already waiting or running
         found = False
-        dirs = [self.job_waiting_dir, self.job_running_dir, self.job_done_dir]
+        dirs = [self.job_waiting_dir, self.job_running_dir]
         for d in dirs:
             for f in glob.glob(os.path.join(d, '*')):
                 str = ''
