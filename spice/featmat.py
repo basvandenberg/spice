@@ -660,9 +660,12 @@ class FeatureMatrix(object):
         return ts
 
     def histogram_data(self, feat_id, labeling_name, class_ids=None,
-                       num_bins=40, standardized=False):
+                       num_bins=40, standardized=False, title=None):
 
         # test num_bins > 0
+
+        if(title is None):
+            title = ''
 
         # get labeling data
         try:
@@ -711,17 +714,26 @@ class FeatureMatrix(object):
         bin_edges = list(numpy.arange(min_val, max_val, step))
         bin_edges.append(max_val)
 
+        max_count = 0
         hists = {}
         for lab in hist_data.keys():
 
             h, e = numpy.histogram(hist_data[lab], bin_edges)
             hists[lab] = list(h)
 
+            max_count = max(max_count, max(h))
+
         result = {}
+        result['feature-id'] = feat_id
+        result['title'] = title
         result['x-label'] = feat_name
         result['legend'] = class_ids
         for lab in class_ids:
             result[lab] = hists[lab]
+        result['min-value'] = min_val
+        result['max-value'] = max_val
+        result['max-count'] = max_count
+        result['bin-edges'] = bin_edges
 
         return result
 
@@ -732,7 +744,7 @@ class FeatureMatrix(object):
             title = ''
 
         hist_data = self.histogram_data(feat_id, labeling_name, class_ids,
-                                        standardized=standardized)
+                                        standardized=standardized, title=title)
         return json.dumps(hist_data)
 
     def save_histogram(self, feat_id, labeling_name, class_ids=None,
