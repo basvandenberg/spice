@@ -6,8 +6,9 @@
 """
 
 import os
-import sys
+#import sys
 import glob
+import json
 
 import numpy
 from scipy import stats
@@ -16,11 +17,11 @@ from scipy.spatial import distance
 from matplotlib import pyplot
 
 # HACK TODO remove if sklearn is updated to 0.14 on compute servers...
-import sklearn
-if not(sklearn.__version__ == '0.14.1'):
-    sys.path.insert(1, os.environ['SKL'])
-    reload(sklearn)
-assert(sklearn.__version__ == '0.14.1')
+#import sklearn
+#if not(sklearn.__version__ == '0.14.1'):
+#    sys.path.insert(1, os.environ['SKL'])
+#    reload(sklearn)
+#assert(sklearn.__version__ == '0.14.1')
 
 from sklearn.datasets.base import Bunch
 
@@ -354,8 +355,6 @@ class FeatureMatrix(object):
             new_cust_feat_i = 0
         else:
             last_cust_feat = sorted(cust_feats)[-1]
-            print last_cust_feat
-            print len(self.CUSTOM_FEAT_PRE) + 1
             new_cust_feat_i = int(
                 last_cust_feat[(len(self.CUSTOM_FEAT_PRE)):]) + 1
 
@@ -659,6 +658,82 @@ class FeatureMatrix(object):
                           self.feature_matrix[lab0_indices, f_i]))
 
         return ts
+
+    def histogram_data(self, feat_id, labeling_name, class_ids=None,
+                       num_bins=40, standardized=False):
+
+        # test num_bins > 0
+
+        # get labeling data
+        try:
+            labeling = self.labeling_dict[labeling_name]
+        except KeyError:
+            raise ValueError('Labeling does not exist: %s.' % (labeling_name))
+
+        # by default use all classes
+        if not(class_ids):
+            class_ids = labeling.class_names
+
+        # get the feature matrix column index for the given feature id
+        try:
+            feature_index = self.feature_ids.index(feat_id)
+        except ValueError:
+            raise ValueError('Feature %s does not exist.' % (feat_id))
+
+        # get the name of the feature
+        feat_name = self.feature_names[feat_id]
+
+        # get the feature matrix, standardize data if requested
+        if(standardized):
+            fm = self.standardized()
+        else:
+            fm = self.feature_matrix
+
+        # generate histogram data
+        hist_data = {}
+        # TODO check what is the proper python way to this
+        min_val = 10000.0
+        max_val = -10000.0
+
+        for lab in class_ids:
+
+            lab_indices = labeling.object_indices_per_class[lab]
+
+            # fetch feature column with only the object rows with label lab
+            h_data = fm[lab_indices, feature_index]
+
+            min_val = min(min_val, min(h_data))
+            max_val = max(max_val, max(h_data))
+            hist_data[lab] = h_data
+
+        # bin edges, including the last edge
+        step = (max_val - min_val) / num_bins
+        bin_edges = list(numpy.arange(min_val, max_val, step))
+        bin_edges.append(max_val)
+
+        hists = {}
+        for lab in hist_data.keys():
+
+            h, e = numpy.histogram(hist_data[lab], bin_edges)
+            hists[lab] = list(h)
+
+        result = {}
+        result['x-label'] = feat_name
+        result['legend'] = class_ids
+        for lab in class_ids:
+            result[lab] = hists[lab]
+
+        return result
+
+    def histogram_json(self, feat_id, labeling_name, class_ids=None,
+                       num_bins=40, standardized=False, title=None):
+
+        if(title is None):
+            title = ''
+
+        hist_data = self.histogram_data(feat_id, labeling_name, class_ids,
+                                        standardized=standardized)
+        return json.dumps(hist_data)
 
     def save_histogram(self, feat_id, labeling_name, class_ids=None,
                        colors=None, img_format='png', root_dir='.',
