@@ -709,10 +709,42 @@ class FeatureMatrix(object):
             max_val = max(max_val, max(h_data))
             hist_data[lab] = h_data
 
-        # bin edges, including the last edge
+        # round step size
+        # quick and dirty, there's probably some elegant way to do this
         step = (max_val - min_val) / num_bins
-        bin_edges = list(numpy.arange(min_val, max_val, step))
-        bin_edges.append(max_val)
+        orde = 0
+        tmp_step = step
+        while(tmp_step < 1.0):
+            orde += 1
+            tmp_step *= 10
+        orde = 10**orde
+        step = round(step * orde) / orde
+
+        # quick and dirty again, rounded range with nice bin boundaries
+        start = 0.0
+
+        if(min_val < 0.0):
+            while(start > min_val):
+                start -= step
+    
+        elif(min_val > 0.0):
+            while(start < min_val):
+                start += step
+            start -= step
+
+        end = 0.0
+
+        if(max_val < 0.0):
+            while(end > max_val):
+                end -= step
+            end += step
+
+        elif(max_val > 0.0):
+            while(end < max_val):
+                end += step
+
+        # generate the bin edges
+        bin_edges = list(numpy.arange(start, end, step))
 
         max_count = 0
         hists = {}
@@ -722,6 +754,26 @@ class FeatureMatrix(object):
             hists[lab] = list(h)
 
             max_count = max(max_count, max(h))
+
+        # and again, quick and dirty, the y grid
+        y_grid = []
+
+        if(max_count < 100):
+            t = max_count / 10
+            y_grid = range(0, t * 10 + 1, t)
+        elif(max_count < 1000):
+            t = (max_count / 100) + 1
+            y_grid = range(0, t * 100 + 1, t * 10)
+        elif(max_count < 10000):
+            t = (max_count / 1000) + 1
+            y_grid = range(0, t * 1000 + 1, t * 100)
+        elif(max_count < 100000):
+            t = (max_count / 10000) + 1
+            y_grid = range(0, t * 10000 + 1, t * 1000)
+        else:
+            y_grid = range(0, max_count, max_count / 10)
+            
+            
 
         result = {}
         result['feature-id'] = feat_id
@@ -734,6 +786,7 @@ class FeatureMatrix(object):
         result['max-value'] = max_val
         result['max-count'] = max_count
         result['bin-edges'] = bin_edges
+        result['y-grid'] = y_grid
 
         return result
 
