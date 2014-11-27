@@ -694,6 +694,7 @@ class FeatureMatrix(object):
 
         # generate histogram data
         hist_data = {}
+
         # TODO check what is the proper python way to this
         min_val = 10000.0
         max_val = -10000.0
@@ -712,6 +713,7 @@ class FeatureMatrix(object):
         # round step size
         # quick and dirty, there's probably some elegant way to do this
         step = (max_val - min_val) / num_bins
+        '''
         orde = 0
         tmp_step = step
         while(tmp_step < 1.0):
@@ -742,6 +744,9 @@ class FeatureMatrix(object):
         elif(max_val > 0.0):
             while(end < max_val):
                 end += step
+        '''
+        start = min_val
+        end = max_val
 
         # generate the bin edges
         bin_edges = list(numpy.arange(start, end, step))
@@ -752,14 +757,15 @@ class FeatureMatrix(object):
 
             h, e = numpy.histogram(hist_data[lab], bin_edges)
             hists[lab] = list(h)
-
             max_count = max(max_count, max(h))
 
         # and again, quick and dirty, the y grid
         y_grid = []
 
+        if(max_count < 10):
+            y_grid = range(10)
         if(max_count < 100):
-            t = max_count / 10
+            t = (max_count / 10) + 1
             y_grid = range(0, t * 10 + 1, t)
         elif(max_count < 1000):
             t = (max_count / 100) + 1
@@ -772,8 +778,6 @@ class FeatureMatrix(object):
             y_grid = range(0, t * 10000 + 1, t * 1000)
         else:
             y_grid = range(0, max_count, max_count / 10)
-            
-            
 
         result = {}
         result['feature-id'] = feat_id
@@ -797,7 +801,8 @@ class FeatureMatrix(object):
             title = ''
 
         hist_data = self.histogram_data(feat_id, labeling_name, class_ids,
-                                        standardized=standardized, title=title)
+                                        standardized=standardized, title=title,
+                                        num_bins=num_bins)
         return json.dumps(hist_data)
 
     def save_histogram(self, feat_id, labeling_name, class_ids=None,
