@@ -12,7 +12,7 @@ from spice.plotpy import color
 
 def heatmap_fig(data, xlab, ylab, file_name, vmin=-3.0, vmax=3.0):
     
-    fig = pyplot.figure(figsize=(8,8))
+    fig = pyplot.figure(figsize=(30,30))
     gs = gridspec.GridSpec(1, 2, width_ratios=[20, 1])
     
     ax0 = pyplot.subplot(gs[0, 0])
@@ -20,7 +20,7 @@ def heatmap_fig(data, xlab, ylab, file_name, vmin=-3.0, vmax=3.0):
     
     ax1 = pyplot.subplot(gs[0, 1])
     #colorbar.ColorbarBase(ax1, cmap=my_cmap())
-    colorbar.ColorbarBase(ax1, cmap=cm.get_cmap('RdBu'))
+    #colorbar.ColorbarBase(ax1, cmap=cm.get_cmap('RdBu'))
     step = (vmax - vmin) / 10.0
     ticklab = list(numpy.arange(vmin, vmax, step))
     ticklab.append(vmax)
@@ -102,7 +102,7 @@ def heatmap_labeled_fig(data, xlab, ylab, label_lists, class_names, file_path,
     '''
 
     fig.savefig(file_path + '.png', bbox_inches='tight')
-    fig.savefig(file_path + '.svg', bbox_inches='tight')
+    #fig.savefig(file_path + '.svg', bbox_inches='tight')
     #fig.savefig(file_path + '.png')
     #fig.savefig(file_path + '.svg')
 

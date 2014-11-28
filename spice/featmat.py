@@ -728,7 +728,7 @@ class FeatureMatrix(object):
         if(min_val < 0.0):
             while(start > min_val):
                 start -= step
-    
+
         elif(min_val > 0.0):
             while(start < min_val):
                 start += step
@@ -750,6 +750,7 @@ class FeatureMatrix(object):
 
         # generate the bin edges
         bin_edges = list(numpy.arange(start, end, step))
+        bin_edges.append(end)
 
         max_count = 0
         hists = {}
@@ -763,8 +764,8 @@ class FeatureMatrix(object):
         y_grid = []
 
         if(max_count < 10):
-            y_grid = range(10)
-        if(max_count < 100):
+            y_grid = range(max_count + 1)
+        elif(max_count < 100):
             t = (max_count / 10) + 1
             y_grid = range(0, t * 10 + 1, t)
         elif(max_count < 1000):
@@ -865,6 +866,91 @@ class FeatureMatrix(object):
         pyplot.close(fig)
 
         return out_f
+
+    def scatter_json(self, feat_id0, feat_id1, labeling_name=None,
+                     class_ids=None, standardized=False, feat0_pre=None,
+                     feat1_pre=None,):
+
+        try:
+            labeling = self.labeling_dict[labeling_name]
+        except KeyError:
+            raise ValueError('Labeling does not exist: %s.' % (labeling_name))
+
+        if not(labeling_name):
+            labeling_name = self.labeling_dict[sorted(
+                self.labeling_dict.keys())[0]].name
+
+        if not(class_ids):
+            class_ids = self.labeling_dict[labeling_name].class_names
+
+        try:
+            feature_index0 = self.feature_ids.index(feat_id0)
+            feature_index1 = self.feature_ids.index(feat_id1)
+        except ValueError:
+            raise ValueError('Feature %s or %s does not exist.' %
+                             (feat_id0, feat_id1))
+
+        feat_name0 = self.feature_names[feat_id0]
+        feat_name1 = self.feature_names[feat_id1]
+
+        if(feat0_pre):
+            feat_name0 = ' - '.join([feat0_pre, feat_name0])
+        if(feat1_pre):
+            feat_name1 = ' - '.join([feat1_pre, feat_name1])
+
+        if(standardized):
+            # standardize data NOTE that fm is standardized before the objects
+            # are sliced out!!!
+            # not sure if this is the desired situation...
+            fm = self.standardized()
+        else:
+            fm = self.feature_matrix
+
+        legend = []
+        scatters = {}
+
+        xmin = 10000
+        xmax = -10000
+        ymin = 10000
+        ymax = -10000
+
+        # for each class id, add object ids that have that class label
+        for index, class_id in enumerate(class_ids):
+
+            object_is = labeling.object_indices_per_class[class_id]
+            x = fm[object_is, feature_index0]
+            y = fm[object_is, feature_index1]
+            #test x = list(numpy.arange(0.0, 1.0, 0.005))
+            #test y = list(numpy.arange(0.0, 1.0, 0.005))
+
+            xmin = min(xmin, min(x))
+            xmax = max(xmax, max(x))
+            ymin = min(ymin, min(y))
+            ymax = max(ymax, max(y))
+
+            legend.append(class_id)
+            scatters[class_id] = zip(x, y)
+
+        grid_size = 20.0
+
+        step = (xmax - xmin) / grid_size
+        xgrid = list(numpy.arange(xmin, xmax, step))
+        xgrid.append(xmax)
+
+        step = (ymax - ymin) / grid_size
+        ygrid = list(numpy.arange(ymin, ymax, step))
+        ygrid.append(ymax)
+
+        scatter_data = {}
+        scatter_data['legend'] = legend
+        for item in legend:
+            scatter_data[item] = scatters[item]
+        scatter_data['x-label'] = feat_name0
+        scatter_data['y-label'] = feat_name1
+        scatter_data['x-grid'] = xgrid
+        scatter_data['y-grid'] = ygrid
+
+        return json.dumps(scatter_data)
 
     def save_scatter(self, feat_id0, feat_id1, labeling_name=None,
                      class_ids=None, colors=None, img_format='png',
