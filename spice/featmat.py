@@ -1023,6 +1023,45 @@ class FeatureMatrix(object):
 
         return out_f
 
+    def clustdist_json(self, feature_ids=None, labeling_name=None,
+                       class_ids=None):
+
+        if not(labeling_name):
+            labeling_name = 'one_class'
+
+        # fm is normalized!
+        (fm, sample_names, feature_names, target, target_names) =\
+            self.get_dataset(feature_ids, labeling_name, class_ids)
+
+        # reorder feature matrix rows (objects)
+        object_indices = hierarchy.leaves_list(self.clust_object(fm))
+        fm = fm[object_indices, :]
+
+        # reorder standardized feature matrix columns (feats)
+        feat_indices = hierarchy.leaves_list(self.clust_feat(fm))
+        fm = fm[:, feat_indices]
+
+        # add labels of all available labelings (reordered using object_is)
+        lablist = [target[i] for i in object_indices]
+        #class_names = [target_names]
+
+        # reorder the feature and object ids
+        fs = [feature_names[i] for i in feat_indices]
+        gs = [sample_names for i in object_indices]
+
+        json_data = {}
+        json_data['feature-names'] = fs
+        #json_data['object-names'] = gs --> not yet needed on client side
+        json_data['object-labels'] = lablist
+        json_data['class-names'] = target_names
+        json_data['max-value'] = fm.max();
+        json_data['min-value'] = fm.min();
+        # add feature list per feature-name
+        for index, item in enumerate(fs):
+            json_data[item] = list(fm[:, index])
+
+        return json.dumps(json_data)
+
     def get_clustdist_path(self, feature_ids=None, labeling_name=None,
                            class_ids=None, vmin=-3.0, vmax=3.0, root_dir='.'):
 
