@@ -16,13 +16,7 @@ from scipy.cluster import hierarchy
 from scipy.spatial import distance
 from matplotlib import pyplot
 
-# HACK TODO remove if sklearn is updated to 0.14 on compute servers...
-#import sklearn
-#if not(sklearn.__version__ == '0.14.1'):
-#    sys.path.insert(1, os.environ['SKL'])
-#    reload(sklearn)
-#assert(sklearn.__version__ == '0.14.1')
-
+import sklearn
 from sklearn.datasets.base import Bunch
 
 from biopy import file_io
