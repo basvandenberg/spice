@@ -1,3 +1,8 @@
+### 0.1.4 - 21 April 2017.
+
+- Small updates
+- Fix issue #2.
+
 ### 0.1.3 - 24 March 2014.
 
 HOTFIX - SpiceWeb ISSUE #6.
