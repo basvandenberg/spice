@@ -215,6 +215,12 @@ class Protein(object):
             scale_names = ['Georgiev scale %i' % (i)
                            for i in xrange(1, len(scale_list) + 1)]
 
+        # retrieve AAIndex scale with index scales
+        elif(type(scales) == int):
+            scale_list = [sequtil.get_aaindex_scale(scales)]
+            scale_ids = ['aai%i' % (scales)]
+            scale_names = ['amino acid index %i' % (scales)]
+
         # retrieve list of pseaac scale
         elif(scales[0] == 'p' and len(scales) > 2):
             scale_indices = [int(i) for i in scales.split('p')[1:]]
@@ -228,12 +234,6 @@ class Protein(object):
             scale_list = [int(scales[1:])]
             scale_ids = ['pseaac%i' % (scale_index + 1)]
             scale_names = ['PseAAC scale %i' % (scale_index + 1)]
-
-        # retrieve AAIndex scale with index scales
-        elif(type(scales) == int):
-            scale_list = [sequtil.get_aaindex_scale(scales)]
-            scale_ids = ['aai%i' % (scales)]
-            scale_names = ['amino acid index %i' % (scales)]
 
         # retrieve list of AAIndex scales... (still used somewhere?)
         elif(type(scales) == list and all([type[i] == int for i in scales])):

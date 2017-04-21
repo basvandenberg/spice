@@ -6,8 +6,9 @@
 """
 
 import os
-import sys
+#import sys
 import glob
+import json
 
 import numpy
 from scipy import stats
@@ -15,13 +16,7 @@ from scipy.cluster import hierarchy
 from scipy.spatial import distance
 from matplotlib import pyplot
 
-# HACK TODO remove if sklearn is updated to 0.14 on compute servers...
 import sklearn
-if not(sklearn.__version__ == '0.14.1'):
-    sys.path.insert(1, os.environ['SKL'])
-    reload(sklearn)
-assert(sklearn.__version__ == '0.14.1')
-
 from sklearn.datasets.base import Bunch
 
 from biopy import file_io
@@ -354,8 +349,6 @@ class FeatureMatrix(object):
             new_cust_feat_i = 0
         else:
             last_cust_feat = sorted(cust_feats)[-1]
-            print last_cust_feat
-            print len(self.CUSTOM_FEAT_PRE) + 1
             new_cust_feat_i = int(
                 last_cust_feat[(len(self.CUSTOM_FEAT_PRE)):]) + 1
 
@@ -660,6 +653,153 @@ class FeatureMatrix(object):
 
         return ts
 
+    def histogram_data(self, feat_id, labeling_name, class_ids=None,
+                       num_bins=40, standardized=False, title=None):
+
+        # test num_bins > 0
+
+        if(title is None):
+            title = ''
+
+        # get labeling data
+        try:
+            labeling = self.labeling_dict[labeling_name]
+        except KeyError:
+            raise ValueError('Labeling does not exist: %s.' % (labeling_name))
+
+        # by default use all classes
+        if not(class_ids):
+            class_ids = labeling.class_names
+
+        # get the feature matrix column index for the given feature id
+        try:
+            feature_index = self.feature_ids.index(feat_id)
+        except ValueError:
+            raise ValueError('Feature %s does not exist.' % (feat_id))
+
+        # get the name of the feature
+        feat_name = self.feature_names[feat_id]
+
+        # get the feature matrix, standardize data if requested
+        if(standardized):
+            fm = self.standardized()
+        else:
+            fm = self.feature_matrix
+
+        # generate histogram data
+        hist_data = {}
+
+        # TODO check what is the proper python way to this
+        min_val = 10000.0
+        max_val = -10000.0
+
+        for lab in class_ids:
+
+            lab_indices = labeling.object_indices_per_class[lab]
+
+            # fetch feature column with only the object rows with label lab
+            h_data = fm[lab_indices, feature_index]
+
+            min_val = min(min_val, min(h_data))
+            max_val = max(max_val, max(h_data))
+            hist_data[lab] = h_data
+
+        # round step size
+        # quick and dirty, there's probably some elegant way to do this
+        step = (max_val - min_val) / num_bins
+        '''
+        orde = 0
+        tmp_step = step
+        while(tmp_step < 1.0):
+            orde += 1
+            tmp_step *= 10
+        orde = 10**orde
+        step = round(step * orde) / orde
+
+        # quick and dirty again, rounded range with nice bin boundaries
+        start = 0.0
+
+        if(min_val < 0.0):
+            while(start > min_val):
+                start -= step
+
+        elif(min_val > 0.0):
+            while(start < min_val):
+                start += step
+            start -= step
+
+        end = 0.0
+
+        if(max_val < 0.0):
+            while(end > max_val):
+                end -= step
+            end += step
+
+        elif(max_val > 0.0):
+            while(end < max_val):
+                end += step
+        '''
+        start = min_val
+        end = max_val
+
+        # generate the bin edges
+        bin_edges = list(numpy.arange(start, end, step))
+        bin_edges.append(end)
+
+        max_count = 0
+        hists = {}
+        for lab in hist_data.keys():
+
+            h, e = numpy.histogram(hist_data[lab], bin_edges)
+            hists[lab] = list(h)
+            max_count = max(max_count, max(h))
+
+        # and again, quick and dirty, the y grid
+        y_grid = []
+
+        if(max_count < 10):
+            y_grid = range(max_count + 1)
+        elif(max_count < 100):
+            t = (max_count / 10) + 1
+            y_grid = range(0, t * 10 + 1, t)
+        elif(max_count < 1000):
+            t = (max_count / 100) + 1
+            y_grid = range(0, t * 100 + 1, t * 10)
+        elif(max_count < 10000):
+            t = (max_count / 1000) + 1
+            y_grid = range(0, t * 1000 + 1, t * 100)
+        elif(max_count < 100000):
+            t = (max_count / 10000) + 1
+            y_grid = range(0, t * 10000 + 1, t * 1000)
+        else:
+            y_grid = range(0, max_count, max_count / 10)
+
+        result = {}
+        result['feature-id'] = feat_id
+        result['title'] = title
+        result['x-label'] = feat_name
+        result['legend'] = class_ids
+        for lab in class_ids:
+            result[lab] = hists[lab]
+        result['min-value'] = min_val
+        result['max-value'] = max_val
+        result['max-count'] = max_count
+        result['bin-edges'] = bin_edges
+        result['y-grid'] = y_grid
+
+        return result
+
+    def histogram_json(self, feat_id, labeling_name, class_ids=None,
+                       num_bins=40, standardized=False, title=None):
+
+        if(title is None):
+            title = ''
+
+        hist_data = self.histogram_data(feat_id, labeling_name, class_ids,
+                                        standardized=standardized, title=title,
+                                        num_bins=num_bins)
+        return json.dumps(hist_data)
+
     def save_histogram(self, feat_id, labeling_name, class_ids=None,
                        colors=None, img_format='png', root_dir='.',
                        title=None, standardized=False):
@@ -720,6 +860,91 @@ class FeatureMatrix(object):
         pyplot.close(fig)
 
         return out_f
+
+    def scatter_json(self, feat_id0, feat_id1, labeling_name=None,
+                     class_ids=None, standardized=False, feat0_pre=None,
+                     feat1_pre=None,):
+
+        try:
+            labeling = self.labeling_dict[labeling_name]
+        except KeyError:
+            raise ValueError('Labeling does not exist: %s.' % (labeling_name))
+
+        if not(labeling_name):
+            labeling_name = self.labeling_dict[sorted(
+                self.labeling_dict.keys())[0]].name
+
+        if not(class_ids):
+            class_ids = self.labeling_dict[labeling_name].class_names
+
+        try:
+            feature_index0 = self.feature_ids.index(feat_id0)
+            feature_index1 = self.feature_ids.index(feat_id1)
+        except ValueError:
+            raise ValueError('Feature %s or %s does not exist.' %
+                             (feat_id0, feat_id1))
+
+        feat_name0 = self.feature_names[feat_id0]
+        feat_name1 = self.feature_names[feat_id1]
+
+        if(feat0_pre):
+            feat_name0 = ' - '.join([feat0_pre, feat_name0])
+        if(feat1_pre):
+            feat_name1 = ' - '.join([feat1_pre, feat_name1])
+
+        if(standardized):
+            # standardize data NOTE that fm is standardized before the objects
+            # are sliced out!!!
+            # not sure if this is the desired situation...
+            fm = self.standardized()
+        else:
+            fm = self.feature_matrix
+
+        legend = []
+        scatters = {}
+
+        xmin = 10000
+        xmax = -10000
+        ymin = 10000
+        ymax = -10000
+
+        # for each class id, add object ids that have that class label
+        for index, class_id in enumerate(class_ids):
+
+            object_is = labeling.object_indices_per_class[class_id]
+            x = fm[object_is, feature_index0]
+            y = fm[object_is, feature_index1]
+            #test x = list(numpy.arange(0.0, 1.0, 0.005))
+            #test y = list(numpy.arange(0.0, 1.0, 0.005))
+
+            xmin = min(xmin, min(x))
+            xmax = max(xmax, max(x))
+            ymin = min(ymin, min(y))
+            ymax = max(ymax, max(y))
+
+            legend.append(class_id)
+            scatters[class_id] = zip(x, y)
+
+        grid_size = 20.0
+
+        step = (xmax - xmin) / grid_size
+        xgrid = list(numpy.arange(xmin, xmax, step))
+        xgrid.append(xmax)
+
+        step = (ymax - ymin) / grid_size
+        ygrid = list(numpy.arange(ymin, ymax, step))
+        ygrid.append(ymax)
+
+        scatter_data = {}
+        scatter_data['legend'] = legend
+        for item in legend:
+            scatter_data[item] = scatters[item]
+        scatter_data['x-label'] = feat_name0
+        scatter_data['y-label'] = feat_name1
+        scatter_data['x-grid'] = xgrid
+        scatter_data['y-grid'] = ygrid
+
+        return json.dumps(scatter_data)
 
     def save_scatter(self, feat_id0, feat_id1, labeling_name=None,
                      class_ids=None, colors=None, img_format='png',
@@ -791,6 +1016,45 @@ class FeatureMatrix(object):
         pyplot.close(fig)
 
         return out_f
+
+    def clustdist_json(self, feature_ids=None, labeling_name=None,
+                       class_ids=None):
+
+        if not(labeling_name):
+            labeling_name = 'one_class'
+
+        # fm is normalized!
+        (fm, sample_names, feature_names, target, target_names) =\
+            self.get_dataset(feature_ids, labeling_name, class_ids)
+
+        # reorder feature matrix rows (objects)
+        object_indices = hierarchy.leaves_list(self.clust_object(fm))
+        fm = fm[object_indices, :]
+
+        # reorder standardized feature matrix columns (feats)
+        feat_indices = hierarchy.leaves_list(self.clust_feat(fm))
+        fm = fm[:, feat_indices]
+
+        # add labels of all available labelings (reordered using object_is)
+        lablist = [target[i] for i in object_indices]
+        #class_names = [target_names]
+
+        # reorder the feature and object ids
+        fs = [feature_names[i] for i in feat_indices]
+        gs = [sample_names for i in object_indices]
+
+        json_data = {}
+        json_data['feature-names'] = fs
+        #json_data['object-names'] = gs --> not yet needed on client side
+        json_data['object-labels'] = lablist
+        json_data['class-names'] = target_names
+        json_data['max-value'] = fm.max();
+        json_data['min-value'] = fm.min();
+        # add feature list per feature-name
+        for index, item in enumerate(fs):
+            json_data[item] = list(fm[:, index])
+
+        return json.dumps(json_data)
 
     def get_clustdist_path(self, feature_ids=None, labeling_name=None,
                            class_ids=None, vmin=-3.0, vmax=3.0, root_dir='.'):
