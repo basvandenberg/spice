@@ -16,7 +16,6 @@ from scipy.cluster import hierarchy
 from scipy.spatial import distance
 from matplotlib import pyplot
 
-import sklearn
 from sklearn.datasets.base import Bunch
 
 from biopy import file_io

@@ -1,3 +1,7 @@
+### 0.1.5 - 23 April 2017.
+
+- Fix issue #2 for classify and classification.
+
 ### 0.1.4 - 21 April 2017.
 
 - Small updates
